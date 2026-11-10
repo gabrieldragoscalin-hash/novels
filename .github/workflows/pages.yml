@@ -1,0 +1,72 @@
+name: Build and deploy game
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore Godot cache
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/godot/export_templates/4.6.3.stable
+            ~/godot-bin
+          key: godot-4.6.3-linux-web-v1
+      - name: Install Godot and Web export template
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        env:
+          GODOT_VERSION: 4.6.3
+        run: |
+          set -euo pipefail
+          release="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable"
+          editor="Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          templates="Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          curl -fL --retry 3 "$release/$editor" -o "$editor"
+          curl -fL --retry 3 "$release/$templates" -o "$templates"
+          curl -fL --retry 3 "$release/SHA512-SUMS.txt" -o SHA512-SUMS.txt
+          grep -F "$editor" SHA512-SUMS.txt | sha512sum --check --strict
+          grep -F "$templates" SHA512-SUMS.txt | sha512sum --check --strict
+          unzip -q "$editor" -d /tmp/godot
+          mkdir -p "$HOME/godot-bin"
+          install "/tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" "$HOME/godot-bin/godot"
+          unzip -q "$templates" 'templates/web*' -d /tmp/godot
+          target="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$target"
+          cp /tmp/godot/templates/web* "$target/"
+          rm "$editor" "$templates" SHA512-SUMS.txt
+      - name: Add Godot to PATH
+        run: echo "$HOME/godot-bin" >> "$GITHUB_PATH"
+      - name: Import and test
+        run: |
+          godot --headless --editor --path . --import
+          godot --headless --path . --script tests/smoke.gd
+      - name: Export browser game
+        run: |
+          mkdir -p build/web
+          godot --headless --path . --export-release Web build/web/index.html
+          touch build/web/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
