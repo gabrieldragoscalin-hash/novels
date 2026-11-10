@@ -14,7 +14,7 @@ func run() -> void:
 	room.player = Vector2(90, 310)
 	room.move_player(Vector2(100, 0))
 	assert(room.player.x <= 96, "Pillars must block the player")
-	room.player = Vector2(240, 530)
+	room.player = Vector2(65, 530)
 	room.move_player(Vector2(0, 1000))
 	assert(room.player.y <= 584, "Player must stay within room walls")
 	var touch := InputEventScreenTouch.new()
@@ -48,6 +48,39 @@ func run() -> void:
 	assert(room.pointer == -1, "Losing focus must release movement")
 	room.reset_player()
 	assert(room.player == Vector2(240, 530))
+	# Traverse every room in a snake, then return through the same doors.
+	var route: Array[Vector2i] = []
+	for y in range(5):
+		for x in range(4): route.append(Vector2i.RIGHT if y % 2 == 0 else Vector2i.LEFT)
+		if y < 4: route.append(Vector2i.DOWN)
+	for direction in route:
+		await cross_door(room, direction)
+	assert(room.dungeon.current == Vector2i(4, 4))
+	for state in room.dungeon.rooms.values(): assert(state["visits"] > 0, "All 25 rooms must be reachable")
+	route.reverse()
+	for direction in route:
+		await cross_door(room, -direction)
+	assert(room.dungeon.current == Vector2i.ZERO)
+	assert(room.dungeon.rooms[Vector2i.ZERO]["visits"] == 2, "Visits must survive room changes")
+	room.player = Vector2(240, 186)
+	room.move_player(Vector2(0, -10))
+	assert(not room.transitioning and room.dungeon.current == Vector2i.ZERO, "Outer wall cannot leave grid")
+	print("PASS: 25 rooms, bidirectional doors, transitions, outer boundaries, persistent visits")
 	print("PASS: start gate, movement, pillar collision, bounds, touch ownership, release, focus loss, reset")
 	room.queue_free()
 	quit(0)
+
+func cross_door(room: Node, direction: Vector2i) -> void:
+	var previous: Vector2i = room.dungeon.current
+	if direction == Vector2i.RIGHT: room.player = Vector2(436, 385)
+	elif direction == Vector2i.LEFT: room.player = Vector2(44, 385)
+	elif direction == Vector2i.DOWN: room.player = Vector2(240, 584)
+	else: room.player = Vector2(240, 186)
+	room.move_player(Vector2(direction) * 2)
+	assert(room.transitioning, "Walking into an open door starts a transition")
+	room.move_player(Vector2(direction) * 1000)
+	assert(room.dungeon.current == previous, "Movement must pause during fade-out")
+	await room.transition_finished
+	assert(room.dungeon.current == previous + direction)
+	assert(not room._blocked(room.player), "Entrance must not intersect a pillar")
+	assert(room.FLOOR.grow(-room.RADIUS).has_point(room.player))

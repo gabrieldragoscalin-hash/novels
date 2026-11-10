@@ -4,14 +4,21 @@ A Godot 4.6.3 roguelite prototype. The agreed concept is in [GAME_DESIGN.md](GAM
 
 ## First playable
 
-One room with an original placeholder adventurer, angled wall/pillar artwork,
-collision, keyboard movement, and a floating touch joystick. Combat, room travel,
-dungeon generation, progression, and saves are not implemented yet.
+A connected 5×5 dungeon with 25 rooms, an original placeholder adventurer,
+angled wall/pillar artwork, collision, keyboard movement, and a floating touch
+joystick. Walk into the centre of an open doorway to travel with a short fade.
+A minimap highlights your current room in gold and visited rooms in teal; room
+colours and coordinate markings help orientation. Doors at the outside of the
+map are solid walls. Holding movement continues naturally after a transition.
+
+This milestone starts at A1 and uses placeholder rooms. Combat, random room types,
+random start/boss placement, floor progression, and persistent saves come later.
+Room visit counts are retained while travelling during the current session.
 
 On iPhone: tap **Enter the dungeon**, then touch and drag anywhere on the game to move. The joystick appears beneath
 your finger and disappears when released; interface buttons remain usable.
 Release to stop. On desktop: use WASD or arrow keys. **Reset position** returns you
-to the entrance. The doorway is decorative in this milestone.
+to the entrance. Doorway arrows show available neighbouring rooms.
 
 ## Open locally
 
@@ -51,7 +58,8 @@ Safari performance and touch behaviour still need device testing.
 ## Project layout
 
 - `scenes/room.tscn`: entry scene.
-- `scripts/room.gd`: room drawing, collision, input, and prototype interface.
+- `scripts/room.gd`: room drawing, collision, input, transitions, and interface.
+- `scripts/dungeon.gd`: grid bounds, coordinates, and per-room visit state.
 - `tests/smoke.gd`: automated runtime checks.
 - `tests/browser_smoke.py`: optional Chromium touch/keyboard checks (requires
   Playwright and Pillow). Serve the export on port 8765, then run

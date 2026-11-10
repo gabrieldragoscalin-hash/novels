@@ -59,6 +59,22 @@ with sync_playwright() as p:
  page.wait_for_timeout(150)
  reset=player_center(page)
  assert abs(reset[0]-before[0])<2 and abs(reset[1]-before[1])<2,('Reset button failed',reset,before)
+ # Walk through the east door and return; verify the minimap's current-room tile.
+ page.keyboard.down('w');page.wait_for_timeout(780);page.keyboard.up('w')
+ x,y=pos(80,680)
+ cdp.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':x,'y':y,'id':0}]})
+ cdp.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':[{'x':x+35*scale,'y':y,'id':0}]})
+ page.wait_for_timeout(1800)
+ cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]})
+ page.wait_for_timeout(400)
+ def map_color(x,y):
+  image=Image.open(io.BytesIO(page.screenshot())).convert('RGB')
+  px,py=pos(365+x*16,30+y*16)
+  return image.getpixel((int(px),int(py)))
+ assert map_color(1,0)==(223,189,120),('East doorway must enter B1',map_color(1,0))
+ page.keyboard.down('a');page.wait_for_timeout(1800);page.keyboard.up('a')
+ page.wait_for_timeout(400)
+ assert map_color(0,0)==(223,189,120),'West doorway must return to A1'
  page.screenshot(path=str(Path(tempfile.gettempdir())/'dungeon-tested.png'))
  assert not errors,errors
  print(json.dumps({'keyboard_before':before,'keyboard_after':after,'touch_after':touch,'release_after':stopped,'browser_errors':errors,'result':'PASS'}),flush=True)

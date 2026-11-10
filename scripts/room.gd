@@ -1,9 +1,14 @@
 extends Node2D
-## First playable: one room, no combat or dungeon progression yet.
+## Connected-room prototype; combat and floor progression come later.
+signal transition_finished
+const DungeonState = preload("res://scripts/dungeon.gd")
 const SPEED := 185.0
 const RADIUS := 12.0
 const FLOOR := Rect2(32, 174, 416, 422)
 const PILLARS: Array[Rect2] = [Rect2(108, 290, 38, 40), Rect2(334, 290, 38, 40), Rect2(108, 456, 38, 40), Rect2(334, 456, 38, 40)]
+var dungeon = DungeonState.new()
+var transitioning := false
+var fade: ColorRect
 var player := Vector2(240, 530)
 var active := false
 var pointer := -1
@@ -20,6 +25,7 @@ var font := ThemeDB.fallback_font
 
 func _ready() -> void:
 	_build_ui()
+	_update_room_label()
 	get_viewport().focus_exited.connect(_release_stick)
 	queue_redraw()
 
@@ -31,10 +37,11 @@ func _build_ui() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui.add_child(root)
 	_label(root, "THE DUNGEON", Vector2(28, 25), 25, Color("eee5cc"))
-	_label(root, "FIRST STEPS   /   MOVEMENT PROTOTYPE", Vector2(29, 61), 11, Color("96a3b6"))
+	_label(root, "FIRST STEPS   /   EXPLORE 25 ROOMS", Vector2(29, 61), 11, Color("96a3b6"))
 	status_label = _label(root, "ROOM A1     •     FLOOR 01", Vector2(29, 109), 13, Color("dfbd78"))
 	_label(root, "Touch and drag anywhere to move", Vector2(99, 623), 16, Color("d2d7df"))
 	_label(root, "WASD / arrow keys on a computer", Vector2(126, 648), 12, Color("8594aa"))
+	_label(root, "Walk into a doorway to change rooms", Vector2(117, 676), 12, Color("dfbd78"))
 	var reset := Button.new()
 	reset.text = "Reset position"
 	reset.position = Vector2(164, 737)
@@ -59,11 +66,11 @@ func _build_ui() -> void:
 	box.add_theme_constant_override("separation", 16)
 	start_panel.add_child(box)
 	var title := Label.new()
-	title.text = "Your first room"
+	title.text = "Explore the dungeon"
 	title.add_theme_font_size_override("font_size", 26)
 	box.add_child(title)
 	var text := Label.new()
-	text.text = "Explore with touch or keyboard.\nThis is where the dungeon begins.\nCombat and other rooms come next."
+	text.text = "25 connected rooms await.\nWalk through doors to explore.\nCombat and rewards come next."
 	text.add_theme_font_size_override("font_size", 14)
 	box.add_child(text)
 	var start := Button.new()
@@ -72,6 +79,14 @@ func _build_ui() -> void:
 	start.pressed.connect(start_game)
 	box.add_child(start)
 	root.add_child(start_panel)
+	var overlay := CanvasLayer.new()
+	overlay.layer = 10
+	add_child(overlay)
+	fade = ColorRect.new()
+	fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	fade.color = Color(0.025, 0.035, 0.055, 0)
+	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(fade)
 
 func _label(parent: Node, text: String, pos: Vector2, size: int, color: Color) -> Label:
 	var label := Label.new()
@@ -88,6 +103,7 @@ func start_game() -> void:
 	start_panel.hide()
 
 func reset_player() -> void:
+	if transitioning: return
 	player = Vector2(240, 530)
 	distance_walked = 0.0
 	_release_stick()
@@ -106,7 +122,7 @@ func _input(event: InputEvent) -> void:
 	if not active:
 		return
 	if event is InputEventScreenTouch:
-		if event.pressed and pointer == -1 and not pointer_mouse and _is_control_area(event.position):
+		if event.pressed and not transitioning and pointer == -1 and not pointer_mouse and _is_control_area(event.position):
 			pointer = event.index
 			stick_origin = event.position
 			stick_position = event.position
@@ -115,7 +131,7 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventScreenDrag and event.index == pointer:
 		stick_position = event.position
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed and pointer == -1 and not pointer_mouse and _is_control_area(event.position):
+		if event.pressed and not transitioning and pointer == -1 and not pointer_mouse and _is_control_area(event.position):
 			pointer_mouse = true
 			stick_origin = event.position
 			stick_position = event.position
@@ -133,7 +149,7 @@ func _is_control_area(pos: Vector2) -> bool:
 
 func _physics_process(delta: float) -> void:
 	clock += delta
-	if active:
+	if active and not transitioning:
 		var direction := Vector2.ZERO
 		if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT): direction.x -= 1
 		if Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT): direction.x += 1
@@ -146,6 +162,7 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 func move_player(motion: Vector2) -> void:
+	if transitioning: return
 	var old := player
 	# Substeps prevent tunnelling through pillars during frame stalls.
 	var steps := maxi(1, int(ceil(motion.length() / 5.0)))
@@ -157,6 +174,41 @@ func move_player(motion: Vector2) -> void:
 		if not _blocked(next): player.y = next.y
 	distance_walked += player.distance_to(old)
 	if absf(motion.x) > 0.01: facing = signf(motion.x)
+	_check_door(motion)
+
+func _check_door(motion: Vector2) -> void:
+	if not active: return
+	var direction := Vector2i.ZERO
+	if absf(player.x - 240) <= 28:
+		if player.y <= 186.1 and motion.y < 0: direction = Vector2i.UP
+		elif player.y >= 583.9 and motion.y > 0: direction = Vector2i.DOWN
+	if absf(player.y - 385) <= 28:
+		if player.x <= 44.1 and motion.x < 0: direction = Vector2i.LEFT
+		elif player.x >= 435.9 and motion.x > 0: direction = Vector2i.RIGHT
+	if direction != Vector2i.ZERO and dungeon.contains(dungeon.current + direction):
+		_transition_to(direction)
+
+func _transition_to(direction: Vector2i) -> void:
+	if transitioning or not dungeon.contains(dungeon.current + direction): return
+	transitioning = true
+	var tween := create_tween()
+	tween.tween_property(fade, "color:a", 1.0, 0.12)
+	tween.tween_callback(func():
+		dungeon.enter(dungeon.current + direction)
+		if direction == Vector2i.RIGHT: player = Vector2(72, 385)
+		elif direction == Vector2i.LEFT: player = Vector2(408, 385)
+		elif direction == Vector2i.DOWN: player = Vector2(240, 214)
+		else: player = Vector2(240, 556)
+		_update_room_label()
+	)
+	tween.tween_property(fade, "color:a", 0.0, 0.12)
+	tween.tween_callback(func():
+		transitioning = false
+		transition_finished.emit()
+	)
+
+func _update_room_label() -> void:
+	status_label.text = "ROOM %s     •     FLOOR 01" % dungeon.room_name()
 
 func _blocked(pos: Vector2) -> bool:
 	for pillar in PILLARS:
@@ -171,15 +223,19 @@ func _draw() -> void:
 	for y in range(8):
 		for x in range(8):
 			var tile := Rect2(33 + x * 52, 175 + y * 52, 50, 50)
-			var color := Color("202f43") if (x + y) % 2 == 0 else Color("233247")
+			var palette: Array[Color] = [Color("202f43"), Color("253a40"), Color("343047"), Color("3b3434"), Color("303b36")]
+			var color := palette[(dungeon.current.x + dungeon.current.y) % palette.size()]
+			if (x + y) % 2 != 0: color = color.lightened(0.045)
 			draw_rect(tile, color)
 	draw_rect(Rect2(22, 174, 10, 434), Color("344157"))
 	draw_rect(Rect2(448, 174, 10, 434), Color("344157"))
 	draw_rect(Rect2(22, 596, 436, 12), Color("101a2a"))
-	# Sealed decorative doorway: room transitions are not implemented yet.
-	draw_rect(Rect2(210, 151, 60, 43), Color("0c1421"))
-	draw_rect(Rect2(216, 157, 48, 37), Color("483d38"))
-	for x in [218, 232, 246, 260]: draw_line(Vector2(x, 158), Vector2(x, 193), Color("8e7247"), 2)
+	# Only draw open passages where another grid room exists.
+	for direction in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		if dungeon.contains(dungeon.current + direction):
+			_draw_door(direction)
+	_draw_minimap()
+	draw_string(font, Vector2(216, 401), dungeon.room_name(), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color(0.8, 0.85, 0.9, 0.18))
 	for x in [76, 404]:
 		draw_circle(Vector2(x, 187), 26, Color(0.95, 0.55, 0.2, 0.045))
 		draw_rect(Rect2(x - 3, 175, 6, 15), Color("78634d"))
@@ -216,3 +272,27 @@ func _draw_player() -> void:
 	draw_circle(player + Vector2(0, -29), 10, Color("edd0a3"))
 	draw_arc(player + Vector2(0, -31), 10, PI, TAU, 12, Color("343043"), 6)
 	draw_circle(player + Vector2(facing * 4, -29), 1.4, Color("172131"))
+
+func _draw_door(direction: Vector2i) -> void:
+	var door: Rect2
+	if direction == Vector2i.UP: door = Rect2(208, 149, 64, 45)
+	elif direction == Vector2i.DOWN: door = Rect2(208, 578, 64, 30)
+	elif direction == Vector2i.LEFT: door = Rect2(22, 353, 30, 64)
+	else: door = Rect2(428, 353, 30, 64)
+	draw_rect(door.grow(3), Color("8e7247"))
+	draw_rect(door, Color("0a1420"))
+	var center := door.get_center()
+	var arrow := Vector2(direction)
+	var side := Vector2(-arrow.y, arrow.x)
+	draw_line(center - arrow * 7, center + arrow * 7, Color("dfbd78"), 2)
+	draw_line(center + arrow * 7, center + side * 5, Color("dfbd78"), 2)
+	draw_line(center + arrow * 7, center - side * 5, Color("dfbd78"), 2)
+
+func _draw_minimap() -> void:
+	for y in range(5):
+		for x in range(5):
+			var cell := Vector2i(x, y)
+			var color := Color("263348")
+			if dungeon.rooms[cell]["visits"] > 0: color = Color("527b80")
+			if cell == dungeon.current: color = Color("dfbd78")
+			draw_rect(Rect2(359 + x * 16, 24 + y * 16, 12, 12), color)
