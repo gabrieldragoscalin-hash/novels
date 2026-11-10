@@ -19,7 +19,7 @@ func run() -> void:
 	assert(room.player.y <= 584, "Player must stay within room walls")
 	var touch := InputEventScreenTouch.new()
 	touch.index = 0
-	touch.position = Vector2(220, 680)
+	touch.position = Vector2(220, 380)
 	touch.pressed = true
 	room._input(touch)
 	assert(room.pointer == 0, "Touch should activate the joystick")
@@ -32,6 +32,17 @@ func run() -> void:
 	touch.pressed = false
 	room._input(touch)
 	assert(room.pointer == -1, "Releasing touch must stop the joystick")
+	for pos in [Vector2(30, 80), Vector2(220, 380), Vector2(50, 900)]:
+		touch.position = pos
+		touch.pressed = true
+		room._input(touch)
+		assert(room.pointer == 0 and room.stick_origin == pos, "Joystick must start at any non-button touch")
+		touch.pressed = false
+		room._input(touch)
+	touch.position = Vector2(200, 750)
+	touch.pressed = true
+	room._input(touch)
+	assert(room.pointer == -1, "Buttons must not activate movement")
 	room.pointer = 0
 	room._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	assert(room.pointer == -1, "Losing focus must release movement")

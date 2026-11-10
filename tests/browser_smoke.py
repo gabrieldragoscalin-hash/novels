@@ -43,7 +43,7 @@ with sync_playwright() as p:
  assert after[1]<before[1]-20,('Keyboard movement failed',before,after)
  # CDP sends a real touch drag with an identifiable touch point.
  cdp=context.new_cdp_session(page)
- x,y=pos(220,680)
+ x,y=pos(220,380)
  cdp.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':x,'y':y,'id':0}]})
  cdp.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':[{'x':x+35*scale,'y':y,'id':0}]})
  page.wait_for_timeout(400)
@@ -54,6 +54,11 @@ with sync_playwright() as p:
  page.wait_for_timeout(350)
  stopped=player_center(page)
  assert abs(stopped[0]-touch[0])<2,'Release must stop movement'
+ # A real touch on Reset must still work, without starting the joystick.
+ page.touchscreen.tap(*pos(240,755))
+ page.wait_for_timeout(150)
+ reset=player_center(page)
+ assert abs(reset[0]-before[0])<2 and abs(reset[1]-before[1])<2,('Reset button failed',reset,before)
  page.screenshot(path=str(Path(tempfile.gettempdir())/'dungeon-tested.png'))
  assert not errors,errors
  print(json.dumps({'keyboard_before':before,'keyboard_after':after,'touch_after':touch,'release_after':stopped,'browser_errors':errors,'result':'PASS'}),flush=True)

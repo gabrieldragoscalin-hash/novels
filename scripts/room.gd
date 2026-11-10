@@ -15,6 +15,7 @@ var clock := 0.0
 var distance_walked := 0.0
 var start_panel: PanelContainer
 var status_label: Label
+var movement_blockers: Array[Control] = []
 var font := ThemeDB.fallback_font
 
 func _ready() -> void:
@@ -32,7 +33,7 @@ func _build_ui() -> void:
 	_label(root, "THE DUNGEON", Vector2(28, 25), 25, Color("eee5cc"))
 	_label(root, "FIRST STEPS   /   MOVEMENT PROTOTYPE", Vector2(29, 61), 11, Color("96a3b6"))
 	status_label = _label(root, "ROOM A1     •     FLOOR 01", Vector2(29, 109), 13, Color("dfbd78"))
-	_label(root, "Drag below the room to move", Vector2(111, 623), 16, Color("d2d7df"))
+	_label(root, "Touch and drag anywhere to move", Vector2(99, 623), 16, Color("d2d7df"))
 	_label(root, "WASD / arrow keys on a computer", Vector2(126, 648), 12, Color("8594aa"))
 	var reset := Button.new()
 	reset.text = "Reset position"
@@ -40,6 +41,7 @@ func _build_ui() -> void:
 	reset.size = Vector2(152, 40)
 	reset.pressed.connect(reset_player)
 	root.add_child(reset)
+	movement_blockers.append(reset)
 	start_panel = PanelContainer.new()
 	start_panel.position = Vector2(54, 250)
 	start_panel.size = Vector2(372, 240)
@@ -74,6 +76,7 @@ func _build_ui() -> void:
 func _label(parent: Node, text: String, pos: Vector2, size: int, color: Color) -> Label:
 	var label := Label.new()
 	label.text = text
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.position = pos
 	label.add_theme_font_size_override("font_size", size)
 	label.add_theme_color_override("font_color", color)
@@ -103,7 +106,7 @@ func _input(event: InputEvent) -> void:
 	if not active:
 		return
 	if event is InputEventScreenTouch:
-		if event.pressed and pointer == -1 and _is_control_area(event.position):
+		if event.pressed and pointer == -1 and not pointer_mouse and _is_control_area(event.position):
 			pointer = event.index
 			stick_origin = event.position
 			stick_position = event.position
@@ -112,7 +115,7 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventScreenDrag and event.index == pointer:
 		stick_position = event.position
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed and pointer == -1 and _is_control_area(event.position):
+		if event.pressed and pointer == -1 and not pointer_mouse and _is_control_area(event.position):
 			pointer_mouse = true
 			stick_origin = event.position
 			stick_position = event.position
@@ -122,7 +125,11 @@ func _input(event: InputEvent) -> void:
 		stick_position = event.position
 
 func _is_control_area(pos: Vector2) -> bool:
-	return pos.y >= 605 and pos.y < 727
+	# UI buttons keep their normal behaviour, even with full-screen movement.
+	for control in movement_blockers:
+		if control.is_visible_in_tree() and control.get_global_rect().has_point(pos):
+			return false
+	return true
 
 func _physics_process(delta: float) -> void:
 	clock += delta
@@ -186,9 +193,6 @@ func _draw() -> void:
 		draw_circle(stick_origin, 48, Color(0.5, 0.75, 0.85, 0.12))
 		draw_arc(stick_origin, 48, 0, TAU, 48, Color("7193a6"), 2)
 		draw_circle(stick_origin + (stick_position - stick_origin).limit_length(45), 20, Color("48b9a8"))
-	else:
-		draw_arc(Vector2(240, 701), 19, 0, TAU, 32, Color("40556d"), 2)
-		draw_circle(Vector2(240, 701), 5, Color("6b849b"))
 
 func _draw_shadow(center: Vector2, radii: Vector2, color: Color) -> void:
 	var points := PackedVector2Array()

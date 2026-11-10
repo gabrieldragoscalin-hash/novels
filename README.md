@@ -8,7 +8,8 @@ One room with an original placeholder adventurer, angled wall/pillar artwork,
 collision, keyboard movement, and a floating touch joystick. Combat, room travel,
 dungeon generation, progression, and saves are not implemented yet.
 
-On iPhone: tap **Enter the dungeon**, then drag in the area below the room to move.
+On iPhone: tap **Enter the dungeon**, then touch and drag anywhere on the game to move. The joystick appears beneath
+your finger and disappears when released; interface buttons remain usable.
 Release to stop. On desktop: use WASD or arrow keys. **Reset position** returns you
 to the entrance. The doorway is decorative in this milestone.
 
