@@ -1,12 +1,18 @@
 extends Node2D
-## Connected-room prototype; combat and floor progression come later.
+## First combat prototype: auto-fire while moving and persistent encounters.
 signal transition_finished
+const CombatState = preload("res://scripts/combat.gd")
 const DungeonState = preload("res://scripts/dungeon.gd")
 const SPEED := 185.0
 const RADIUS := 12.0
 const FLOOR := Rect2(32, 174, 416, 422)
 const PILLARS: Array[Rect2] = [Rect2(108, 290, 38, 40), Rect2(334, 290, 38, 40), Rect2(108, 456, 38, 40), Rect2(334, 456, 38, 40)]
 var dungeon = DungeonState.new()
+var combat = CombatState.new(FLOOR, PILLARS)
+var death_panel: PanelContainer
+var health_label: Label
+var encounter_label: Label
+var focused := true
 var transitioning := false
 var fade: ColorRect
 var player := Vector2(240, 530)
@@ -26,6 +32,7 @@ var font := ThemeDB.fallback_font
 func _ready() -> void:
 	_build_ui()
 	_update_room_label()
+	combat.enter(dungeon.rooms[dungeon.current], player)
 	get_viewport().focus_exited.connect(_release_stick)
 	queue_redraw()
 
@@ -37,16 +44,18 @@ func _build_ui() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui.add_child(root)
 	_label(root, "THE DUNGEON", Vector2(28, 25), 25, Color("eee5cc"))
-	_label(root, "FIRST STEPS   /   EXPLORE 25 ROOMS", Vector2(29, 61), 11, Color("96a3b6"))
+	_label(root, "FIRST STEPS   /   RANGED COMBAT", Vector2(29, 61), 11, Color("96a3b6"))
+	health_label = _label(root, "HP  6 / 6", Vector2(29, 83), 15, Color("69d4b8"))
+	encounter_label = _label(root, "", Vector2(29, 130), 11, Color("96a3b6"))
 	status_label = _label(root, "ROOM A1     •     FLOOR 01", Vector2(29, 109), 13, Color("dfbd78"))
 	_label(root, "Touch and drag anywhere to move", Vector2(99, 623), 16, Color("d2d7df"))
 	_label(root, "WASD / arrow keys on a computer", Vector2(126, 648), 12, Color("8594aa"))
-	_label(root, "Walk into a doorway to change rooms", Vector2(117, 676), 12, Color("dfbd78"))
+	_label(root, "Auto-fire while moving • doors stay open", Vector2(112, 676), 12, Color("dfbd78"))
 	var reset := Button.new()
-	reset.text = "Reset position"
+	reset.text = "Restart run"
 	reset.position = Vector2(164, 737)
 	reset.size = Vector2(152, 40)
-	reset.pressed.connect(reset_player)
+	reset.pressed.connect(restart_run)
 	root.add_child(reset)
 	movement_blockers.append(reset)
 	start_panel = PanelContainer.new()
@@ -66,11 +75,11 @@ func _build_ui() -> void:
 	box.add_theme_constant_override("separation", 16)
 	start_panel.add_child(box)
 	var title := Label.new()
-	title.text = "Explore the dungeon"
+	title.text = "Keep moving. Fight."
 	title.add_theme_font_size_override("font_size", 26)
 	box.add_child(title)
 	var text := Label.new()
-	text.text = "25 connected rooms await.\nWalk through doors to explore.\nCombat and rewards come next."
+	text.text = "Attacks aim and fire automatically.\nDodge the enemies chasing you.\nExplore, fight, or retreat through doors."
 	text.add_theme_font_size_override("font_size", 14)
 	box.add_child(text)
 	var start := Button.new()
@@ -79,6 +88,28 @@ func _build_ui() -> void:
 	start.pressed.connect(start_game)
 	box.add_child(start)
 	root.add_child(start_panel)
+	death_panel = PanelContainer.new()
+	death_panel.position = Vector2(54, 250)
+	death_panel.size = Vector2(372, 240)
+	death_panel.add_theme_stylebox_override("panel", style)
+	var death_box := VBoxContainer.new()
+	death_box.add_theme_constant_override("separation", 18)
+	death_panel.add_child(death_box)
+	var death_title := Label.new()
+	death_title.text = "Your run has ended"
+	death_title.add_theme_font_size_override("font_size", 24)
+	death_box.add_child(death_title)
+	var death_text := Label.new()
+	death_text.text = "Try again. Keep moving to dodge.\nThe hub and progression come later."
+	death_text.add_theme_font_size_override("font_size", 14)
+	death_box.add_child(death_text)
+	var retry := Button.new()
+	retry.text = "Start a new run"
+	retry.custom_minimum_size.y = 48
+	retry.pressed.connect(restart_run)
+	death_box.add_child(retry)
+	root.add_child(death_panel)
+	death_panel.hide()
 	var overlay := CanvasLayer.new()
 	overlay.layer = 10
 	add_child(overlay)
@@ -102,6 +133,16 @@ func start_game() -> void:
 	active = true
 	start_panel.hide()
 
+func restart_run() -> void:
+	if transitioning: return
+	dungeon = DungeonState.new()
+	combat = CombatState.new(FLOOR, PILLARS)
+	reset_player()
+	combat.enter(dungeon.rooms[dungeon.current], player)
+	death_panel.hide()
+	_update_room_label()
+	start_game()
+
 func reset_player() -> void:
 	if transitioning: return
 	player = Vector2(240, 530)
@@ -116,7 +157,10 @@ func _release_stick() -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		focused = false
 		_release_stick()
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		focused = true
 
 func _input(event: InputEvent) -> void:
 	if not active:
@@ -149,7 +193,7 @@ func _is_control_area(pos: Vector2) -> bool:
 
 func _physics_process(delta: float) -> void:
 	clock += delta
-	if active and not transitioning:
+	if active and not transitioning and focused:
 		var direction := Vector2.ZERO
 		if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT): direction.x -= 1
 		if Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT): direction.x += 1
@@ -159,6 +203,13 @@ func _physics_process(delta: float) -> void:
 			direction += (stick_position - stick_origin).limit_length(45.0) / 45.0
 		if direction.length() > 0.08:
 			move_player(direction.limit_length(1.0) * SPEED * delta)
+		if not transitioning:
+			combat.tick(delta, player)
+			if combat.health <= 0:
+				active = false
+				_release_stick()
+				death_panel.show()
+	_update_combat_labels()
 	queue_redraw()
 
 func move_player(motion: Vector2) -> void:
@@ -199,6 +250,7 @@ func _transition_to(direction: Vector2i) -> void:
 		elif direction == Vector2i.LEFT: player = Vector2(408, 385)
 		elif direction == Vector2i.DOWN: player = Vector2(240, 214)
 		else: player = Vector2(240, 556)
+		combat.enter(dungeon.rooms[dungeon.current], player)
 		_update_room_label()
 	)
 	tween.tween_property(fade, "color:a", 0.0, 0.12)
@@ -209,6 +261,12 @@ func _transition_to(direction: Vector2i) -> void:
 
 func _update_room_label() -> void:
 	status_label.text = "ROOM %s     •     FLOOR 01" % dungeon.room_name()
+
+func _update_combat_labels() -> void:
+	health_label.text = "HP  %d / %d" % [combat.health, combat.MAX_HEALTH]
+	health_label.modulate = Color("ff8b83") if combat.hurt_time > 0.7 else Color.WHITE
+	var alive: int = combat.alive_count()
+	encounter_label.text = "%d ENEMIES  •  %d DEFEATED" % [alive, combat.kills] if alive > 0 else "ROOM SAFE  •  %d DEFEATED" % combat.kills
 
 func _blocked(pos: Vector2) -> bool:
 	for pillar in PILLARS:
@@ -235,16 +293,29 @@ func _draw() -> void:
 		if dungeon.contains(dungeon.current + direction):
 			_draw_door(direction)
 	_draw_minimap()
+	draw_rect(Rect2(150, 88, 130, 8), Color("263348"))
+	draw_rect(Rect2(150, 88, 130.0 * combat.health / combat.MAX_HEALTH, 8), Color("69d4b8"))
 	draw_string(font, Vector2(216, 401), dungeon.room_name(), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color(0.8, 0.85, 0.9, 0.18))
 	for x in [76, 404]:
 		draw_circle(Vector2(x, 187), 26, Color(0.95, 0.55, 0.2, 0.045))
 		draw_rect(Rect2(x - 3, 175, 6, 15), Color("78634d"))
 		draw_circle(Vector2(x, 173), 5 + sin(clock * 7 + x) * 0.7, Color("f4bb63"))
-	for pillar in PILLARS:
-		if pillar.end.y <= player.y: _draw_pillar(pillar)
-	_draw_player()
-	for pillar in PILLARS:
-		if pillar.end.y > player.y: _draw_pillar(pillar)
+	var actors: Array = []
+	for pillar in PILLARS: actors.append({"y": pillar.end.y, "pillar": pillar})
+	actors.append({"y": player.y, "player": true})
+	for enemy in combat.enemies:
+		if enemy["hp"] > 0: actors.append({"y": enemy["pos"].y, "enemy": enemy})
+	actors.sort_custom(func(a, b): return a["y"] < b["y"])
+	for actor in actors:
+		if actor.has("pillar"): _draw_pillar(actor["pillar"])
+		elif actor.has("enemy"): _draw_enemy(actor["enemy"])
+		elif combat.hurt_time <= 0 or int(clock * 14) % 2 == 0: _draw_player()
+	for bullet in combat.bullets:
+		var tip: Vector2 = bullet["pos"] + Vector2(0, -16)
+		draw_line(tip - bullet["velocity"].normalized() * 12, tip, Color("f6c96c"), 3)
+		draw_circle(tip, 3, Color("fff0ba"))
+	for impact in combat.impacts:
+		draw_arc(impact["pos"] + Vector2(0, -16), (0.22 - impact["life"]) * 85 + 3, 0, TAU, 12, Color(1, 0.8, 0.4, impact["life"] / 0.22), 2)
 	if pointer != -1 or pointer_mouse:
 		draw_circle(stick_origin, 48, Color(0.5, 0.75, 0.85, 0.12))
 		draw_arc(stick_origin, 48, 0, TAU, 48, Color("7193a6"), 2)
@@ -296,3 +367,14 @@ func _draw_minimap() -> void:
 			if dungeon.rooms[cell]["visits"] > 0: color = Color("527b80")
 			if cell == dungeon.current: color = Color("dfbd78")
 			draw_rect(Rect2(359 + x * 16, 24 + y * 16, 12, 12), color)
+
+func _draw_enemy(enemy: Dictionary) -> void:
+	var pos: Vector2 = enemy["pos"]
+	_draw_shadow(pos + Vector2(0, 3), Vector2(16, 7), Color(0, 0, 0, 0.35))
+	var color := Color("ffecce") if enemy["flash"] > 0 else Color("c85e72")
+	draw_circle(pos + Vector2(0, -13), 15, color)
+	draw_colored_polygon(PackedVector2Array([pos + Vector2(-12, -20), pos + Vector2(-12, -33), pos + Vector2(-3, -25)]), color)
+	draw_colored_polygon(PackedVector2Array([pos + Vector2(12, -20), pos + Vector2(12, -33), pos + Vector2(3, -25)]), color)
+	for x in [-5, 5]: draw_circle(pos + Vector2(x, -16), 2.5, Color("ffeaa4"))
+	draw_rect(Rect2(pos + Vector2(-17, -43), Vector2(34, 4)), Color("111a29"))
+	draw_rect(Rect2(pos + Vector2(-17, -43), Vector2(34.0 * enemy["hp"] / 3.0, 4)), Color("ed8392"))

@@ -72,6 +72,18 @@ with sync_playwright() as p:
   px,py=pos(365+x*16,30+y*16)
   return image.getpixel((int(px),int(py)))
  assert map_color(1,0)==(223,189,120),('East doorway must enter B1',map_color(1,0))
+ # Wait for automatic attacks to clear B1; enemy health bars stay visible during hit flashes.
+ def enemy_bars():
+  image=Image.open(io.BytesIO(page.screenshot())).convert('RGB')
+  crop=image.crop((0,100,image.width,490))
+  return sum(count for count,(r,g,b) in crop.getcolors(crop.width*crop.height) if abs(r-237)<3 and abs(g-131)<3 and abs(b-146)<3)
+ page.screenshot(path=str(Path(tempfile.gettempdir())/'dungeon-enemies.png'))
+ for attempt in range(40):
+  if enemy_bars()==0: break
+  page.wait_for_timeout(200)
+ assert enemy_bars()==0,'Automatic attacks must clear enemies in B1'
+ page.screenshot(path=str(Path(tempfile.gettempdir())/'dungeon-combat.png'))
+
  page.keyboard.down('a');page.wait_for_timeout(1800);page.keyboard.up('a')
  page.wait_for_timeout(400)
  assert map_color(0,0)==(223,189,120),'West doorway must return to A1'

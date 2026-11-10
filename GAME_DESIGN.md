@@ -2,8 +2,8 @@
 
 Last updated: 2026-11-10
 
-Status: pre-production. This records the agreed concept, not an implemented game.
-No title or engine has been selected. Open decisions below must not be treated as
+Status: early playable prototype. This records the full intended design; many systems are not implemented yet.
+No final title has been selected. The prototype uses Godot 4.6.3 with GDScript. Open decisions below must not be treated as
 settled requirements. This game replaces the earlier book project in this repository.
 
 ## Vision and platforms
@@ -18,7 +18,7 @@ existing survivor, mobile action, or dungeon game.
 
 Intended platforms: playable in a browser, downloadable on PC, and adaptable to
 mobile. Development should begin with mostly free tools and minimal operating
-costs. Store releases, monetization, and the engine are undecided.
+costs. Store releases and monetization are undecided.
 
 ## Terms and core loop
 
@@ -174,6 +174,17 @@ Their presence and service identities are agreed. Detailed offers, costs, healin
 amounts, and interaction limits remain undecided. The wheel's upgrade-exchange
 reward does not yet establish the standalone trader's full behaviour.
 
+## Combat direction
+
+- Three-quarter top-down presentation, using Archero as a camera reference.
+- Automatic ranged attacks continue **while moving**; no stop-to-shoot requirement.
+- Touch uses a floating joystick wherever the player touches, excluding UI buttons.
+- Ranged combat is the first implementation target.
+- Melee weapons are planned for later, including upgrades that increase their range.
+- The prototype uses chasing enemies, contact damage, brief hit invulnerability,
+  persistent enemy state on room revisits, open doors for retreat, and restart on death.
+  These are initial combat defaults, not final balance or complete progression.
+
 ## XP, levels, and upgrade choices
 
 - Enemies drop XP.
@@ -252,8 +263,8 @@ All rooms are accessible in the current concept; dynamic paths are no longer its
 
 These are discussion items, not approved feature requirements:
 
-- Combat perspective, controls, attacks, weapons, room dimensions, and encounter duration.
-- Engine, art direction, audio, input adaptation, and browser/mobile performance.
+- Weapon variety, melee behaviour, enemy attacks, room dimensions, and encounter duration.
+- Final art direction, audio, input adaptation, and browser/mobile performance.
 - Room generation/adjacency constraints and the placement details listed above.
 - Room discovery, map visibility, and how upcoming encounters are communicated.
 - Whether encounters lock the player inside temporarily, and how retreat works.
@@ -264,6 +275,6 @@ These are discussion items, not approved feature requirements:
 - Service cycling, economy balance, coins' purpose, and anti-farming details.
 - Persistence, saves, pause/resume, permanent progression, and monetization.
 
-A suggested next step is a small playable prototype spanning three floors, testing
+A later prototype milestone can span three floors, testing
 combat feel, route choices, room revisits, and pacing before expanding content.
 This is a recommendation, not a separately agreed implementation scope.
