@@ -178,18 +178,10 @@ func _draw() -> void:
 		draw_rect(Rect2(x - 3, 175, 6, 15), Color("78634d"))
 		draw_circle(Vector2(x, 173), 5 + sin(clock * 7 + x) * 0.7, Color("f4bb63"))
 	for pillar in PILLARS:
-		_draw_shadow(pillar.position + Vector2(22, 44), Vector2(29, 10), Color(0, 0, 0, 0.25))
-		draw_rect(pillar, Color("354359"))
-		draw_rect(Rect2(pillar.position - Vector2(4, 15), Vector2(46, 19)), Color("60718a"))
-		draw_line(pillar.position + Vector2(5, 7), pillar.position + Vector2(5, 33), Color("485972"), 3)
-	# Original placeholder adventurer, with feet anchored to the collision position.
-	_draw_shadow(player + Vector2(0, 3), Vector2(15, 6), Color(0, 0, 0, 0.4))
-	draw_colored_polygon(PackedVector2Array([player + Vector2(-12, -5), player + Vector2(-10, -23), player + Vector2(10, -23), player + Vector2(13, -5)]), Color("39bca7"))
-	draw_line(player + Vector2(-5, -4), player + Vector2(-5, 1), Color("b7c5d3"), 5)
-	draw_line(player + Vector2(5, -4), player + Vector2(5, 1), Color("b7c5d3"), 5)
-	draw_circle(player + Vector2(0, -29), 10, Color("edd0a3"))
-	draw_arc(player + Vector2(0, -31), 10, PI, TAU, 12, Color("343043"), 6)
-	draw_circle(player + Vector2(facing * 4, -29), 1.4, Color("172131"))
+		if pillar.end.y <= player.y: _draw_pillar(pillar)
+	_draw_player()
+	for pillar in PILLARS:
+		if pillar.end.y > player.y: _draw_pillar(pillar)
 	if pointer != -1 or pointer_mouse:
 		draw_circle(stick_origin, 48, Color(0.5, 0.75, 0.85, 0.12))
 		draw_arc(stick_origin, 48, 0, TAU, 48, Color("7193a6"), 2)
@@ -204,3 +196,19 @@ func _draw_shadow(center: Vector2, radii: Vector2, color: Color) -> void:
 		var angle := TAU * i / 24.0
 		points.append(center + Vector2(cos(angle), sin(angle)) * radii)
 	draw_colored_polygon(points, color)
+
+func _draw_pillar(pillar: Rect2) -> void:
+	_draw_shadow(pillar.position + Vector2(22, 44), Vector2(29, 10), Color(0, 0, 0, 0.25))
+	draw_rect(pillar, Color("354359"))
+	draw_rect(Rect2(pillar.position - Vector2(4, 15), Vector2(46, 19)), Color("60718a"))
+	draw_line(pillar.position + Vector2(5, 7), pillar.position + Vector2(5, 33), Color("485972"), 3)
+
+func _draw_player() -> void:
+	# Original placeholder adventurer, with feet anchored to the collision position.
+	_draw_shadow(player + Vector2(0, 3), Vector2(15, 6), Color(0, 0, 0, 0.4))
+	draw_colored_polygon(PackedVector2Array([player + Vector2(-12, -5), player + Vector2(-10, -23), player + Vector2(10, -23), player + Vector2(13, -5)]), Color("39bca7"))
+	draw_line(player + Vector2(-5, -4), player + Vector2(-5, 1), Color("b7c5d3"), 5)
+	draw_line(player + Vector2(5, -4), player + Vector2(5, 1), Color("b7c5d3"), 5)
+	draw_circle(player + Vector2(0, -29), 10, Color("edd0a3"))
+	draw_arc(player + Vector2(0, -31), 10, PI, TAU, 12, Color("343043"), 6)
+	draw_circle(player + Vector2(facing * 4, -29), 1.4, Color("172131"))

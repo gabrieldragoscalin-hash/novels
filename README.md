@@ -52,6 +52,9 @@ Safari performance and touch behaviour still need device testing.
 - `scenes/room.tscn`: entry scene.
 - `scripts/room.gd`: room drawing, collision, input, and prototype interface.
 - `tests/smoke.gd`: automated runtime checks.
+- `tests/browser_smoke.py`: optional Chromium touch/keyboard checks (requires
+  Playwright and Pillow). Serve the export on port 8765, then run
+  `python3 tests/browser_smoke.py`; an alternate URL can be passed as an argument.
 - `export_presets.cfg`: browser export configuration.
 
 The first prototype uses procedural placeholder graphics. Its appearance is not
