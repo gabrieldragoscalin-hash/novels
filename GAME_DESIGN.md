@@ -195,8 +195,23 @@ reward does not yet establish the standalone trader's full behaviour.
 - Character progression across floors belongs to the same run; permanent hub
   progression is separate.
 
-Upgrade pools, stacking rules, rarity, XP thresholds, coin amounts, and the broader
-purpose of coins remain undecided.
+Current prototype defaults (subject to balancing):
+
+- Each enemy drops a collectible crystal worth 2 XP. Nearby crystals are attracted
+  to the player with a clear path; uncollected XP stays in its room.
+- Start at level 1. The next level needs `4 + 2 × (current level - 1)` XP.
+- Level-up pauses combat and movement for the reward selection. Overflow XP is
+  retained, and multiple earned choices are handled in sequence.
+- Offers contain two distinct upgrade types and a 20-coin option. Offers stay fixed
+  until selected. Coins are tracked but have no spending interface yet.
+- Upgrade pool: +1 damage; 15% faster firing; +10% base movement speed;
+  piercing one additional enemy per projectile; +2 max HP with 2 HP healing.
+- Ranks stack. Prototype caps: movement 5, firing speed 8, piercing 5; damage and
+  vitality remain uncapped. Capped upgrades leave the offer pool.
+- Run levels, XP, coins, and upgrade ranks reset on death/restart.
+
+Final balance, rarity, the larger upgrade pool, and the broader purpose of coins
+remain open.
 
 ## Dungeon flare economy
 

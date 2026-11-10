@@ -13,7 +13,7 @@ func _init() -> void:
 				var spawns := [Vector2(240, 270), Vector2(192, 385), Vector2(288, 385)]
 				for i in range(1 + (x + y) % 3):
 					enemies.append({"pos": spawns[i], "hp": 3, "flash": 0.0, "repath": 0.0, "path": PackedVector2Array()})
-			rooms[Vector2i(x, y)] = {"visits": 0, "enemies": enemies}
+			rooms[Vector2i(x, y)] = {"visits": 0, "enemies": enemies, "pickups": []}
 	enter(current)
 
 func contains(cell: Vector2i) -> bool:

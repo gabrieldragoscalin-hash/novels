@@ -10,6 +10,11 @@ const PILLARS: Array[Rect2] = [Rect2(108, 290, 38, 40), Rect2(334, 290, 38, 40),
 var dungeon = DungeonState.new()
 var combat = CombatState.new(FLOOR, PILLARS)
 var death_panel: PanelContainer
+var level_panel: Panel
+var level_title: Label
+var card_buttons: Array[Button] = []
+var xp_label: Label
+var build_label: Label
 var health_label: Label
 var encounter_label: Label
 var focused := true
@@ -44,10 +49,12 @@ func _build_ui() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui.add_child(root)
 	_label(root, "THE DUNGEON", Vector2(28, 25), 25, Color("eee5cc"))
-	_label(root, "FIRST STEPS   /   RANGED COMBAT", Vector2(29, 61), 11, Color("96a3b6"))
+	_label(root, "FIRST STEPS   /   BUILD YOUR RUN", Vector2(29, 61), 11, Color("96a3b6"))
 	health_label = _label(root, "HP  6 / 6", Vector2(29, 83), 15, Color("69d4b8"))
-	encounter_label = _label(root, "", Vector2(29, 130), 11, Color("96a3b6"))
-	status_label = _label(root, "ROOM A1     •     FLOOR 01", Vector2(29, 109), 13, Color("dfbd78"))
+	encounter_label = _label(root, "", Vector2(245, 130), 11, Color("96a3b6"))
+	xp_label = _label(root, "", Vector2(29, 103), 11, Color("96c9ff"))
+	build_label = _label(root, "", Vector2(29, 703), 10, Color("96a3b6"))
+	status_label = _label(root, "ROOM A1     •     FLOOR 01", Vector2(29, 120), 13, Color("dfbd78"))
 	_label(root, "Touch and drag anywhere to move", Vector2(99, 623), 16, Color("d2d7df"))
 	_label(root, "WASD / arrow keys on a computer", Vector2(126, 648), 12, Color("8594aa"))
 	_label(root, "Auto-fire while moving • doors stay open", Vector2(112, 676), 12, Color("dfbd78"))
@@ -100,7 +107,7 @@ func _build_ui() -> void:
 	death_title.add_theme_font_size_override("font_size", 24)
 	death_box.add_child(death_title)
 	var death_text := Label.new()
-	death_text.text = "Try again. Keep moving to dodge.\nThe hub and progression come later."
+	death_text.text = "Try again. Keep moving to dodge.\nRun upgrades reset. The hub comes later."
 	death_text.add_theme_font_size_override("font_size", 14)
 	death_box.add_child(death_text)
 	var retry := Button.new()
@@ -110,6 +117,23 @@ func _build_ui() -> void:
 	death_box.add_child(retry)
 	root.add_child(death_panel)
 	death_panel.hide()
+	level_panel = Panel.new()
+	level_panel.position = Vector2(40, 210)
+	level_panel.size = Vector2(400, 370)
+	level_panel.add_theme_stylebox_override("panel", style)
+	level_title = _label(level_panel, "LEVEL UP", Vector2(24, 20), 25, Color("dfbd78"))
+	_label(level_panel, "Choose one. Combat is paused.", Vector2(24, 58), 14, Color("d2d7df"))
+	for index in range(3):
+		var card := Button.new()
+		card.position = Vector2(24, 100 + index * 78)
+		card.size = Vector2(352, 64)
+		card.add_theme_font_size_override("font_size", 15)
+		card.pressed.connect(_choose_upgrade.bind(index))
+		level_panel.add_child(card)
+		card_buttons.append(card)
+	_label(level_panel, "One choice per level • lasts this run", Vector2(24, 342), 12, Color("96a3b6"))
+	root.add_child(level_panel)
+	level_panel.hide()
 	var overlay := CanvasLayer.new()
 	overlay.layer = 10
 	add_child(overlay)
@@ -140,6 +164,7 @@ func restart_run() -> void:
 	reset_player()
 	combat.enter(dungeon.rooms[dungeon.current], player)
 	death_panel.hide()
+	level_panel.hide()
 	_update_room_label()
 	start_game()
 
@@ -163,7 +188,7 @@ func _notification(what: int) -> void:
 		focused = true
 
 func _input(event: InputEvent) -> void:
-	if not active:
+	if not active or combat.progression.pending > 0:
 		return
 	if event is InputEventScreenTouch:
 		if event.pressed and not transitioning and pointer == -1 and not pointer_mouse and _is_control_area(event.position):
@@ -193,7 +218,7 @@ func _is_control_area(pos: Vector2) -> bool:
 
 func _physics_process(delta: float) -> void:
 	clock += delta
-	if active and not transitioning and focused:
+	if active and not transitioning and focused and combat.progression.pending == 0:
 		var direction := Vector2.ZERO
 		if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT): direction.x -= 1
 		if Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT): direction.x += 1
@@ -202,9 +227,10 @@ func _physics_process(delta: float) -> void:
 		if pointer != -1 or pointer_mouse:
 			direction += (stick_position - stick_origin).limit_length(45.0) / 45.0
 		if direction.length() > 0.08:
-			move_player(direction.limit_length(1.0) * SPEED * delta)
+			move_player(direction.limit_length(1.0) * SPEED * combat.progression.movement_multiplier() * delta)
 		if not transitioning:
 			combat.tick(delta, player)
+			if combat.progression.pending > 0: _show_level_up()
 			if combat.health <= 0:
 				active = false
 				_release_stick()
@@ -213,7 +239,7 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 func move_player(motion: Vector2) -> void:
-	if transitioning: return
+	if transitioning or combat.progression.pending > 0: return
 	var old := player
 	# Substeps prevent tunnelling through pillars during frame stalls.
 	var steps := maxi(1, int(ceil(motion.length() / 5.0)))
@@ -228,7 +254,7 @@ func move_player(motion: Vector2) -> void:
 	_check_door(motion)
 
 func _check_door(motion: Vector2) -> void:
-	if not active: return
+	if not active or combat.progression.pending > 0: return
 	var direction := Vector2i.ZERO
 	if absf(player.x - 240) <= 28:
 		if player.y <= 186.1 and motion.y < 0: direction = Vector2i.UP
@@ -240,7 +266,7 @@ func _check_door(motion: Vector2) -> void:
 		_transition_to(direction)
 
 func _transition_to(direction: Vector2i) -> void:
-	if transitioning or not dungeon.contains(dungeon.current + direction): return
+	if transitioning or combat.progression.pending > 0 or not dungeon.contains(dungeon.current + direction): return
 	transitioning = true
 	var tween := create_tween()
 	tween.tween_property(fade, "color:a", 1.0, 0.12)
@@ -263,8 +289,10 @@ func _update_room_label() -> void:
 	status_label.text = "ROOM %s     •     FLOOR 01" % dungeon.room_name()
 
 func _update_combat_labels() -> void:
-	health_label.text = "HP  %d / %d" % [combat.health, combat.MAX_HEALTH]
+	health_label.text = "HP  %d / %d" % [combat.health, combat.progression.max_health()]
 	health_label.modulate = Color("ff8b83") if combat.hurt_time > 0.7 else Color.WHITE
+	xp_label.text = "LV %d   XP %d/%d   •   %d COINS" % [combat.progression.level, combat.progression.xp, combat.progression.required_xp(), combat.progression.coins]
+	build_label.text = "DMG %d  •  RATE %.1f/s  •  SPEED +%d%%  •  PIERCE %d" % [combat.progression.damage(), 1.0 / combat.progression.fire_interval(), combat.progression.ranks["movement"] * 10, combat.progression.ranks["piercing"]]
 	var alive: int = combat.alive_count()
 	encounter_label.text = "%d ENEMIES  •  %d DEFEATED" % [alive, combat.kills] if alive > 0 else "ROOM SAFE  •  %d DEFEATED" % combat.kills
 
@@ -294,12 +322,18 @@ func _draw() -> void:
 			_draw_door(direction)
 	_draw_minimap()
 	draw_rect(Rect2(150, 88, 130, 8), Color("263348"))
-	draw_rect(Rect2(150, 88, 130.0 * combat.health / combat.MAX_HEALTH, 8), Color("69d4b8"))
+	draw_rect(Rect2(150, 88, 130.0 * combat.health / combat.progression.max_health(), 8), Color("69d4b8"))
+	draw_rect(Rect2(285, 108, 60, 5), Color("263348"))
+	draw_rect(Rect2(285, 108, 60.0 * combat.progression.xp / combat.progression.required_xp(), 5), Color("96c9ff"))
 	draw_string(font, Vector2(216, 401), dungeon.room_name(), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color(0.8, 0.85, 0.9, 0.18))
 	for x in [76, 404]:
 		draw_circle(Vector2(x, 187), 26, Color(0.95, 0.55, 0.2, 0.045))
 		draw_rect(Rect2(x - 3, 175, 6, 15), Color("78634d"))
 		draw_circle(Vector2(x, 173), 5 + sin(clock * 7 + x) * 0.7, Color("f4bb63"))
+	for pickup in combat.pickups:
+		var pos: Vector2 = pickup["pos"]
+		draw_circle(pos, 10, Color(0.4, 0.7, 1, 0.12))
+		draw_colored_polygon(PackedVector2Array([pos + Vector2(0, -7), pos + Vector2(5, 0), pos + Vector2(0, 7), pos + Vector2(-5, 0)]), Color("96c9ff"))
 	var actors: Array = []
 	for pillar in PILLARS: actors.append({"y": pillar.end.y, "pillar": pillar})
 	actors.append({"y": player.y, "player": true})
@@ -378,3 +412,25 @@ func _draw_enemy(enemy: Dictionary) -> void:
 	for x in [-5, 5]: draw_circle(pos + Vector2(x, -16), 2.5, Color("ffeaa4"))
 	draw_rect(Rect2(pos + Vector2(-17, -43), Vector2(34, 4)), Color("111a29"))
 	draw_rect(Rect2(pos + Vector2(-17, -43), Vector2(34.0 * enemy["hp"] / 3.0, 4)), Color("ed8392"))
+
+func _show_level_up() -> void:
+	_release_stick()
+	level_title.text = "LEVEL %d — CHOOSE A REWARD" % combat.progression.level
+	level_title.add_theme_font_size_override("font_size", 19)
+	for index in range(3):
+		var id: String = combat.progression.offers[index]
+		if id == "coins":
+			card_buttons[index].text = "+%d coins\nSave currency instead of an upgrade" % combat.progression.coin_reward()
+		else:
+			var info: Array = combat.progression.UPGRADES[id]
+			card_buttons[index].text = "%s\n%s" % [info[0], info[1]]
+	level_panel.show()
+
+func _choose_upgrade(index: int) -> void:
+	if not level_panel.visible or not combat.apply_choice(index): return
+	_release_stick()
+	if combat.progression.pending > 0: _show_level_up()
+	else:
+		level_panel.hide()
+		combat.grace_time = maxf(combat.grace_time, 0.5)
+	_update_combat_labels()

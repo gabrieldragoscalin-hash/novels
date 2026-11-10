@@ -82,6 +82,22 @@ with sync_playwright() as p:
   if enemy_bars()==0: break
   page.wait_for_timeout(200)
  assert enemy_bars()==0,'Automatic attacks must clear enemies in B1'
+ # XP from the two enemies should trigger the first reward choice.
+ def choice_visible():
+  image=Image.open(io.BytesIO(page.screenshot())).convert('RGB')
+  px,py=pos(50,240)
+  return image.getpixel((int(px),int(py)))==(19,30,48)
+ for attempt in range(25):
+  if choice_visible(): break
+  page.wait_for_timeout(200)
+ assert choice_visible(),'Collected enemy XP must show a level-up choice'
+ page.screenshot(path=str(Path(tempfile.gettempdir())/'dungeon-level-up.png'))
+ page.keyboard.down('a');page.wait_for_timeout(300);page.keyboard.up('a')
+ assert map_color(1,0)==(223,189,120),'Room travel must pause during reward choice'
+ page.touchscreen.tap(*pos(240,500))
+ page.wait_for_timeout(200)
+ assert not choice_visible(),'Touching the coin card must dismiss the reward choice'
+
  page.screenshot(path=str(Path(tempfile.gettempdir())/'dungeon-combat.png'))
 
  page.keyboard.down('a');page.wait_for_timeout(1800);page.keyboard.up('a')

@@ -21,8 +21,19 @@ projectiles disappear on room changes. A brief arrival grace period protects
 against immediate contact damage. Combat pauses when the app loses focus.
 
 Death offers a new run, and **Restart run** resets health, enemies, and exploration.
+Enemies now drop blue XP crystals. Walk near them to collect; nearby crystals
+are attracted to you when no pillar blocks the way. Uncollected crystals remain
+in their room. Two enemies give the first level-up; later levels need more XP.
+Leveling pauses combat and movement until you choose one of **two different
+upgrades or 20 coins**. Overflow XP queues additional choices without losing XP.
+
+The initial upgrade pool is damage, attack speed, movement speed, piercing shots,
+and maximum health (which also heals two HP). The HUD shows level, XP, coins, and
+build statistics. Upgrades and coins last across rooms and reset on a new run.
+Coins are tracked but cannot be spent yet; shops come later.
+
 The layout and encounters remain deterministic for this prototype. Random room
-types, random start/boss placement, XP/rewards, upgrades, melee, floor progression,
+types, random start/boss placement, other rewards, melee, floor progression,
 the hub, and persistent saves come later.
 
 On iPhone: tap **Enter the dungeon**, then touch and drag anywhere on the game to move. The joystick appears beneath
@@ -38,6 +49,7 @@ No third-party assets or paid services are required.
 godot --headless --editor --path . --import
 godot --headless --path . --script tests/smoke.gd
 godot --headless --path . --script tests/combat_smoke.gd
+godot --headless --path . --script tests/progression_smoke.gd
 ```
 
 ## Browser build and GitHub Pages
@@ -70,9 +82,11 @@ Safari performance and touch behaviour still need device testing.
 - `scenes/room.tscn`: entry scene.
 - `scripts/room.gd`: room drawing, collision, input, transitions, and interface.
 - `scripts/dungeon.gd`: grid bounds, coordinates, and per-room encounter state.
-- `scripts/combat.gd`: targeting, projectiles, enemy navigation, health, and damage.
+- `scripts/combat.gd`: targeting, projectiles, enemies, health, damage, and XP pickups.
+- `scripts/progression.gd`: run levels, upgrade offers, stats, and coins.
 - `tests/smoke.gd`: movement and room-travel checks.
 - `tests/combat_smoke.gd`: combat, persistence, and death/restart checks.
+- `tests/progression_smoke.gd`: XP, choice, upgrade, pause, and reset checks.
 - `tests/browser_smoke.py`: optional Chromium touch/keyboard checks (requires
   Playwright and Pillow). Serve the export on port 8765, then run
   `python3 tests/browser_smoke.py`; an alternate URL can be passed as an argument.

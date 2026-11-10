@@ -1,10 +1,13 @@
 extends RefCounted
 ## Pure encounter state, shared with room storage; no enemy respawns on re-entry.
+const Progression = preload("res://scripts/progression.gd")
 const ENEMY_HP := 3
 const ENEMY_SPEED := 67.0
 const FIRE_INTERVAL := 0.45
 const BULLET_SPEED := 390.0
 const MAX_HEALTH := 6
+var progression = Progression.new()
+var pickups: Array = []
 var health := MAX_HEALTH
 var hurt_time := 0.0
 var grace_time := 0.0
@@ -36,6 +39,8 @@ func enter(state: Dictionary, player: Vector2) -> void:
 	fire_time = 0.15
 	grace_time = 0.7
 	enemies = state["enemies"]
+	if not state.has("pickups"): state["pickups"] = []
+	pickups = state["pickups"]
 	# Keep doorway arrivals safe without healing or resurrecting enemies.
 	for enemy in enemies:
 		if enemy["hp"] <= 0: continue
@@ -80,7 +85,7 @@ func _cell(point: Vector2) -> Vector2i:
 	return cell
 
 func tick(delta: float, player: Vector2) -> void:
-	if health <= 0: return
+	if health <= 0 or progression.pending > 0: return
 	hurt_time = maxf(0, hurt_time - delta)
 	grace_time = maxf(0, grace_time - delta)
 	fire_time -= delta
@@ -97,10 +102,12 @@ func tick(delta: float, player: Vector2) -> void:
 			target = enemy
 			closest = distance
 	if not target.is_empty() and fire_time <= 0:
-		bullets.append({"pos": player, "velocity": player.direction_to(target["pos"]) * BULLET_SPEED, "life": 1.6})
-		fire_time = FIRE_INTERVAL
+		bullets.append({"pos": player, "velocity": player.direction_to(target["pos"]) * BULLET_SPEED, "life": 1.6, "hits": [], "remaining": 1 + progression.ranks["piercing"]})
+		fire_time = progression.fire_interval()
 	# Small swept steps prevent projectiles skipping walls or enemies on slow frames.
 	for bullet in bullets:
+		if not bullet.has("hits"): bullet["hits"] = []
+		if not bullet.has("remaining"): bullet["remaining"] = 1
 		bullet["life"] -= delta
 		var motion: Vector2 = bullet["velocity"] * delta
 		var steps := maxi(1, int(ceil(motion.length() / 5.0)))
@@ -111,17 +118,24 @@ func tick(delta: float, player: Vector2) -> void:
 				break
 			bullet["pos"] = next
 			var hit := false
-			for enemy in enemies:
-				if enemy["hp"] > 0 and next.distance_to(enemy["pos"]) <= 17:
-					enemy["hp"] -= 1
+			for enemy_index in range(enemies.size()):
+				var enemy: Dictionary = enemies[enemy_index]
+				if enemy["hp"] > 0 and not bullet["hits"].has(enemy_index) and next.distance_to(enemy["pos"]) <= 17:
+					enemy["hp"] -= progression.damage()
 					enemy["flash"] = 0.13
-					bullet["life"] = 0
+					bullet["hits"].append(enemy_index)
+					bullet["remaining"] -= 1
+					if bullet["remaining"] <= 0: bullet["life"] = 0
 					impacts.append({"pos": next, "life": 0.22})
-					if enemy["hp"] <= 0: kills += 1
-					hit = true
+					if enemy["hp"] <= 0:
+						kills += 1
+						pickups.append({"pos": enemy["pos"], "amount": 2})
+					hit = bullet["life"] <= 0
 					break
 			if hit: break
 	bullets = bullets.filter(func(bullet): return bullet["life"] > 0)
+	_collect_xp(delta, player)
+	if progression.pending > 0: return
 	for enemy in enemies:
 		if enemy["hp"] <= 0: continue
 		enemy["repath"] -= delta
@@ -145,3 +159,21 @@ func alive_count() -> int:
 	for enemy in enemies:
 		if enemy["hp"] > 0: count += 1
 	return count
+
+func _collect_xp(delta: float, player: Vector2) -> void:
+	for i in range(pickups.size() - 1, -1, -1):
+		var pickup: Dictionary = pickups[i]
+		var distance: float = pickup["pos"].distance_to(player)
+		if distance <= 110 and not wall_between(pickup["pos"], player):
+			pickup["pos"] = pickup["pos"].move_toward(player, 240 * delta)
+		if pickup["pos"].distance_to(player) <= 20:
+			var amount: int = pickup["amount"]
+			pickups.remove_at(i)
+			progression.add_xp(amount)
+			if progression.pending > 0: return
+
+func apply_choice(index: int) -> bool:
+	var choice: String = progression.choose(index)
+	if choice.is_empty(): return false
+	if choice == "health": health = mini(health + 2, progression.max_health())
+	return true
