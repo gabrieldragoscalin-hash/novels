@@ -20,8 +20,11 @@ awaken with weaker enemies on floor 3. Defeating the third boss ends the expedit
 
 Core features: three enemy archetypes and a telegraphed boss; XP pickups and upgrade
 choices; coins/flares; loot, three trap effects, shop, trader, free upgrade, wheel,
-healer; and device-local hub keys, supply seals, and training. Menus pause combat.
-Doors stay open. Room rewards and enemy state cannot be farmed by revisiting.
+healer; and a persistent hub armory with three ranged weapons, armor, boots, a charm,
+crafting, permanent item upgrades, keys, supply seals, and training. Menus pause combat.
+There are 13 temporary run upgrades, including critical hits, multishot, ricochet,
+frost, burn, regeneration and XP bonuses. Doors stay open; room rewards and enemy
+state cannot be farmed by revisiting.
 
 Use [`?seed=9`](https://gabrieldragoscalin-hash.github.io/novels/?seed=9) to repeat a
 layout for balance testing. These numbers are defaults, not a claim of fair balance.
@@ -39,10 +42,13 @@ godot --headless --path . --script tests/combat_smoke.gd
 godot --headless --path . --script tests/progression_smoke.gd
 godot --headless --path . --script tests/floors_smoke.gd
 godot --headless --path . --script tests/services_smoke.gd
+godot --headless --path . --script tests/equipment_smoke.gd
+godot --headless --path . --script tests/upgrades_smoke.gd
 ```
 
 Floor tests cover 80 seeds through all three floors and actual projectile boss
-kills. Service tests cover wheel outcomes, traps, finite rewards, and local saves.
+kills. Service tests cover wheel outcomes, traps, finite rewards, and local saves. Equipment tests check legacy saves, crafting, loadouts and upgrade
+costs; upgrade tests exercise the new combat effects.
 `tests/describe_run.gd` prints the seed-9 map used by the browser checks.
 
 ## Export and deploy
@@ -68,4 +74,4 @@ Safari remains part of device testing. Local progress is specific to the browser
 and origin; it is not synchronized across devices.
 
 Scripts are separated into dungeon generation, combat, progression, services,
-hub persistence, and the room/interface controller under `scripts/`.
+hub/equipment persistence, and the room/interface controller under `scripts/`.

@@ -48,17 +48,18 @@ Room adjacency constraints have not been added; all neighbouring rooms connect.
 
 | Setting | Floor 1 | Floor 2 | Floor 3 |
 | --- | ---: | ---: | ---: |
-| Normal/shooter HP | 3 | 5 | 7 |
-| Brute HP | 6 | 10 | 14 |
+| Normal/shooter HP | 3 | 9 | 18 |
+| Brute HP | 6 | 18 | 36 |
 | Combat room enemy count | 3 | 4 | 5 |
 | Loot room enemy count | 0 | 2 | 3 |
-| Initially empty room enemies | 0 | 0 | 2 normal, tier 2 (5 HP) |
+| Initially empty room enemies | 0 | 0 | 2 normal, tier 2 (9 HP) |
 | Boss HP | 22 | 38 | 54 |
 | Boss spread | 3 shots | 5 shots | 5 shots |
 | Boss flare reward | 50 | 60 | 70 |
 
-Player: 6 starting HP plus hub training; 185 movement speed; 1 damage;
-one shot per 0.45 seconds. Contact and hostile projectiles deal 1 damage, with
+Starter bow: 6 starting HP plus hub training/equipment; 185 movement speed; 1 damage;
+one shot per 0.45 seconds. Equipped weapons replace base attack stats, while armor,
+boots and charms add their own bonuses. Contact and hostile projectiles deal 1 damage, with
 one second of invulnerability after a hit and 0.7 seconds of safe arrival time.
 
 Normal enemies chase. Brutes are slower and tougher. Shooters reposition until
@@ -69,9 +70,29 @@ Enemy health/deaths, unopened chests, uncollected XP, and service uses survive
 room revisits. Boss death clears hostile projectiles.
 
 Enemies give 2 XP; bosses give 8 XP. Levels require 4, 6, 8, ... XP.
-Level-up offers two distinct upgrades or 20 coins. Current upgrades stack:
-+1 damage; 15% faster firing; +10% base movement; +1 enemy pierced; +2 max HP
-and heal 2 HP. Movement caps at 5 ranks, firing at 8, piercing at 5.
+Level-up offers two distinct upgrades or 20 coins. There are now **13 run upgrades**, all resetting on a new expedition:
+
+| Upgrade | Effect per rank | Cap |
+| --- | --- | ---: |
+| Heavy bolts | +1 damage | Uncapped |
+| Quick draw | 15% faster firing | 8 |
+| Light feet | +10% base movement | 5 |
+| Piercing bolts | Pierce one additional enemy | 5 |
+| Vitality | +2 max HP and heal 2 | Uncapped |
+| Deadeye | +10% double-damage critical chance | 5 |
+| Split volley | One additional side projectile | 2 |
+| Ricochet | One additional wall/pillar bounce | 2 |
+| Frostbite | Hits slow enemies by 15% for 2 seconds | 3 |
+| Ember touch | Hits burn for 1 damage/s for 3 seconds | 3 |
+| Gatherer | +40 XP attraction radius | 4 |
+| Fast learner | +20% XP gained | 3 |
+| Second wind | Heal 1 every 12/8/6 seconds by rank | 3 |
+
+Critical hits, multishot, piercing, bounces, frost and burn combine. A bolt cannot
+hit the same enemy twice. Burn kills use the same one-time reward path as direct
+hits. XP bonuses keep fractional XP between pickups instead of rounding each
+crystal separately. Equipment bonuses are separate from ranks and cannot be traded.
+Caps also apply to offers from the trader, wheel, and shop.
 
 ## Rewards and services
 
@@ -80,7 +101,8 @@ reset on a new run. Shops make coins and flares useful now.
 
 - Normal/shooter kill: 1 flare. Brute kill: 2. Boss: its floor reward only.
 - Loot chest: 10 flares once, plus 20/25/30 coins by floor. Floors 2–3 also give
-  an upgrade-or-coins choice. Defenders give their own XP/flares.
+  an upgrade-or-coins choice. Defenders give their own XP/flares. Each chest also banks scrap equal to its floor
+  number and has a 30% chance to find one catalog item; duplicates become 2 scrap.
 - Initially empty room: no room reward on floors 1–2. Floor 3: 5 flares once when
   its enemies are defeated, in addition to their individual kill rewards.
 - Bonus room: 5 flares on first entrance each floor, independent of service use.
@@ -119,11 +141,44 @@ These are **prototype choices for previously undecided systems**:
 - A key buys +1 starting HP at the hub, up to three permanent training levels.
 - A supply seal is consumed automatically when starting the next run and gives
   20 starting coins. The hub displays this before departure.
-- Keys, seals, and training save locally to `user://hub.json` (browser storage for
+- Keys, seals, training, scrap, equipment levels and equipped slots save locally to `user://hub.json` (browser storage for
   the web build). There is no login, cross-device synchronization, or cloud account.
   Clearing site data removes this local progress; current-run state is not saved.
+  Old hub saves migrate without losing keys, seals or training. Save replacement
+  uses a temporary file to protect against partially written JSON.
 - Death, completion, or the Return to hub button leads back to preparation. Health,
   XP, levels, ranks, coins, and flares are reset when the next expedition begins.
+
+## Armory and workshop
+
+The hub now has a persistent stash and four equipment slots: weapon, armor, boots,
+and charm. Select **Armory** to inspect stored/craftable gear, equip it, or upgrade
+it. Nothing changes the active run; a fresh loadout snapshot is taken on departure.
+Weapons are not lost on death, and there is no equipment durability.
+
+| Item | Slot | Craft cost (scrap) | Level-1 effect |
+| --- | --- | ---: | --- |
+| Ranger bow | Weapon | Starter | 1 damage, 0.45s interval |
+| Iron crossbow | Weapon | 8 | 2 damage, 0.72s interval, +1 pierce |
+| Ember wand | Weapon | 10 | 1 damage, 0.34s interval, 10% critical chance |
+| Warden vest | Armor | 6 | +2 max HP |
+| Scout boots | Boots | 6 | +8% movement |
+| Scholar charm | Charm | 8 | +10% XP |
+
+All gear has five permanent levels. Upgrading costs 3 × current level scrap
+(3/6/9/12). Bow/wand damage increases every second level; crossbow damage increases
+every level. All weapons gain 5% firing speed per permanent level. Vest HP increases
+by 1 per level, boots by 3 percentage points, charm XP by 5 percentage points.
+The item view previews the next level before upgrading.
+
+Every loot chest banks 1/2/3 scrap by floor. Boss victories bank 3/6/9 scrap, once
+per boss, even before departure. Equipment finds are stored immediately; owning a
+duplicate grants 2 scrap without changing its level. Crafting creates one unique
+stored item type, rather than multiple identical copies. Equipment can be upgraded
+only from the hub UI. Keys, seals and training continue to work as before.
+
+The stash, recipes and costs are a foundation for more items; rarity, melee weapons,
+unique random affixes and inventory capacity are not implemented yet.
 
 ## Main tuning locations
 
@@ -131,7 +186,8 @@ These are **prototype choices for previously undecided systems**:
 - `scripts/combat.gd`: attacks, damage, AI, projectile speeds, trap effects, rewards.
 - `scripts/progression.gd`: XP thresholds, upgrade effects, caps, coin card reward.
 - `scripts/services.gd`: finite rewards, shop prices, healing, trading.
-- `scripts/hub.gd`: local progression and save validation.
+- `scripts/hub.gd`: stash, crafting, upgrade costs, slots, local saves and migration.
+- `scripts/equipment.gd`: gear catalog, permanent levels, and loadout stats.
 
 Before scaling beyond floor 3, check whether players have reasons to skip rooms,
 whether each currency/upgrade choice is useful, whether boss patterns are readable,

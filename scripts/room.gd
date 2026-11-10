@@ -17,10 +17,12 @@ var seed_override := -1
 var in_hub := true
 var interacting := false
 var service_panel: Panel
+var service_close_button: Button
 var service_title: Label
 var service_description: Label
 var service_buttons: Array[Button] = []
 var interact_button: Button
+var armory_button: Button
 var hub_label: Label
 var train_button: Button
 var outcome_title: Label
@@ -30,6 +32,8 @@ var death_panel: PanelContainer
 var level_panel: Panel
 var level_title: Label
 var card_buttons: Array[Button] = []
+var notice_label: Label
+var notice_time := 0.0
 var seed_label: Label
 var xp_label: Label
 var build_label: Label
@@ -74,6 +78,7 @@ func _build_ui() -> void:
 	health_label = _label(root, "HP  6 / 6", Vector2(29, 83), 15, Color("69d4b8"))
 	encounter_label = _label(root, "", Vector2(245, 130), 11, Color("96a3b6"))
 	xp_label = _label(root, "", Vector2(29, 103), 11, Color("96c9ff"))
+	notice_label = _label(root, "", Vector2(29, 607), 10, Color("dfbd78"))
 	seed_label = _label(root, "", Vector2(29, 724), 9, Color("96a3b6"))
 	build_label = _label(root, "", Vector2(29, 703), 10, Color("96a3b6"))
 	status_label = _label(root, "ROOM A1     •     FLOOR 01", Vector2(29, 120), 13, Color("dfbd78"))
@@ -94,8 +99,8 @@ func _build_ui() -> void:
 	root.add_child(reset)
 	movement_blockers.append(reset)
 	start_panel = PanelContainer.new()
-	start_panel.position = Vector2(54, 210)
-	start_panel.size = Vector2(372, 330)
+	start_panel.position = Vector2(54, 170)
+	start_panel.size = Vector2(372, 420)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("131e30")
 	style.border_color = Color("a7864d")
@@ -114,12 +119,18 @@ func _build_ui() -> void:
 	title.add_theme_font_size_override("font_size", 26)
 	box.add_child(title)
 	var text := Label.new()
-	text.text = "Explore all room types across 3 floors.\nDefeat each boss to descend.\nKeys and supply seals survive runs."
+	text.text = "Explore all room types across 3 floors.\nDefeat each boss to descend.\nStore equipment and choose a loadout."
 	text.add_theme_font_size_override("font_size", 14)
 	box.add_child(text)
 	hub_label = Label.new()
 	hub_label.add_theme_font_size_override("font_size", 13)
 	box.add_child(hub_label)
+	armory_button = Button.new()
+	armory_button.text = "Armory • store, equip & upgrade"
+	armory_button.custom_minimum_size.y = 40
+	armory_button.add_theme_font_size_override("font_size", 14)
+	armory_button.pressed.connect(_open_armory)
+	box.add_child(armory_button)
 	train_button = Button.new()
 	train_button.text = "Train +1 starting HP • 1 key (max 3)"
 	train_button.custom_minimum_size.y = 38
@@ -149,7 +160,7 @@ func _build_ui() -> void:
 	death_box.add_child(death_title)
 	var death_text := Label.new()
 	outcome_text = death_text
-	death_text.text = "Try again. Keep moving to dodge.\nRun upgrades reset. The hub comes later."
+	death_text.text = "Try again. Keep moving to dodge.\nRun upgrades reset. Stored gear stays safe."
 	death_text.add_theme_font_size_override("font_size", 14)
 	death_box.add_child(death_text)
 	var retry := Button.new()
@@ -188,6 +199,7 @@ func _build_ui() -> void:
 		service_panel.add_child(button)
 		service_buttons.append(button)
 	var close := Button.new()
+	service_close_button = close
 	close.text = "Back to room"
 	close.position = Vector2(110, 367)
 	close.size = Vector2(200, 36)
@@ -232,6 +244,7 @@ func _new_run() -> void:
 	combat = CombatState.new(FLOOR, PILLARS)
 	combat.progression.rng.seed = dungeon.seed_value + 101
 	combat.progression.base_health = 6 + hub.training
+	combat.progression.apply_loadout(hub.loadout_stats())
 	combat.health = combat.progression.max_health()
 	if hub.seals > 0:
 		hub.seals -= 1
@@ -244,6 +257,8 @@ func _new_run() -> void:
 	level_panel.hide()
 	service_panel.hide()
 	interacting = false
+	notice_time = 0
+	notice_label.hide()
 	_update_room_label()
 
 func reset_player() -> void:
@@ -309,13 +324,16 @@ func _physics_process(delta: float) -> void:
 		if direction.length() > 0.08:
 			move_player(direction.limit_length(1.0) * SPEED * combat.progression.movement_multiplier() * delta)
 		if not transitioning:
+			notice_time = maxf(0, notice_time - delta)
+			notice_label.visible = notice_time > 0
 			combat.tick(delta, player)
+			_bank_boss_materials()
 			if combat.progression.pending > 0: _show_level_up()
 			if combat.health <= 0:
 				active = false
 				_release_stick()
 				outcome_title.text = "Your run has ended"
-				outcome_text.text = "Floor %d • %d enemies defeated\nKeys and seals are kept at the hub." % [dungeon.floor_number, combat.kills]
+				outcome_text.text = "Floor %d • %d enemies defeated\nArmory, scrap, keys and seals are kept." % [dungeon.floor_number, combat.kills]
 				death_panel.show()
 	_update_combat_labels()
 	_update_interact()
@@ -375,8 +393,8 @@ func _update_combat_labels() -> void:
 	health_label.text = "HP  %d / %d" % [combat.health, combat.progression.max_health()]
 	health_label.modulate = Color("ff8b83") if combat.hurt_time > 0.7 else Color.WHITE
 	xp_label.text = "L%d XP %d/%d • %d C • %d F" % [combat.progression.level, combat.progression.xp, combat.progression.required_xp(), combat.progression.coins, combat.progression.flares]
-	build_label.text = "DMG %d  •  RATE %.1f/s  •  SPEED +%d%%  •  PIERCE %d" % [combat.progression.damage(), 1.0 / combat.progression.fire_interval(), combat.progression.ranks["movement"] * 10, combat.progression.ranks["piercing"]]
-	seed_label.text = "SEED %d • HUB %d KEYS / %d SEALS" % [dungeon.seed_value, hub.keys, hub.seals]
+	build_label.text = "DMG %d  •  RATE %.1f/s  •  SPEED +%d%%  •  PIERCE %d" % [combat.progression.damage(), 1.0 / combat.progression.fire_interval(), roundi((combat.progression.gear_movement + combat.progression.ranks["movement"] * 0.1) * 100), combat.progression.base_pierce + combat.progression.ranks["piercing"]]
+	seed_label.text = "SEED %d • %s Lv.%d • HUB %d SCRAP" % [dungeon.seed_value, combat.progression.weapon.to_upper(), combat.progression.weapon_level, hub.materials]
 	var alive: int = combat.alive_count()
 	encounter_label.text = "%d ENEMIES  •  %d DEFEATED" % [alive, combat.kills] if alive > 0 else "ROOM SAFE  •  %d DEFEATED" % combat.kills
 	if combat.progression.slow_time > 0: encounter_label.text += " • SLOW"
@@ -438,8 +456,10 @@ func _draw() -> void:
 		draw_circle(bullet["pos"] + Vector2(0, -16), 6, Color("ff786f"))
 	for bullet in combat.bullets:
 		var tip: Vector2 = bullet["pos"] + Vector2(0, -16)
-		draw_line(tip - bullet["velocity"].normalized() * 12, tip, Color("f6c96c"), 3)
-		draw_circle(tip, 3, Color("fff0ba"))
+		var bolt_color := Color("96c9ff") if combat.progression.weapon == "wand" else Color("f6c96c")
+		if bullet.get("critical", false): bolt_color = Color("ff9773")
+		draw_line(tip - bullet["velocity"].normalized() * 12, tip, bolt_color, 3)
+		draw_circle(tip, 3, bolt_color)
 	for impact in combat.impacts:
 		draw_arc(impact["pos"] + Vector2(0, -16), (0.22 - impact["life"]) * 85 + 3, 0, TAU, 12, Color(1, 0.8, 0.4, impact["life"] / 0.22), 2)
 	if pointer != -1 or pointer_mouse:
@@ -511,6 +531,8 @@ func _draw_enemy(enemy: Dictionary) -> void:
 	if enemy.get("kind", "") == "shooter": base = Color("be8be8")
 	if enemy.get("kind", "") == "brute": base = Color("db9a52")
 	if enemy.get("kind", "") == "boss": base = Color("e25151")
+	if enemy.get("frost_time", 0.0) > 0: base = Color("79bfe8")
+	if enemy.get("burn_time", 0.0) > 0: draw_arc(pos + Vector2(0, -13), 18, 0, TAU, 16, Color("f5a255"), 2)
 	var color := Color("ffecce") if enemy["flash"] > 0 else base
 	draw_circle(pos + Vector2(0, -13), 23 if enemy.get("kind", "") == "boss" else 15, color)
 	draw_colored_polygon(PackedVector2Array([pos + Vector2(-12, -20), pos + Vector2(-12, -33), pos + Vector2(-3, -25)]), color)
@@ -551,7 +573,7 @@ func _read_seed() -> void:
 		if arg.begins_with("--seed=") and arg.trim_prefix("--seed=").is_valid_int(): seed_override = int(arg.trim_prefix("--seed="))
 
 func _refresh_hub() -> void:
-	hub_label.text = "%d keys • %d seals • +%d starting HP\nA seal supplies 20 coins on your next run." % [hub.keys, hub.seals, hub.training]
+	hub_label.text = "%d keys • %d seals • %d scrap\n%s Lv.%d • +%d trained HP\nA seal supplies 20 coins on your next run." % [hub.keys, hub.seals, hub.materials, hub.Equipment.ITEMS[hub.equipped["weapon"]]["name"], hub.inventory[hub.equipped["weapon"]], hub.training]
 	if not hub.persistence_ok: hub_label.text += "\nStorage unavailable: progress is session-only."
 	train_button.disabled = hub.keys <= 0 or hub.training >= 3
 
@@ -560,6 +582,8 @@ func _return_to_hub() -> void:
 	active = false
 	interacting = false
 	in_hub = true
+	notice_time = 0
+	notice_label.hide()
 	_release_stick()
 	level_panel.hide()
 	death_panel.hide()
@@ -591,7 +615,10 @@ func _interact() -> void:
 	match state["role"]:
 		"boss": _advance_floor()
 		"loot":
-			if services.loot() and combat.progression.pending > 0: _show_level_up("LOOT — CHOOSE A REWARD")
+			if services.loot():
+				_notice(state["reward"])
+				if combat.progression.pending > 0: _show_level_up("LOOT — CHOOSE A REWARD")
+				else: _menu("Loot secured", "+%d coins • 10 flares\n%s" % [15 + dungeon.floor_number * 5, state["reward"]], [])
 		"bonus":
 			if state.get("summoned_shop", false): _open_shop()
 			elif state["service"] == "shop": _open_shop()
@@ -608,6 +635,7 @@ func _interact() -> void:
 func _advance_floor() -> void:
 	var state: Dictionary = dungeon.rooms[dungeon.current]
 	if state["role"] != "boss" or combat.alive_count() > 0 or not state["boss_paid"]: return
+	_bank_boss_materials()
 	if dungeon.advance():
 		player = Vector2(240, 530)
 		_release_stick()
@@ -632,6 +660,7 @@ func _advance_floor() -> void:
 func _menu(title: String, description: String, options: Array, columns: int = 1) -> void:
 	interacting = true
 	_release_stick()
+	service_close_button.text = "Back to hub" if in_hub else "Back to room"
 	service_title.text = title
 	service_description.text = description
 	for index in range(service_buttons.size()):
@@ -769,3 +798,63 @@ func _draw_room_content() -> void:
 		draw_string(font, center + Vector2(-23, 5), "EXIT", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("132030"))
 	elif role == "empty":
 		draw_string(font, center + Vector2(-34, 40), "QUIET" if dungeon.floor_number < 3 else "AWAKENED", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("96a3b6"))
+
+func _open_armory(message: String = "") -> void:
+	if not in_hub: return
+	var options: Array = []
+	for id in hub.Equipment.ITEMS:
+		var item: Dictionary = hub.Equipment.ITEMS[id]
+		var owned: bool = hub.inventory.has(id)
+		var text: String = item["name"] + (" Lv.%d" % hub.inventory[id] if owned else " • Craft %d scrap" % item["cost"])
+		if owned and hub.equipped[item["slot"]] == id: text += " [E]"
+		options.append({"text": text, "action": _armory_item.bind(id)})
+	_menu("Armory & workshop", "%d scrap • equipment survives every run.\n[E] = equipped. Changes apply next expedition.\n%s" % [hub.materials, message], options)
+
+func _armory_item(id: String, message: String = "") -> void:
+	if not in_hub: return
+	var catalog = hub.Equipment
+	var item: Dictionary = catalog.ITEMS[id]
+	var owned: bool = hub.inventory.has(id)
+	var level: int = hub.inventory.get(id, 1)
+	var equipped_now: bool = owned and hub.equipped[item["slot"]] == id
+	var options: Array = []
+	if not owned:
+		options.append({"text": "Craft • %d scrap" % item["cost"], "disabled": hub.materials < item["cost"], "action": _armory_craft.bind(id)})
+	else:
+		options.append({"text": "Equipped" if equipped_now else "Equip for next run", "disabled": equipped_now, "action": _armory_equip.bind(id)})
+		options.append({"text": "Maximum level" if level >= catalog.MAX_LEVEL else "Upgrade to Lv.%d • %d scrap" % [level + 1, hub.upgrade_cost(id)], "disabled": level >= catalog.MAX_LEVEL or hub.materials < hub.upgrade_cost(id), "action": _armory_upgrade.bind(id)})
+		if item["slot"] != "weapon" and equipped_now: options.append({"text": "Unequip", "action": _armory_unequip.bind(id)})
+	options.append({"text": "Back to stored equipment", "action": _open_armory})
+	_menu("%s • Lv.%d" % [item["name"], level] if owned else item["name"], "%s\n%s\n%d scrap • %s" % [catalog.summary(id, level), "Next: " + catalog.summary(id, level + 1) if owned and level < catalog.MAX_LEVEL else item["description"], hub.materials, message], options)
+
+func _armory_craft(id: String) -> void:
+	if in_hub and hub.craft(id):
+		_refresh_hub()
+		_armory_item(id, "Crafted and stored.")
+
+func _armory_equip(id: String) -> void:
+	if in_hub and hub.equip_item(id):
+		_refresh_hub()
+		_armory_item(id, "Equipped for next run.")
+
+func _armory_upgrade(id: String) -> void:
+	if in_hub and hub.upgrade(id):
+		_refresh_hub()
+		_armory_item(id, "Permanently upgraded.")
+
+func _armory_unequip(id: String) -> void:
+	if in_hub and hub.unequip(hub.Equipment.ITEMS[id]["slot"]):
+		_refresh_hub()
+		_armory_item(id, "Stored in the armory.")
+
+func _notice(text: String) -> void:
+	notice_label.text = text.replace("\n", " • ")
+	notice_time = 5.0
+	notice_label.show()
+
+func _bank_boss_materials() -> void:
+	var state: Dictionary = dungeon.rooms[dungeon.current]
+	if state["role"] == "boss" and state["boss_paid"] and not state.get("materials_paid", false):
+		state["materials_paid"] = true
+		hub.grant_materials(dungeon.floor_number * 3)
+		_notice("Boss defeated • %d scrap stored at the hub" % (dungeon.floor_number * 3))

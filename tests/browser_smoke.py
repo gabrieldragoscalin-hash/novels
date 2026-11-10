@@ -71,7 +71,7 @@ with sync_playwright() as p:
         finally: page.keyboard.up(key)
 
     capture('dungeon-hub.png')
-    tap(240,500)
+    tap(240,540)
     assert current_room() == (0,1), 'Seed 9 must start at A2'
     before = player_pos()
     cdp = context.new_cdp_session(page)
@@ -90,6 +90,7 @@ with sync_playwright() as p:
     tap(240,575)  # Back to room.
     go(1,0)  # B1 free loot.
     tap(240,682)
+    tap(240,575)  # Loot/materials notice.
     go(1,0)  # C1 shop.
     tap(240,682)
     capture('dungeon-shop.png')
@@ -97,9 +98,11 @@ with sync_playwright() as p:
     tap(240,575)
     go(0,1)  # C2 loot.
     tap(240,682)
+    tap(240,575)
     go(0,1)  # C3 empty.
     go(0,1)  # C4 loot.
     tap(240,682)
+    tap(240,575)
     go(0,1)  # C5 free upgrade.
     tap(240,682)
     capture('dungeon-level-up.png')
@@ -108,9 +111,45 @@ with sync_playwright() as p:
     assert current_room() == (2,3), 'Movement must resume after reward selection'
     tap(240,755)  # Return to hub, retaining the purchased key.
     capture('dungeon-hub-return.png')
-    tap(240,440)  # Spend the key on training.
-    tap(240,500)  # Start again with the same seed and permanent training.
+    tap(240,424)  # Armory: all stored and craftable gear.
+    capture('dungeon-armory.png')
+    tap(240,313)  # Ranger bow.
+    capture('dungeon-weapon.png')
+    tap(240,355)  # Spend 3 collected scrap to upgrade it.
+    capture('dungeon-weapon-upgraded.png')
+    tap(240,575)  # Back to hub.
+
+    tap(240,480)  # Spend the key on training.
+    tap(240,540)  # Start again with the same seed and permanent training.
     assert current_room() == (0,1)
+    # Read the actual browser save to verify atomic persistence of gear and training.
+    save_script = """async () => {
+      for (const info of await indexedDB.databases()) {
+        const db = await new Promise((resolve,reject) => {
+          const req=indexedDB.open(info.name);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+        });
+        if (!db.objectStoreNames.contains('FILE_DATA')) { db.close();continue; }
+        const tx=db.transaction('FILE_DATA','readonly');const store=tx.objectStore('FILE_DATA');
+        const read=req=>new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});
+        const [keys,values]=await Promise.all([read(store.getAllKeys()),read(store.getAll())]);
+        db.close();
+        for (let i=0;i<keys.length;i++) {
+          if (!String(keys[i]).endsWith('/hub.json')) continue;
+          try {return JSON.parse(new TextDecoder().decode(new Uint8Array(values[i].contents)));} catch(e) {}
+        }
+      }
+      return null;
+    }"""
+    saved=None
+    for attempt in range(30):
+        saved=page.evaluate(save_script)
+        if saved and saved.get('inventory',{}).get('bow')==2 and saved.get('training')==1:break
+        page.wait_for_timeout(200)
+    assert saved and saved['inventory']['bow']==2 and saved['training']==1,('Gear must persist to IndexedDB',saved)
+    page.reload(wait_until='networkidle')
+    page.wait_for_timeout(4500)
+    tap(240,540)
+    assert current_room()==(0,1),'Saved loadout must allow restarting after reload'
     capture('dungeon-tested.png')
     # Reach the boss through a combat-free floor-one route and inspect its attack.
     go(0,-1)
@@ -123,5 +162,5 @@ with sync_playwright() as p:
     page.wait_for_timeout(2300)
     capture('dungeon-boss-volley.png')
     assert not errors, errors
-    print(json.dumps({'result':'PASS', 'seed':9, 'checks':['touch movement','release','door travel','trader menu','loot pickup','two-column shop','permanent key purchase','free upgrade','hub return and training','boss rendering and volley'], 'browser_errors':errors}))
+    print(json.dumps({'result':'PASS', 'seed':9, 'checks':['touch movement','release','door travel','trader menu','loot pickup','two-column shop','permanent key purchase','free upgrade','hub return and training','armory and weapon upgrade','browser save and reload','boss rendering and volley'], 'browser_errors':errors}))
     browser.close()

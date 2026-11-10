@@ -5,8 +5,26 @@ const UPGRADES := {
 	"attack_speed": ["Quick draw", "Fire 15% faster"],
 	"movement": ["Light feet", "+10% movement speed"],
 	"piercing": ["Piercing bolts", "Pass through 1 additional enemy"],
-	"health": ["Vitality", "+2 max HP and heal 2 HP"]
+	"health": ["Vitality", "+2 max HP and heal 2 HP"],
+	"critical": ["Deadeye", "+10% chance for double damage"],
+	"multishot": ["Split volley", "+1 side bolt per attack"],
+	"ricochet": ["Ricochet", "Bolts bounce off 1 additional wall"],
+	"frost": ["Frostbite", "Hits slow enemies for 2 seconds"],
+	"burn": ["Ember touch", "Hits burn for +1 damage/s for 3s"],
+	"magnet": ["Gatherer", "+40 XP pickup attraction range"],
+	"experience": ["Fast learner", "+20% experience gained"],
+	"regeneration": ["Second wind", "Recover 1 HP every 12s (faster per rank)"]
 }
+const CAPS := {"attack_speed": 8, "movement": 5, "piercing": 5, "critical": 5, "multishot": 2, "ricochet": 2, "frost": 3, "burn": 3, "magnet": 4, "experience": 3, "regeneration": 3}
+var weapon := "bow"
+var weapon_level := 1
+var base_damage := 1
+var base_interval := 0.45
+var projectile_speed := 390.0
+var base_pierce := 0
+var base_critical := 0.0
+var gear_movement := 0.0
+var gear_xp := 0.0
 var base_health := 6
 var level := 1
 var xp := 0
@@ -14,12 +32,13 @@ var coins := 0
 var flares := 0
 var slow_time := 0.0
 var pending := 0
-var ranks: Dictionary = {"damage": 0, "attack_speed": 0, "movement": 0, "piercing": 0, "health": 0}
+var ranks: Dictionary = {}
 var offers: Array[String] = []
 var rng := RandomNumberGenerator.new()
 
 func _init() -> void:
 	rng.randomize()
+	for id in UPGRADES: ranks[id] = 0
 
 func required_xp() -> int:
 	return 4 + (level - 1) * 2
@@ -34,12 +53,7 @@ func add_xp(amount: int) -> void:
 	if pending > 0 and offers.is_empty(): _roll_offers()
 
 func _roll_offers() -> void:
-	var pool: Array[String] = []
-	for id in UPGRADES:
-		if id == "piercing" and ranks[id] >= 5: continue
-		if id == "movement" and ranks[id] >= 5: continue
-		if id == "attack_speed" and ranks[id] >= 8: continue
-		pool.append(id)
+	var pool := available_upgrades()
 	offers.clear()
 	for i in range(2):
 		var index := rng.randi_range(0, pool.size() - 1)
@@ -61,13 +75,13 @@ func choose(index: int) -> String:
 	return id
 
 func damage() -> int:
-	return 1 + ranks["damage"]
+	return base_damage + ranks["damage"]
 
 func fire_interval() -> float:
-	return 0.45 / pow(1.15, ranks["attack_speed"])
+	return base_interval / pow(1.15, ranks["attack_speed"])
 
 func movement_multiplier() -> float:
-	return (1.0 + ranks["movement"] * 0.1) * (0.65 if slow_time > 0 else 1.0)
+	return (1.0 + gear_movement + ranks["movement"] * 0.1) * (0.65 if slow_time > 0 else 1.0)
 
 func max_health() -> int:
 	return base_health + ranks["health"] * 2
@@ -75,9 +89,7 @@ func max_health() -> int:
 func available_upgrades() -> Array[String]:
 	var pool: Array[String] = []
 	for id in UPGRADES:
-		if id == "piercing" and ranks[id] >= 5: continue
-		if id == "movement" and ranks[id] >= 5: continue
-		if id == "attack_speed" and ranks[id] >= 8: continue
+		if CAPS.has(id) and ranks[id] >= CAPS[id]: continue
 		pool.append(id)
 	return pool
 
@@ -90,3 +102,21 @@ func reward_choices(count: int = 2, with_coins: bool = true) -> void:
 		offers.append(pool[index])
 		pool.remove_at(index)
 	if with_coins: offers.append("coins")
+
+func xp_multiplier() -> float:
+	return 1.0 + gear_xp + ranks["experience"] * 0.2
+
+func critical_chance() -> float:
+	return minf(0.75, base_critical + ranks["critical"] * 0.1)
+
+func apply_loadout(stats: Dictionary) -> void:
+	weapon = stats["weapon"]
+	weapon_level = stats["level"]
+	base_damage = stats["damage"]
+	base_interval = stats["interval"]
+	projectile_speed = stats["projectile_speed"]
+	base_pierce = stats["pierce"]
+	base_critical = stats["critical"]
+	gear_movement = stats["movement"]
+	gear_xp = stats["xp"]
+	base_health += stats["health"]

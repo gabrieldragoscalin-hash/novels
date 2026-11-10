@@ -26,6 +26,12 @@ func loot() -> bool:
 	room["room_paid"] = true
 	combat.progression.flares += 20 if dungeon.floor_number % 5 == 0 else 10
 	combat.progression.coins += 15 + dungeon.floor_number * 5
+	hub.grant_materials(dungeon.floor_number)
+	room["reward"] = "+%d scrap stored at the hub" % dungeon.floor_number
+	if dungeon.rng.randf() < 0.3:
+		var catalog: Array = hub.Equipment.ITEMS.keys()
+		var id: String = catalog[dungeon.rng.randi_range(0, catalog.size() - 1)]
+		room["reward"] += "\n" + hub.find_equipment(id)
 	# Better loot across the three floors without consuming an XP level.
 	if dungeon.floor_number >= 2: combat.progression.reward_choices()
 	return true

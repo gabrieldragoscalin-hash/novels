@@ -2,7 +2,7 @@
 
 Last updated: 2026-11-10
 
-Status: three-floor ranged prototype for balance testing. See BALANCING.md for implemented defaults and remaining scope.
+Status: three-floor ranged prototype with a persistent equipment armory and expanded run upgrades. See BALANCING.md for implemented defaults and remaining scope.
 No final title has been selected. The prototype uses Godot 4.6.3 with GDScript. Open decisions below must not be treated as
 settled requirements. This game replaces the earlier book project in this repository.
 
@@ -36,7 +36,7 @@ costs. Store releases and monetization are undecided.
 6. Repeat until death.
 7. Return to the hub and use retained loot. The next run generates a fresh dungeon.
 
-Prototype: keys, supply seals, and hub training survive death in device-local storage. Run XP, levels, upgrades, coins, and flares reset on the next expedition. These defaults can be balanced or revised.
+Prototype: equipment, scrap, keys, supply seals, and hub training survive death in device-local storage. Run XP, levels, upgrades, coins, and flares reset on the next expedition; stored equipment and its levels do not. These defaults can be balanced or revised.
 
 ## Dungeon structure
 
@@ -188,21 +188,19 @@ Prototype: the healer restores full health once per floor; full-health visits do
 
 Current prototype defaults (subject to balancing):
 
-- Each enemy drops a collectible crystal worth 2 XP. Nearby crystals are attracted
+- Normal enemies drop collectible crystals worth 2 XP; bosses drop 8 XP. Nearby crystals are attracted
   to the player with a clear path; uncollected XP stays in its room.
 - Start at level 1. The next level needs `4 + 2 × (current level - 1)` XP.
 - Level-up pauses combat and movement for the reward selection. Overflow XP is
   retained, and multiple earned choices are handled in sequence.
 - Offers contain two distinct upgrade types and a 20-coin option. Offers stay fixed
-  until selected. Coins are tracked but have no spending interface yet.
-- Upgrade pool: +1 damage; 15% faster firing; +10% base movement speed;
-  piercing one additional enemy per projectile; +2 max HP with 2 HP healing.
+  until selected. Coins purchase permanent shop items; run assistance uses flares.
+- The pool now has 13 upgrades: damage, attack speed, movement speed, piercing, max HP/healing, critical hits, multishot, ricochet, frost, burn, XP attraction, XP gain and regeneration. Exact effects and caps are in BALANCING.md.
 - Ranks stack. Prototype caps: movement 5, firing speed 8, piercing 5; damage and
   vitality remain uncapped. Capped upgrades leave the offer pool.
 - Run levels, XP, coins, and upgrade ranks reset on death/restart.
 
-Final balance, rarity, the larger upgrade pool, and the broader purpose of coins
-remain open.
+Final balance, rarity, and further upgrade/weapon additions remain open.
 
 ## Dungeon flare economy
 
@@ -251,6 +249,24 @@ Examples: bonus rooms give 5 on floors 1–5, 10 on 6–10, and 15 on
 - Dungeon flares and run levels are temporary.
 
 Prototype defaults: permanent shop purchases cost coins and are secured immediately; a key trains +1 starting HP (up to three times); a supply seal automatically provides 20 coins on the next expedition. Hub data is local to a device/browser, without account synchronization. Prices and retention can be revised during balancing.
+
+## Equipment armory (current milestone)
+
+- The hub stores unique owned item types and their permanent levels, across runs.
+- Four slots: one ranged weapon, armor, boots and charm. Gear can be equipped,
+  unequipped (except the only weapon), crafted and upgraded from the hub.
+- Starter Ranger bow; craftable Iron crossbow and Ember wand; Warden vest,
+  Scout boots and Scholar charm. All gear has five permanent levels.
+- Chests grant scrap equal to the floor and a 30% equipment-find chance. Duplicate
+  finds grant 2 scrap. Bosses bank 3 × floor scrap once on defeat.
+- Scrap and finds are secured immediately. Costs, stats and level previews are in
+  BALANCING.md; these remain prototype values.
+- Gear stats are copied into each new run and combine with temporary run ranks.
+  Hub changes cannot alter an active run. Death removes run ranks but not equipment.
+- Old local hub saves gain starter equipment without losing keys/seals/training.
+  This is device-local storage, without cloud account synchronization.
+- Normal enemy HP now scales 3 → 9 → 18 through floors 1–3; brutes have double HP.
+  Awakened empty rooms on floor 3 use the tier-2 enemy HP of 9.
 
 ## Replaced concepts — do not implement
 

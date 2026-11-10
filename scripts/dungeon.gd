@@ -90,7 +90,7 @@ func _prepare_floor() -> void:
 	enter(current)
 
 static func make_enemy(pos: Vector2, kind: String, tier: int) -> Dictionary:
-	var hp := 3 + (tier - 1) * 2
+	var hp: int = [3, 9, 18][clampi(tier - 1, 0, 2)]
 	if kind == "brute": hp *= 2
 	if kind == "boss": hp = 22 + (tier - 1) * 16
 	return {"pos": pos, "hp": hp, "max_hp": hp, "kind": kind, "tier": tier, "flash": 0.0, "repath": 0.0, "path": PackedVector2Array(), "attack": 1.5, "telegraph": 0.0, "aim": Vector2.DOWN}
