@@ -16,6 +16,9 @@ var enemies: Array = []
 var bullets: Array = []
 var impacts: Array = []
 var kills := 0
+var hostile_bullets: Array = []
+var room_state: Dictionary = {}
+var floor_number := 1
 var nav := AStarGrid2D.new()
 var bounds: Rect2
 var obstacles: Array[Rect2]
@@ -35,6 +38,8 @@ func _init(room_bounds: Rect2, pillars: Array[Rect2]) -> void:
 
 func enter(state: Dictionary, player: Vector2) -> void:
 	bullets.clear()
+	hostile_bullets.clear()
+	room_state = state
 	impacts.clear()
 	fire_time = 0.15
 	grace_time = 0.7
@@ -89,6 +94,7 @@ func tick(delta: float, player: Vector2) -> void:
 	hurt_time = maxf(0, hurt_time - delta)
 	grace_time = maxf(0, grace_time - delta)
 	fire_time -= delta
+	progression.slow_time = maxf(0, progression.slow_time - delta)
 	for impact in impacts: impact["life"] -= delta
 	impacts = impacts.filter(func(impact): return impact["life"] > 0)
 	# Target the nearest enemy with a clear shot. Moving never suppresses firing.
@@ -120,7 +126,7 @@ func tick(delta: float, player: Vector2) -> void:
 			var hit := false
 			for enemy_index in range(enemies.size()):
 				var enemy: Dictionary = enemies[enemy_index]
-				if enemy["hp"] > 0 and not bullet["hits"].has(enemy_index) and next.distance_to(enemy["pos"]) <= 17:
+				if enemy["hp"] > 0 and not bullet["hits"].has(enemy_index) and next.distance_to(enemy["pos"]) <= (27 if enemy.get("kind", "") == "boss" else 17):
 					enemy["hp"] -= progression.damage()
 					enemy["flash"] = 0.13
 					bullet["hits"].append(enemy_index)
@@ -129,7 +135,14 @@ func tick(delta: float, player: Vector2) -> void:
 					impacts.append({"pos": next, "life": 0.22})
 					if enemy["hp"] <= 0:
 						kills += 1
-						pickups.append({"pos": enemy["pos"], "amount": 2})
+						pickups.append({"pos": enemy["pos"], "amount": 8 if enemy.get("kind", "normal") == "boss" else 2})
+						if enemy.get("kind", "normal") == "boss":
+							hostile_bullets.clear()
+							grace_time = maxf(grace_time, 0.5)
+							if not room_state.get("boss_paid", false):
+								progression.flares += 50 + 10 * (floor_number - 1)
+								room_state["boss_paid"] = true
+						elif room_state.get("role", "") != "boss": progression.flares += 2 if enemy.get("kind", "normal") == "brute" else 1
 					hit = bullet["life"] <= 0
 					break
 			if hit: break
@@ -145,14 +158,24 @@ func tick(delta: float, player: Vector2) -> void:
 			if enemy["path"].size() > 1: enemy["path"].remove_at(0)
 		var destination := player
 		if not enemy["path"].is_empty(): destination = enemy["path"][0]
-		var next: Vector2 = enemy["pos"].move_toward(destination, ENEMY_SPEED * delta)
+		var kind: String = enemy.get("kind", "normal")
+		var speed: float = ENEMY_SPEED + (enemy.get("tier", 1) - 1) * 6
+		if kind == "brute": speed *= 0.65
+		if kind == "boss": speed *= 0.65
+		if kind == "shooter" and enemy["pos"].distance_to(player) < 160 and not wall_between(enemy["pos"], player): speed = 0
+		var next: Vector2 = enemy["pos"].move_toward(destination, speed * delta)
 		if not blocked(next, 13): enemy["pos"] = next
 		if not enemy["path"].is_empty() and enemy["pos"].distance_to(destination) < 3:
 			enemy["path"].remove_at(0)
-		if enemy["pos"].distance_to(player) < 26 and hurt_time <= 0 and grace_time <= 0:
-			health -= 1
-			hurt_time = 1.0
+		if enemy["pos"].distance_to(player) < (35 if kind == "boss" else 26):
+			hurt(1)
 			if health <= 0: break
+		if kind in ["shooter", "boss"]: _enemy_shoot(enemy, delta, player)
+	_tick_hostile(delta, player)
+	_tick_trap(delta, player)
+	if room_state.get("role", "") == "empty" and floor_number >= 3 and alive_count() == 0 and not room_state.get("room_paid", false):
+		progression.flares += floor_number + 2
+		room_state["room_paid"] = true
 
 func alive_count() -> int:
 	var count := 0
@@ -177,3 +200,52 @@ func apply_choice(index: int) -> bool:
 	if choice.is_empty(): return false
 	if choice == "health": health = mini(health + 2, progression.max_health())
 	return true
+
+func hurt(amount: int) -> void:
+	if hurt_time > 0 or grace_time > 0 or health <= 0: return
+	health = maxi(0, health - amount)
+	hurt_time = 1.0
+
+func _enemy_shoot(enemy: Dictionary, delta: float, player: Vector2) -> void:
+	enemy["attack"] -= delta
+	if enemy["telegraph"] > 0:
+		enemy["telegraph"] -= delta
+		if enemy["telegraph"] <= 0:
+			var boss: bool = enemy["kind"] == "boss"
+			for angle in ([-0.55, -0.28, 0.0, 0.28, 0.55] if floor_number >= 2 else [-0.38, 0.0, 0.38]) if boss else [0.0]:
+				hostile_bullets.append({"pos": enemy["pos"], "velocity": enemy["aim"].rotated(angle) * (125 + floor_number * 12), "life": 4.0})
+			enemy["attack"] = 1.6 if boss else 2.4
+	elif enemy["attack"] <= 0:
+		enemy["telegraph"] = 0.65
+		enemy["aim"] = enemy["pos"].direction_to(player)
+
+func _tick_hostile(delta: float, player: Vector2) -> void:
+	for bullet in hostile_bullets:
+		bullet["life"] -= delta
+		var motion: Vector2 = bullet["velocity"] * delta
+		var steps := maxi(1, int(ceil(motion.length() / 5)))
+		for i in range(steps):
+			var next: Vector2 = bullet["pos"] + motion / steps
+			if not bounds.has_point(next) or wall_between(bullet["pos"], next):
+				bullet["life"] = 0
+				break
+			bullet["pos"] = next
+			if next.distance_to(player) < 16:
+				hurt(1)
+				bullet["life"] = 0
+				break
+	hostile_bullets = hostile_bullets.filter(func(b): return b["life"] > 0)
+
+func _tick_trap(delta: float, player: Vector2) -> void:
+	if room_state.get("role", "") != "trap": return
+	room_state["trap_time"] -= delta
+	if room_state["trap_time"] > 0: return
+	room_state["trap_time"] = 2.5
+	var trap: int = room_state["trap"]
+	if trap == 0:
+		if player.distance_to(Vector2(240, 385)) < 100: progression.slow_time = 4
+	elif trap == 1:
+		if player.distance_to(Vector2(240, 385)) < 80: hurt(1)
+	else:
+		for x in [180, 240, 300]:
+			hostile_bullets.append({"pos": Vector2(x, 195), "velocity": Vector2(0, 140), "life": 3.0})

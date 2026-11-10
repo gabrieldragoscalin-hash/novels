@@ -7,9 +7,12 @@ const UPGRADES := {
 	"piercing": ["Piercing bolts", "Pass through 1 additional enemy"],
 	"health": ["Vitality", "+2 max HP and heal 2 HP"]
 }
+var base_health := 6
 var level := 1
 var xp := 0
 var coins := 0
+var flares := 0
+var slow_time := 0.0
 var pending := 0
 var ranks: Dictionary = {"damage": 0, "attack_speed": 0, "movement": 0, "piercing": 0, "health": 0}
 var offers: Array[String] = []
@@ -64,7 +67,26 @@ func fire_interval() -> float:
 	return 0.45 / pow(1.15, ranks["attack_speed"])
 
 func movement_multiplier() -> float:
-	return 1.0 + ranks["movement"] * 0.1
+	return (1.0 + ranks["movement"] * 0.1) * (0.65 if slow_time > 0 else 1.0)
 
 func max_health() -> int:
-	return 6 + ranks["health"] * 2
+	return base_health + ranks["health"] * 2
+
+func available_upgrades() -> Array[String]:
+	var pool: Array[String] = []
+	for id in UPGRADES:
+		if id == "piercing" and ranks[id] >= 5: continue
+		if id == "movement" and ranks[id] >= 5: continue
+		if id == "attack_speed" and ranks[id] >= 8: continue
+		pool.append(id)
+	return pool
+
+func reward_choices(count: int = 2, with_coins: bool = true) -> void:
+	pending += 1
+	offers.clear()
+	var pool := available_upgrades()
+	for i in range(mini(count, pool.size())):
+		var index := rng.randi_range(0, pool.size() - 1)
+		offers.append(pool[index])
+		pool.remove_at(index)
+	if with_coins: offers.append("coins")

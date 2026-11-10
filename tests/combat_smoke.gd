@@ -49,7 +49,7 @@ func run() -> void:
 
 	var dungeon = Dungeon.new()
 	combat = Combat.new(BOUNDS, PILLARS)
-	var room_state: Dictionary = dungeon.rooms[Vector2i(1, 0)]
+	var room_state: Dictionary = {"enemies": [enemy_at(Vector2(240, 270)), enemy_at(Vector2(192, 385))], "pickups": []}
 	combat.enter(room_state, Vector2(72, 385))
 	combat.enemies[0]["hp"] = 0
 	combat.enemies[1]["hp"] = 1
@@ -61,13 +61,16 @@ func run() -> void:
 
 	var room = load("res://scenes/room.tscn").instantiate()
 	root.add_child(room)
+	room.hub.enabled = false
+	room.hub.training = 0
+	room.hub.seals = 0
 	room.start_game()
 	room.combat.health = 0
 	room._physics_process(1.0 / 60)
 	assert(not room.active and room.death_panel.visible, "Death must show restart interface")
 	room.restart_run()
 	assert(room.active and not room.death_panel.visible and room.combat.health == 6)
-	assert(room.dungeon.current == Vector2i.ZERO and room.combat.kills == 0)
+	assert(room.dungeon.current == room.dungeon.start and room.combat.kills == 0)
 	print("PASS: moving auto-fire, kills, projectile walls, enemy navigation, contact damage, invulnerability, room persistence, death/restart")
 	room.queue_free()
 	quit(0)

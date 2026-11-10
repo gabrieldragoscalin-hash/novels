@@ -10,6 +10,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,11 +47,14 @@ jobs:
       - name: Add Godot to PATH
         run: echo "$HOME/godot-bin" >> "$GITHUB_PATH"
       - name: Import and test
+        timeout-minutes: 3
         run: |
           godot --headless --editor --path . --import
           godot --headless --path . --script tests/smoke.gd
           godot --headless --path . --script tests/combat_smoke.gd
           godot --headless --path . --script tests/progression_smoke.gd
+          godot --headless --path . --script tests/floors_smoke.gd
+          godot --headless --path . --script tests/services_smoke.gd
       - name: Export browser game
         run: |
           mkdir -p build/web

@@ -2,7 +2,7 @@
 
 Last updated: 2026-11-10
 
-Status: early playable prototype. This records the full intended design; many systems are not implemented yet.
+Status: three-floor ranged prototype for balance testing. See BALANCING.md for implemented defaults and remaining scope.
 No final title has been selected. The prototype uses Godot 4.6.3 with GDScript. Open decisions below must not be treated as
 settled requirements. This game replaces the earlier book project in this repository.
 
@@ -36,7 +36,7 @@ costs. Store releases and monetization are undecided.
 6. Repeat until death.
 7. Return to the hub and use retained loot. The next run generates a fresh dungeon.
 
-Which specific resources and purchases survive death is not yet defined.
+Prototype: keys, supply seals, and hub training survive death in device-local storage. Run XP, levels, upgrades, coins, and flares reset on the next expedition. These defaults can be balanced or revised.
 
 ## Dungeon structure
 
@@ -45,8 +45,7 @@ Which specific resources and purchases survive death is not yet defined.
 - The dungeon's room layout and base identities persist between floors in a run.
 - A new run generates a new random layout.
 - Room adjacency/generation constraints will be designed later.
-- Movement between neighbouring rooms is understood as orthogonal; exact
-  movement, combat, camera, and control systems remain undecided.
+- Movement between neighbouring rooms is understood as orthogonal; movement uses a floating joystick or keyboard, with a three-quarter top-down camera and automatic ranged attacks while moving.
 
 ### Starting floor composition
 
@@ -79,20 +78,18 @@ the visible counts of ordinary room types can change on subsequent floors.
 - Presence of all five services is required; visiting every service is not an
   established requirement for reaching the boss.
 
-Open generation details:
+Generation defaults now implemented (subject to revision):
 
-- How the middle row/column of the odd-sized grid participates in opposite halves.
-- How corners select their starting edge and whether a minimum S-to-E distance applies.
-- Whether the exit must always move, rather than only being reselected each floor.
-- Base identities beneath the initial start and exit, which become relevant when
-  those roles move elsewhere.
+- The middle row/column is excluded from opposite-half destinations; top starts use rows 4–5, bottom starts use rows 1–2, with the equivalent rule for columns.
+- Corners use their selected generating edge; the opposite-half rule provides separation.
+- Both start and exit must move from their previous positions.
+- Initial start and boss locations have underlying empty identities. Their temporary overrides move away on subsequent floors.
 
 ## Room identities and floor progression
 
 ### Combat rooms
 
-Remain combat rooms, with increasing encounter difficulty across floors. Enemy
-types, counts, scaling, and larger-enemy classifications are not yet defined.
+Remain combat rooms, with increasing encounter difficulty across floors. Prototype normal, shooter, and brute archetypes, floor counts, and HP scaling are listed in BALANCING.md. Final balance remains open.
 
 Enemies award XP and dungeon flares. Ordinary revisits must not reset rewards.
 
@@ -121,7 +118,7 @@ Enemies award XP and dungeon flares. Ordinary revisits must not reset rewards.
 - Remain trap rooms.
 - Change trap type every floor: no identical trap on consecutive floors.
 - Earlier traps can recur after an intervening floor, e.g. debuff A → trap B → debuff A.
-- Trap behaviours, damage/debuffs, and counterplay are not yet defined.
+- Prototype traps are a slowing field, timed spikes, and a projectile volley; timings and counterplay are listed in BALANCING.md.
 
 ### Bonus rooms
 
@@ -135,8 +132,7 @@ Five permanent bonus-room locations, with these five service roles:
 
 Each location cycles through all five roles before repeating, returning to the
 same role every five floors. Every floor must contain one of each service.
-The rotation order is undecided; independently shuffling each room must not
-accidentally remove or duplicate services.
+The prototype rotation is shop → trader → upgrade → wheel → healer, staggered across the five locations so no service is missing or duplicated.
 
 #### Free upgrade
 
@@ -152,9 +148,7 @@ A wheel in the middle of the room awards one of:
 - Trade an owned upgrade for another: choose the replacement from **three options**.
 - Spawn a shopkeeper.
 
-Wheel odds, number of spins, costs, and what happens when a trade is rolled without
-an owned upgrade are undecided. A summoned shopkeeper does not create another
-room-entry flare reward.
+Prototype: one free animated spin per floor; all five outcomes have equal odds. Healing restores up to 3 HP; the coin outcome gives 20 coins. With no owned upgrade, a trade result gives 20 coins instead. A summoned shopkeeper does not create another room-entry flare reward.
 
 #### Shop
 
@@ -162,17 +156,14 @@ Two columns:
 
 | Column | Contents | Payment |
 | --- | --- | --- |
-| Permanent account progression | Items, keys, and other things useful at the hub, outside runs | Undecided |
+| Permanent account progression | Items, keys, and other things useful at the hub, outside runs | Coins (prototype default) |
 | Current-run assistance | Upgrades, healing, or coins | Dungeon flares |
 
-Prices, stock, purchase limits, and when permanent purchases become secured are
-deferred. Do not assume coins pay for either column.
+Prototype prices and stock are documented in BALANCING.md: permanent keys/seals cost coins; run assistance costs flares. Purchases are finite per room per floor. Permanent items are secured immediately in device-local hub storage. These resolve earlier open questions as testable defaults, not final balance.
 
 #### Trader and healer
 
-Their presence and service identities are agreed. Detailed offers, costs, healing
-amounts, and interaction limits remain undecided. The wheel's upgrade-exchange
-reward does not yet establish the standalone trader's full behaviour.
+Prototype: the healer restores full health once per floor; full-health visits do not spend its use. The trader exchanges one owned upgrade rank for one of three alternatives, free once per floor. Nothing is removed until confirmation.
 
 ## Combat direction
 
@@ -223,7 +214,7 @@ Let `f` be the floor number, starting at 1.
 | Source | Reward | Trigger |
 | --- | --- | --- |
 | Initially empty room, floors 1–2 | 0 | No room reward |
-| Initially empty room, floor 3 onward | `f + 2`: 5 on floor 3, 6 on floor 4, etc. | Room completion; exact completion condition to define |
+| Initially empty room, floor 3 onward | `f + 2`: 5 on floor 3, 6 on floor 4, etc. | All enemies defeated, once per floor |
 | Bonus room | `5 × (1 + floor((f - 1) / 5))` | First entrance per floor |
 | Loot room | 10 normally; 20 when `f` is divisible by 5 | Collect loot / open chest, once per floor |
 | Normal enemy | 1 | Enemy death |
@@ -259,8 +250,7 @@ Examples: bonus rooms give 5 on floors 1–5, 10 on 6–10, and 15 on
 - Shops can offer permanent account items, keys, and hub-related purchases.
 - Dungeon flares and run levels are temporary.
 
-The retained loot types, hub functions, permanent-item payment, death retention,
-and any extraction requirements are deliberately deferred.
+Prototype defaults: permanent shop purchases cost coins and are secured immediately; a key trains +1 starting HP (up to three times); a supply seal automatically provides 20 coins on the next expedition. Hub data is local to a device/browser, without account synchronization. Prices and retention can be revised during balancing.
 
 ## Replaced concepts — do not implement
 
@@ -283,13 +273,11 @@ These are discussion items, not approved feature requirements:
 - Room generation/adjacency constraints and the placement details listed above.
 - Room discovery, map visibility, and how upcoming encounters are communicated.
 - Whether encounters lock the player inside temporarily, and how retreat works.
-- Target floor duration, typical run duration, and any final floor or ending.
+- Target floor and run duration. The current balance build ends after the floor-3 boss; there is no floor 4.
 - Why players would skip rooms instead of always clearing the entire floor.
 - Whether five bonus rooms and early free loot create too much downtime.
 - Enemy variety and new behaviours, rather than only higher HP and numbers.
 - Service cycling, economy balance, coins' purpose, and anti-farming details.
-- Persistence, saves, pause/resume, permanent progression, and monetization.
+- Current-run saves, cloud persistence/accounts, richer permanent progression, and monetization. Local hub saving and combat-pausing menus are implemented.
 
-A later prototype milestone can span three floors, testing
-combat feel, route choices, room revisits, and pacing before expanding content.
-This is a recommendation, not a separately agreed implementation scope.
+The current milestone includes all room categories and services through floor 3, including weaker enemies in initially empty rooms on floor 3. Balance this build before extending floor scaling. Fifth-floor miniboss milestones, melee, and later content remain future work.

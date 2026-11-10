@@ -1,6 +1,8 @@
 extends Node2D
 ## First combat prototype: auto-fire while moving and persistent encounters.
 signal transition_finished
+const HubState = preload("res://scripts/hub.gd")
+const Services = preload("res://scripts/services.gd")
 const CombatState = preload("res://scripts/combat.gd")
 const DungeonState = preload("res://scripts/dungeon.gd")
 const SPEED := 185.0
@@ -9,10 +11,26 @@ const FLOOR := Rect2(32, 174, 416, 422)
 const PILLARS: Array[Rect2] = [Rect2(108, 290, 38, 40), Rect2(334, 290, 38, 40), Rect2(108, 456, 38, 40), Rect2(334, 456, 38, 40)]
 var dungeon = DungeonState.new()
 var combat = CombatState.new(FLOOR, PILLARS)
+var hub = HubState.new()
+var services
+var seed_override := -1
+var in_hub := true
+var interacting := false
+var service_panel: Panel
+var service_title: Label
+var service_description: Label
+var service_buttons: Array[Button] = []
+var interact_button: Button
+var hub_label: Label
+var train_button: Button
+var outcome_title: Label
+var outcome_text: Label
+var wheel_rotation := 0.0
 var death_panel: PanelContainer
 var level_panel: Panel
 var level_title: Label
 var card_buttons: Array[Button] = []
+var seed_label: Label
 var xp_label: Label
 var build_label: Label
 var health_label: Label
@@ -35,7 +53,10 @@ var movement_blockers: Array[Control] = []
 var font := ThemeDB.fallback_font
 
 func _ready() -> void:
+	_read_seed()
 	_build_ui()
+	services = Services.new(dungeon, combat, hub)
+	_refresh_hub()
 	_update_room_label()
 	combat.enter(dungeon.rooms[dungeon.current], player)
 	get_viewport().focus_exited.connect(_release_stick)
@@ -49,25 +70,32 @@ func _build_ui() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui.add_child(root)
 	_label(root, "THE DUNGEON", Vector2(28, 25), 25, Color("eee5cc"))
-	_label(root, "FIRST STEPS   /   BUILD YOUR RUN", Vector2(29, 61), 11, Color("96a3b6"))
+	_label(root, "THREE FLOORS   /   BALANCE PROTOTYPE", Vector2(29, 61), 11, Color("96a3b6"))
 	health_label = _label(root, "HP  6 / 6", Vector2(29, 83), 15, Color("69d4b8"))
 	encounter_label = _label(root, "", Vector2(245, 130), 11, Color("96a3b6"))
 	xp_label = _label(root, "", Vector2(29, 103), 11, Color("96c9ff"))
+	seed_label = _label(root, "", Vector2(29, 724), 9, Color("96a3b6"))
 	build_label = _label(root, "", Vector2(29, 703), 10, Color("96a3b6"))
 	status_label = _label(root, "ROOM A1     •     FLOOR 01", Vector2(29, 120), 13, Color("dfbd78"))
 	_label(root, "Touch and drag anywhere to move", Vector2(99, 623), 16, Color("d2d7df"))
-	_label(root, "WASD / arrow keys on a computer", Vector2(126, 648), 12, Color("8594aa"))
-	_label(root, "Auto-fire while moving • doors stay open", Vector2(112, 676), 12, Color("dfbd78"))
+	_label(root, "WASD / arrows • E to interact", Vector2(132, 648), 12, Color("8594aa"))
+	interact_button = Button.new()
+	interact_button.position = Vector2(100, 665)
+	interact_button.size = Vector2(280, 36)
+	interact_button.pressed.connect(_interact)
+	root.add_child(interact_button)
+	movement_blockers.append(interact_button)
+
 	var reset := Button.new()
-	reset.text = "Restart run"
+	reset.text = "Return to hub"
 	reset.position = Vector2(164, 737)
 	reset.size = Vector2(152, 40)
-	reset.pressed.connect(restart_run)
+	reset.pressed.connect(_return_to_hub)
 	root.add_child(reset)
 	movement_blockers.append(reset)
 	start_panel = PanelContainer.new()
-	start_panel.position = Vector2(54, 250)
-	start_panel.size = Vector2(372, 240)
+	start_panel.position = Vector2(54, 210)
+	start_panel.size = Vector2(372, 330)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("131e30")
 	style.border_color = Color("a7864d")
@@ -82,13 +110,25 @@ func _build_ui() -> void:
 	box.add_theme_constant_override("separation", 16)
 	start_panel.add_child(box)
 	var title := Label.new()
-	title.text = "Keep moving. Fight."
+	title.text = "The expedition hub"
 	title.add_theme_font_size_override("font_size", 26)
 	box.add_child(title)
 	var text := Label.new()
-	text.text = "Attacks aim and fire automatically.\nDodge the enemies chasing you.\nExplore, fight, or retreat through doors."
+	text.text = "Explore all room types across 3 floors.\nDefeat each boss to descend.\nKeys and supply seals survive runs."
 	text.add_theme_font_size_override("font_size", 14)
 	box.add_child(text)
+	hub_label = Label.new()
+	hub_label.add_theme_font_size_override("font_size", 13)
+	box.add_child(hub_label)
+	train_button = Button.new()
+	train_button.text = "Train +1 starting HP • 1 key (max 3)"
+	train_button.custom_minimum_size.y = 38
+	train_button.add_theme_font_size_override("font_size", 13)
+	train_button.pressed.connect(func():
+		hub.train()
+		_refresh_hub()
+	)
+	box.add_child(train_button)
 	var start := Button.new()
 	start.text = "Enter the dungeon"
 	start.custom_minimum_size.y = 48
@@ -103,17 +143,19 @@ func _build_ui() -> void:
 	death_box.add_theme_constant_override("separation", 18)
 	death_panel.add_child(death_box)
 	var death_title := Label.new()
+	outcome_title = death_title
 	death_title.text = "Your run has ended"
 	death_title.add_theme_font_size_override("font_size", 24)
 	death_box.add_child(death_title)
 	var death_text := Label.new()
+	outcome_text = death_text
 	death_text.text = "Try again. Keep moving to dodge.\nRun upgrades reset. The hub comes later."
 	death_text.add_theme_font_size_override("font_size", 14)
 	death_box.add_child(death_text)
 	var retry := Button.new()
-	retry.text = "Start a new run"
+	retry.text = "Return to hub"
 	retry.custom_minimum_size.y = 48
-	retry.pressed.connect(restart_run)
+	retry.pressed.connect(_return_to_hub)
 	death_box.add_child(retry)
 	root.add_child(death_panel)
 	death_panel.hide()
@@ -131,9 +173,28 @@ func _build_ui() -> void:
 		card.pressed.connect(_choose_upgrade.bind(index))
 		level_panel.add_child(card)
 		card_buttons.append(card)
-	_label(level_panel, "One choice per level • lasts this run", Vector2(24, 342), 12, Color("96a3b6"))
+	_label(level_panel, "Choose one reward • lasts this run", Vector2(24, 342), 12, Color("96a3b6"))
 	root.add_child(level_panel)
 	level_panel.hide()
+	service_panel = Panel.new()
+	service_panel.position = Vector2(30, 190)
+	service_panel.size = Vector2(420, 420)
+	service_panel.add_theme_stylebox_override("panel", style)
+	service_title = _label(service_panel, "", Vector2(20, 17), 22, Color("dfbd78"))
+	service_description = _label(service_panel, "", Vector2(20, 51), 13, Color("d2d7df"))
+	for index in range(6):
+		var button := Button.new()
+		button.add_theme_font_size_override("font_size", 13)
+		service_panel.add_child(button)
+		service_buttons.append(button)
+	var close := Button.new()
+	close.text = "Back to room"
+	close.position = Vector2(110, 367)
+	close.size = Vector2(200, 36)
+	close.pressed.connect(_close_service)
+	service_panel.add_child(close)
+	root.add_child(service_panel)
+	service_panel.hide()
 	var overlay := CanvasLayer.new()
 	overlay.layer = 10
 	add_child(overlay)
@@ -154,19 +215,36 @@ func _label(parent: Node, text: String, pos: Vector2, size: int, color: Color) -
 	return label
 
 func start_game() -> void:
+	if in_hub: _new_run()
+	in_hub = false
 	active = true
 	start_panel.hide()
 
 func restart_run() -> void:
 	if transitioning: return
-	dungeon = DungeonState.new()
+	_new_run()
+	in_hub = false
+	active = true
+	start_panel.hide()
+
+func _new_run() -> void:
+	dungeon = DungeonState.new(seed_override)
 	combat = CombatState.new(FLOOR, PILLARS)
+	combat.progression.rng.seed = dungeon.seed_value + 101
+	combat.progression.base_health = 6 + hub.training
+	combat.health = combat.progression.max_health()
+	if hub.seals > 0:
+		hub.seals -= 1
+		hub.save()
+		combat.progression.coins = 20
+	services = Services.new(dungeon, combat, hub)
 	reset_player()
-	combat.enter(dungeon.rooms[dungeon.current], player)
+	_enter_current()
 	death_panel.hide()
 	level_panel.hide()
+	service_panel.hide()
+	interacting = false
 	_update_room_label()
-	start_game()
 
 func reset_player() -> void:
 	if transitioning: return
@@ -188,7 +266,9 @@ func _notification(what: int) -> void:
 		focused = true
 
 func _input(event: InputEvent) -> void:
-	if not active or combat.progression.pending > 0:
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_E:
+		_interact()
+	if not active or interacting or combat.progression.pending > 0:
 		return
 	if event is InputEventScreenTouch:
 		if event.pressed and not transitioning and pointer == -1 and not pointer_mouse and _is_control_area(event.position):
@@ -218,7 +298,7 @@ func _is_control_area(pos: Vector2) -> bool:
 
 func _physics_process(delta: float) -> void:
 	clock += delta
-	if active and not transitioning and focused and combat.progression.pending == 0:
+	if active and not interacting and not transitioning and focused and combat.progression.pending == 0:
 		var direction := Vector2.ZERO
 		if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT): direction.x -= 1
 		if Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT): direction.x += 1
@@ -234,12 +314,15 @@ func _physics_process(delta: float) -> void:
 			if combat.health <= 0:
 				active = false
 				_release_stick()
+				outcome_title.text = "Your run has ended"
+				outcome_text.text = "Floor %d • %d enemies defeated\nKeys and seals are kept at the hub." % [dungeon.floor_number, combat.kills]
 				death_panel.show()
 	_update_combat_labels()
+	_update_interact()
 	queue_redraw()
 
 func move_player(motion: Vector2) -> void:
-	if transitioning or combat.progression.pending > 0: return
+	if transitioning or interacting or combat.progression.pending > 0: return
 	var old := player
 	# Substeps prevent tunnelling through pillars during frame stalls.
 	var steps := maxi(1, int(ceil(motion.length() / 5.0)))
@@ -254,7 +337,7 @@ func move_player(motion: Vector2) -> void:
 	_check_door(motion)
 
 func _check_door(motion: Vector2) -> void:
-	if not active or combat.progression.pending > 0: return
+	if not active or interacting or combat.progression.pending > 0: return
 	var direction := Vector2i.ZERO
 	if absf(player.x - 240) <= 28:
 		if player.y <= 186.1 and motion.y < 0: direction = Vector2i.UP
@@ -266,7 +349,7 @@ func _check_door(motion: Vector2) -> void:
 		_transition_to(direction)
 
 func _transition_to(direction: Vector2i) -> void:
-	if transitioning or combat.progression.pending > 0 or not dungeon.contains(dungeon.current + direction): return
+	if transitioning or interacting or combat.progression.pending > 0 or not dungeon.contains(dungeon.current + direction): return
 	transitioning = true
 	var tween := create_tween()
 	tween.tween_property(fade, "color:a", 1.0, 0.12)
@@ -276,7 +359,7 @@ func _transition_to(direction: Vector2i) -> void:
 		elif direction == Vector2i.LEFT: player = Vector2(408, 385)
 		elif direction == Vector2i.DOWN: player = Vector2(240, 214)
 		else: player = Vector2(240, 556)
-		combat.enter(dungeon.rooms[dungeon.current], player)
+		_enter_current()
 		_update_room_label()
 	)
 	tween.tween_property(fade, "color:a", 0.0, 0.12)
@@ -286,15 +369,17 @@ func _transition_to(direction: Vector2i) -> void:
 	)
 
 func _update_room_label() -> void:
-	status_label.text = "ROOM %s     •     FLOOR 01" % dungeon.room_name()
+	status_label.text = "%s • %s • FLOOR %d/3" % [dungeon.room_name(), dungeon.rooms[dungeon.current]["role"].to_upper(), dungeon.floor_number]
 
 func _update_combat_labels() -> void:
 	health_label.text = "HP  %d / %d" % [combat.health, combat.progression.max_health()]
 	health_label.modulate = Color("ff8b83") if combat.hurt_time > 0.7 else Color.WHITE
-	xp_label.text = "LV %d   XP %d/%d   •   %d COINS" % [combat.progression.level, combat.progression.xp, combat.progression.required_xp(), combat.progression.coins]
+	xp_label.text = "L%d XP %d/%d • %d C • %d F" % [combat.progression.level, combat.progression.xp, combat.progression.required_xp(), combat.progression.coins, combat.progression.flares]
 	build_label.text = "DMG %d  •  RATE %.1f/s  •  SPEED +%d%%  •  PIERCE %d" % [combat.progression.damage(), 1.0 / combat.progression.fire_interval(), combat.progression.ranks["movement"] * 10, combat.progression.ranks["piercing"]]
+	seed_label.text = "SEED %d • HUB %d KEYS / %d SEALS" % [dungeon.seed_value, hub.keys, hub.seals]
 	var alive: int = combat.alive_count()
 	encounter_label.text = "%d ENEMIES  •  %d DEFEATED" % [alive, combat.kills] if alive > 0 else "ROOM SAFE  •  %d DEFEATED" % combat.kills
+	if combat.progression.slow_time > 0: encounter_label.text += " • SLOW"
 
 func _blocked(pos: Vector2) -> bool:
 	for pillar in PILLARS:
@@ -326,6 +411,7 @@ func _draw() -> void:
 	draw_rect(Rect2(285, 108, 60, 5), Color("263348"))
 	draw_rect(Rect2(285, 108, 60.0 * combat.progression.xp / combat.progression.required_xp(), 5), Color("96c9ff"))
 	draw_string(font, Vector2(216, 401), dungeon.room_name(), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color(0.8, 0.85, 0.9, 0.18))
+	_draw_room_content()
 	for x in [76, 404]:
 		draw_circle(Vector2(x, 187), 26, Color(0.95, 0.55, 0.2, 0.045))
 		draw_rect(Rect2(x - 3, 175, 6, 15), Color("78634d"))
@@ -344,6 +430,12 @@ func _draw() -> void:
 		if actor.has("pillar"): _draw_pillar(actor["pillar"])
 		elif actor.has("enemy"): _draw_enemy(actor["enemy"])
 		elif combat.hurt_time <= 0 or int(clock * 14) % 2 == 0: _draw_player()
+	for enemy in combat.enemies:
+		if enemy["hp"] > 0 and enemy.get("telegraph", 0.0) > 0:
+			var origin: Vector2 = enemy["pos"]
+			draw_line(origin, origin + enemy["aim"] * 270, Color(1, 0.3, 0.3, 0.45), 4)
+	for bullet in combat.hostile_bullets:
+		draw_circle(bullet["pos"] + Vector2(0, -16), 6, Color("ff786f"))
 	for bullet in combat.bullets:
 		var tip: Vector2 = bullet["pos"] + Vector2(0, -16)
 		draw_line(tip - bullet["velocity"].normalized() * 12, tip, Color("f6c96c"), 3)
@@ -398,26 +490,42 @@ func _draw_minimap() -> void:
 		for x in range(5):
 			var cell := Vector2i(x, y)
 			var color := Color("263348")
-			if dungeon.rooms[cell]["visits"] > 0: color = Color("527b80")
+			if dungeon.rooms[cell]["role"] == "bonus": color = Color("5d588e")
+			if dungeon.rooms[cell]["role"] == "loot": color = Color("8d7544")
+			if dungeon.rooms[cell]["role"] == "trap": color = Color("8c4c55")
+			if dungeon.rooms[cell]["role"] == "boss": color = Color("da5757")
+			if dungeon.rooms[cell]["role"] == "start": color = Color("527b80")
 			if cell == dungeon.current: color = Color("dfbd78")
-			draw_rect(Rect2(359 + x * 16, 24 + y * 16, 12, 12), color)
+			var tile := Rect2(359 + x * 16, 24 + y * 16, 12, 12)
+			draw_rect(tile, color)
+			var role: String = dungeon.rooms[cell]["role"]
+			var symbol: String = {"combat": "C", "loot": "L", "trap": "!", "boss": "B", "start": "S", "empty": "."}.get(role, "?")
+			if role == "bonus": symbol = dungeon.rooms[cell]["service"].left(1).to_upper()
+			draw_string(font, tile.position + Vector2(2, 10), symbol, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color("101a29") if cell == dungeon.current else Color("e0d8c8"))
+			if dungeon.rooms[cell]["visits"] > 0: draw_rect(tile, Color("69d4b8"), false, 1)
 
 func _draw_enemy(enemy: Dictionary) -> void:
 	var pos: Vector2 = enemy["pos"]
 	_draw_shadow(pos + Vector2(0, 3), Vector2(16, 7), Color(0, 0, 0, 0.35))
-	var color := Color("ffecce") if enemy["flash"] > 0 else Color("c85e72")
-	draw_circle(pos + Vector2(0, -13), 15, color)
+	var base := Color("c85e72")
+	if enemy.get("kind", "") == "shooter": base = Color("be8be8")
+	if enemy.get("kind", "") == "brute": base = Color("db9a52")
+	if enemy.get("kind", "") == "boss": base = Color("e25151")
+	var color := Color("ffecce") if enemy["flash"] > 0 else base
+	draw_circle(pos + Vector2(0, -13), 23 if enemy.get("kind", "") == "boss" else 15, color)
 	draw_colored_polygon(PackedVector2Array([pos + Vector2(-12, -20), pos + Vector2(-12, -33), pos + Vector2(-3, -25)]), color)
 	draw_colored_polygon(PackedVector2Array([pos + Vector2(12, -20), pos + Vector2(12, -33), pos + Vector2(3, -25)]), color)
 	for x in [-5, 5]: draw_circle(pos + Vector2(x, -16), 2.5, Color("ffeaa4"))
 	draw_rect(Rect2(pos + Vector2(-17, -43), Vector2(34, 4)), Color("111a29"))
-	draw_rect(Rect2(pos + Vector2(-17, -43), Vector2(34.0 * enemy["hp"] / 3.0, 4)), Color("ed8392"))
+	draw_rect(Rect2(pos + Vector2(-17, -43), Vector2(34.0 * enemy["hp"] / enemy.get("max_hp", 3), 4)), Color("ed8392"))
 
-func _show_level_up() -> void:
+func _show_level_up(title: String = "") -> void:
 	_release_stick()
-	level_title.text = "LEVEL %d — CHOOSE A REWARD" % combat.progression.level
+	level_title.text = "LEVEL %d — CHOOSE A REWARD" % combat.progression.level if title.is_empty() else title
 	level_title.add_theme_font_size_override("font_size", 19)
 	for index in range(3):
+		card_buttons[index].visible = index < combat.progression.offers.size()
+		if index >= combat.progression.offers.size(): continue
 		var id: String = combat.progression.offers[index]
 		if id == "coins":
 			card_buttons[index].text = "+%d coins\nSave currency instead of an upgrade" % combat.progression.coin_reward()
@@ -434,3 +542,230 @@ func _choose_upgrade(index: int) -> void:
 		level_panel.hide()
 		combat.grace_time = maxf(combat.grace_time, 0.5)
 	_update_combat_labels()
+
+func _read_seed() -> void:
+	if OS.has_feature("web"):
+		var value = JavaScriptBridge.eval("new URLSearchParams(window.location.search).get('seed')")
+		if value != null and str(value).is_valid_int(): seed_override = int(value)
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--seed=") and arg.trim_prefix("--seed=").is_valid_int(): seed_override = int(arg.trim_prefix("--seed="))
+
+func _refresh_hub() -> void:
+	hub_label.text = "%d keys • %d seals • +%d starting HP\nA seal supplies 20 coins on your next run." % [hub.keys, hub.seals, hub.training]
+	if not hub.persistence_ok: hub_label.text += "\nStorage unavailable: progress is session-only."
+	train_button.disabled = hub.keys <= 0 or hub.training >= 3
+
+func _return_to_hub() -> void:
+	if transitioning or wheel_spinning: return
+	active = false
+	interacting = false
+	in_hub = true
+	_release_stick()
+	level_panel.hide()
+	death_panel.hide()
+	service_panel.hide()
+	_refresh_hub()
+	start_panel.show()
+
+func _enter_current() -> void:
+	combat.enter(dungeon.rooms[dungeon.current], player)
+	services.enter()
+
+func _update_interact() -> void:
+	interact_button.visible = active and not transitioning and not interacting and combat.progression.pending == 0
+	var state: Dictionary = dungeon.rooms[dungeon.current]
+	interact_button.disabled = combat.alive_count() > 0
+	match state["role"]:
+		"boss": interact_button.text = "Finish expedition" if dungeon.floor_number == 3 else "Descend to floor %d" % (dungeon.floor_number + 1)
+		"loot":
+			interact_button.text = "Chest opened" if state["used"] else "Open loot chest"
+			interact_button.disabled = interact_button.disabled or state["used"]
+		"bonus":
+			interact_button.text = "Visit travelling shop" if state.get("summoned_shop", false) else "Use %s" % state["service"].capitalize()
+			interact_button.disabled = state["used"] and state["service"] != "shop" and not state.get("summoned_shop", false)
+		_: interact_button.visible = false
+
+func _interact() -> void:
+	if not active or transitioning or interacting or combat.progression.pending > 0 or combat.alive_count() > 0: return
+	var state: Dictionary = dungeon.rooms[dungeon.current]
+	match state["role"]:
+		"boss": _advance_floor()
+		"loot":
+			if services.loot() and combat.progression.pending > 0: _show_level_up("LOOT — CHOOSE A REWARD")
+		"bonus":
+			if state.get("summoned_shop", false): _open_shop()
+			elif state["service"] == "shop": _open_shop()
+			elif state["service"] == "healer":
+				if not services.heal() and not state["used"]:
+					_menu("Healer", "You have full health. Return when wounded.\nThe healing service has not been spent.", [])
+			elif state["service"] == "upgrade":
+				if services.free_upgrade(): _show_level_up("FREE UPGRADE")
+			elif state["service"] == "trader": _begin_trade()
+			elif state["service"] == "wheel": _spin_wheel()
+	_update_combat_labels()
+	_update_interact()
+
+func _advance_floor() -> void:
+	var state: Dictionary = dungeon.rooms[dungeon.current]
+	if state["role"] != "boss" or combat.alive_count() > 0 or not state["boss_paid"]: return
+	if dungeon.advance():
+		player = Vector2(240, 530)
+		_release_stick()
+		_enter_current()
+		_update_room_label()
+		transitioning = true
+		fade.color.a = 1
+		var tween := create_tween()
+		tween.tween_property(fade, "color:a", 0.0, 0.35)
+		tween.tween_callback(func():
+			transitioning = false
+			transition_finished.emit()
+		)
+	else:
+		active = false
+		_release_stick()
+		outcome_title.text = "Three floors conquered!"
+		outcome_title.add_theme_font_size_override("font_size", 21)
+		outcome_text.text = "Level %d • %d enemies defeated\n%d coins • %d flares remaining\nReturn to the hub. Floor 4 is disabled." % [combat.progression.level, combat.kills, combat.progression.coins, combat.progression.flares]
+		death_panel.show()
+
+func _menu(title: String, description: String, options: Array, columns: int = 1) -> void:
+	interacting = true
+	_release_stick()
+	service_title.text = title
+	service_description.text = description
+	for index in range(service_buttons.size()):
+		var button := service_buttons[index]
+		for connection in button.pressed.get_connections(): button.pressed.disconnect(connection["callable"])
+		button.visible = index < options.size()
+		if not button.visible: continue
+		button.text = options[index]["text"]
+		button.disabled = options[index].get("disabled", false)
+		if columns == 2:
+			button.position = Vector2(20 + (index % 2) * 195, 112 + int(index / 2) * 76)
+			button.size = Vector2(185, 65)
+		else:
+			button.position = Vector2(20, 104 + index * 42)
+			button.size = Vector2(380, 38)
+		button.pressed.connect(options[index]["action"])
+	service_panel.show()
+
+func _close_service() -> void:
+	service_panel.hide()
+	interacting = false
+	_release_stick()
+	combat.grace_time = maxf(combat.grace_time, 0.5)
+
+func _open_shop(message: String = "") -> void:
+	var stock: Dictionary = services.state()["stock"]
+	var options: Array = []
+	# Alternating indices form permanent-left / run-right columns.
+	for item in [["key", "Hub key • 20 coins"], ["upgrade", "Upgrade choice • 20 F"], ["seal", "Supply seal • 40 coins"], ["heal", "Heal 3 HP • 10 F"], ["", "Keys train +1 starting HP"], ["coins", "20 coins • 10 F"]]:
+		var id: String = item[0]
+		options.append({"text": item[1] + ("\nSOLD" if stock.get(id, false) else ""), "disabled": id.is_empty() or stock.get(id, false), "action": _shop_buy.bind(id)})
+	_menu("Shop • permanent / this run", "Left: hub items (coins). Right: run help (flares).\n%d coins • %d flares\n%s" % [combat.progression.coins, combat.progression.flares, message], options, 2)
+
+func _shop_buy(id: String) -> void:
+	var message: String = services.buy(id)
+	if combat.progression.pending > 0:
+		_close_service()
+		_show_level_up("SHOP — CHOOSE A REWARD")
+	else: _open_shop(message)
+	_update_combat_labels()
+
+func _begin_trade() -> void:
+	if services.state().get("trade_used", false): return
+	var options: Array = []
+	for id in services.tradable_owned():
+		options.append({"text": "Exchange one %s" % combat.progression.UPGRADES[id][0], "action": _trade_select_old.bind(id)})
+	_menu("Upgrade trader", "Choose the upgrade rank to surrender.\nNo upgrade is removed until you confirm." if not options.is_empty() else "You need an owned upgrade and three eligible replacements.", options)
+
+func _trade_select_old(old: String) -> void:
+	var state: Dictionary = services.state()
+	if not state.has("trade_offers"): state["trade_offers"] = {}
+	if not state["trade_offers"].has(old): state["trade_offers"][old] = services.trade_options(old)
+	var offered: Array[String] = state["trade_offers"][old]
+	var options: Array = []
+	if offered.size() == 3:
+		for replacement in offered:
+			options.append({"text": combat.progression.UPGRADES[replacement][0], "action": _trade_finish.bind(old, replacement, offered)})
+	_menu("Choose a replacement", "Surrender one %s for one of these three." % combat.progression.UPGRADES[old][0] if offered.size() == 3 else "Not enough eligible replacements. Nothing spent.", options)
+
+func _trade_finish(old: String, replacement: String, offered: Array[String]) -> void:
+	if services.trade(old, replacement, offered): _close_service()
+
+var wheel_spinning := false
+
+func _spin_wheel() -> void:
+	var state: Dictionary = services.state()
+	if state["used"]: return
+	state["used"] = true
+	wheel_spinning = true
+	interacting = true
+	_release_stick()
+	var result: int = dungeon.rng.randi_range(0, 4)
+	var target_angle := -PI / 2 - (result + 0.5) * TAU / 5
+	var remaining := fposmod(target_angle - wheel_rotation, TAU)
+	var tween := create_tween()
+	tween.tween_property(self, "wheel_rotation", wheel_rotation + TAU * 3 + remaining, 0.9).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_callback(func():
+		wheel_spinning = false
+		interacting = false
+		match result:
+			0:
+				combat.health = mini(combat.progression.max_health(), combat.health + 3)
+				_menu("Wheel: healing", "Recovered up to 3 HP.", [])
+			1:
+				combat.progression.coins += 20
+				_menu("Wheel: coins", "You gained 20 coins.", [])
+			2:
+				combat.progression.reward_choices(2, false)
+				_show_level_up("WHEEL — CHOOSE AN UPGRADE")
+			3:
+				if services.tradable_owned().is_empty():
+					combat.progression.coins += 20
+					_menu("Wheel: trade", "No eligible trade; received 20 coins instead.", [])
+				else:
+					state["wheel_trade"] = true
+					_begin_trade()
+			4:
+				state["summoned_shop"] = true
+				_open_shop("A shopkeeper answered the wheel.")
+	)
+
+func _draw_room_content() -> void:
+	var state: Dictionary = dungeon.rooms[dungeon.current]
+	var role: String = state["role"]
+	var center := Vector2(240, 385)
+	if role == "loot":
+		draw_rect(Rect2(center - Vector2(24, 17), Vector2(48, 32)), Color("806445") if state["used"] else Color("c99a4b"))
+		draw_line(center + Vector2(0, -17), center + Vector2(0, 15), Color("f6d080"), 5)
+	elif role == "bonus":
+		var label: String = state["service"].to_upper()
+		if state["service"] == "wheel":
+			var colors := [Color("69d4b8"), Color("dfbd78"), Color("96c9ff"), Color("be8be8"), Color("e88a81")]
+			for i in range(5):
+				var points := PackedVector2Array([center])
+				for part in range(9):
+					var angle := wheel_rotation + (i + part / 8.0) * TAU / 5
+					points.append(center + Vector2.from_angle(angle) * 43)
+				draw_colored_polygon(points, colors[i])
+			draw_colored_polygon(PackedVector2Array([center + Vector2(-7, -51), center + Vector2(7, -51), center + Vector2(0, -39)]), Color.WHITE)
+		else:
+			draw_circle(center, 32, Color("5d588e"))
+			draw_string(font, center + Vector2(-8, 7), label.left(1), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color("eee5cc"))
+		draw_string(font, center + Vector2(-45, 65), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("dfbd78"))
+	elif role == "trap":
+		var trap: int = state["trap"]
+		var color := Color("be8be8") if trap == 0 else Color("ff786f")
+		draw_arc(center, 100 if trap == 0 else 80, 0, TAU, 48, color, 2)
+		if state["trap_time"] < 0.7:
+			draw_circle(center, 80, Color(1, 0.3, 0.3, 0.12))
+			if trap == 2:
+				for x in [180, 240, 300]: draw_line(Vector2(x, 195), Vector2(x, 580), Color(1, 0.3, 0.3, 0.3), 3)
+		draw_string(font, center + Vector2(-44, 5), ["SLOW FIELD", "SPIKES", "VOLLEY"][trap], HORIZONTAL_ALIGNMENT_LEFT, -1, 13, color)
+	elif role == "boss" and combat.alive_count() == 0:
+		draw_circle(center, 30, Color("69d4b8"))
+		draw_string(font, center + Vector2(-23, 5), "EXIT", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("132030"))
+	elif role == "empty":
+		draw_string(font, center + Vector2(-34, 40), "QUIET" if dungeon.floor_number < 3 else "AWAKENED", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("96a3b6"))

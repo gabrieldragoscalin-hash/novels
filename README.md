@@ -1,97 +1,71 @@
-# Dungeon — First Steps
+# Dungeon — three-floor prototype
 
-A Godot 4.6.3 roguelite prototype. The agreed concept is in [GAME_DESIGN.md](GAME_DESIGN.md).
+A Godot **4.6.3 / GDScript** roguelite prototype for browser, desktop development,
+and mobile browser testing. [Play on GitHub Pages](https://gabrieldragoscalin-hash.github.io/novels/).
 
-## First playable
+[GAME_DESIGN.md](GAME_DESIGN.md) records the intended design.
+[BALANCING.md](BALANCING.md) describes the implemented rules, defaults, controls,
+seed reproduction, and what remains outside this three-floor build.
 
-A connected 5×5 dungeon with 25 rooms, automatic ranged combat, an original placeholder adventurer,
-angled wall/pillar artwork, collision, keyboard movement, and a floating touch
-joystick. Walk into the centre of an open doorway to travel with a short fade.
-A minimap highlights your current room in gold and visited rooms in teal; room
-colours and coordinate markings help orientation. Doors at the outside of the
-map are solid walls. Holding movement continues naturally after a transition.
+## Play
 
-This milestone starts in the safe room A1. Some rooms are empty; others have
-1–3 chasing enemies. Your adventurer automatically fires at the nearest enemy
-with a clear line of sight, even while moving. Pillars block shots and enemies
-navigate around them. Enemies take three hits and deal contact damage, with a
-short invulnerability window after you are hit. You have six health points.
-Doors stay open so you can retreat. Enemy health and defeats persist on revisits;
-projectiles disappear on room changes. A brief arrival grace period protects
-against immediate contact damage. Combat pauses when the app loses focus.
+Enter from the hub. On iPhone, touch and drag anywhere to move; the joystick appears
+under your finger. On desktop use WASD/arrows. Attacks aim and fire while moving.
+Walk through doors; tap the action button or press **E** for services/chests/exits.
 
-Death offers a new run, and **Restart run** resets health, enemies, and exploration.
-Enemies now drop blue XP crystals. Walk near them to collect; nearby crystals
-are attracted to you when no pillar blocks the way. Uncollected crystals remain
-in their room. Two enemies give the first level-up; later levels need more XP.
-Leveling pauses combat and movement until you choose one of **two different
-upgrades or 20 coins**. Overflow XP queues additional choices without losing XP.
+A fresh 5×5 map is generated per expedition. Its identities persist through three
+floors, with moving starts/bosses, tougher encounters, and rotating services.
+Loot is unguarded on floor 1; defenders arrive on floor 2. Initially empty rooms
+awaken with weaker enemies on floor 3. Defeating the third boss ends the expedition.
 
-The initial upgrade pool is damage, attack speed, movement speed, piercing shots,
-and maximum health (which also heals two HP). The HUD shows level, XP, coins, and
-build statistics. Upgrades and coins last across rooms and reset on a new run.
-Coins are tracked but cannot be spent yet; shops come later.
+Core features: three enemy archetypes and a telegraphed boss; XP pickups and upgrade
+choices; coins/flares; loot, three trap effects, shop, trader, free upgrade, wheel,
+healer; and device-local hub keys, supply seals, and training. Menus pause combat.
+Doors stay open. Room rewards and enemy state cannot be farmed by revisiting.
 
-The layout and encounters remain deterministic for this prototype. Random room
-types, random start/boss placement, other rewards, melee, floor progression,
-the hub, and persistent saves come later.
+Use [`?seed=9`](https://gabrieldragoscalin-hash.github.io/novels/?seed=9) to repeat a
+layout for balance testing. These numbers are defaults, not a claim of fair balance.
+Art is original procedural placeholder graphics. Melee, advanced room adjacency
+constraints, floors 4+, final art/audio, and cloud accounts are not implemented.
 
-On iPhone: tap **Enter the dungeon**, then touch and drag anywhere on the game to move. The joystick appears beneath
-your finger and disappears when released; interface buttons remain usable.
-Release to stop. On desktop: use WASD or arrow keys. **Restart run** starts over in A1. Doorway arrows show available neighbouring rooms.
+## Develop and test
 
-## Open locally
-
-Import `project.godot` in **Godot 4.6.3**, then press F6/F5 to play.
-No third-party assets or paid services are required.
+Import `project.godot` in Godot 4.6.3 and press F5. No external assets are needed.
 
 ```sh
 godot --headless --editor --path . --import
 godot --headless --path . --script tests/smoke.gd
 godot --headless --path . --script tests/combat_smoke.gd
 godot --headless --path . --script tests/progression_smoke.gd
+godot --headless --path . --script tests/floors_smoke.gd
+godot --headless --path . --script tests/services_smoke.gd
 ```
 
-## Browser build and GitHub Pages
+Floor tests cover 80 seeds through all three floors and actual projectile boss
+kills. Service tests cover wheel outcomes, traps, finite rewards, and local saves.
+`tests/describe_run.gd` prints the seed-9 map used by the browser checks.
 
-The workflow in `.github/workflows/pages.yml` builds and deploys on pushes to
-`main`, or from **Actions → Build and deploy game → Run workflow**. Set
-**Settings → Pages → Source → GitHub Actions**. A branch-based Pages source will
-not deploy this Godot project correctly. The workflow downloads the pinned editor
-and templates from the official Godot release and checks their published SHA-512
-checksums before use.
+## Export and deploy
 
-Expected project URL after a successful deployment:
-https://gabrieldragoscalin-hash.github.io/novels/
+Pushes to `main` trigger `.github/workflows/pages.yml`, which installs a pinned,
+checksum-verified Godot release, runs runtime tests, exports, and deploys Pages.
+Set **Settings → Pages → Source → GitHub Actions**. The single-threaded
+Compatibility-renderer Web export needs no cross-origin-isolation headers.
 
-For a local export, install the matching Godot export templates, then:
+For local browser testing, install matching Godot export templates:
 
 ```sh
 mkdir -p build/web
 godot --headless --path . --export-release Web build/web/index.html
-python3 -m http.server 8000 --directory build/web
+python3 -m http.server 8765 --directory build/web
 ```
 
-Open the served page through HTTP rather than opening `index.html` as a file.
-The export uses the Compatibility renderer and **single-threaded WebAssembly**,
-so GitHub Pages does not need cross-origin-isolation headers. Actual iPhone
-Safari performance and touch behaviour still need device testing.
+Serve over HTTP; do not open the exported HTML as a local file.
+Optional browser checks require Playwright, Pillow, and an installed Chromium:
+`python3 tests/browser_smoke.py` (or pass an alternate served URL). They exercise
+mobile input, doors, services, purchases, upgrades, and the hub. Actual iPhone
+Safari remains part of device testing. Local progress is specific to the browser
+and origin; it is not synchronized across devices.
 
-## Project layout
-
-- `scenes/room.tscn`: entry scene.
-- `scripts/room.gd`: room drawing, collision, input, transitions, and interface.
-- `scripts/dungeon.gd`: grid bounds, coordinates, and per-room encounter state.
-- `scripts/combat.gd`: targeting, projectiles, enemies, health, damage, and XP pickups.
-- `scripts/progression.gd`: run levels, upgrade offers, stats, and coins.
-- `tests/smoke.gd`: movement and room-travel checks.
-- `tests/combat_smoke.gd`: combat, persistence, and death/restart checks.
-- `tests/progression_smoke.gd`: XP, choice, upgrade, pause, and reset checks.
-- `tests/browser_smoke.py`: optional Chromium touch/keyboard checks (requires
-  Playwright and Pillow). Serve the export on port 8765, then run
-  `python3 tests/browser_smoke.py`; an alternate URL can be passed as an argument.
-- `export_presets.cfg`: browser export configuration.
-
-The first prototype uses procedural placeholder graphics. Its appearance is not
-final art. Future combat and dungeon systems should be split into their own scenes
-and scripts as they are introduced.
+Scripts are separated into dungeon generation, combat, progression, services,
+hub persistence, and the room/interface controller under `scripts/`.

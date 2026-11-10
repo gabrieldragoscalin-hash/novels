@@ -7,6 +7,10 @@ func run() -> void:
 	var room = load("res://scenes/room.tscn").instantiate()
 	root.add_child(room)
 	assert(not room.active, "Start screen must pause movement")
+	room.hub.enabled = false
+	room.hub.keys = 0
+	room.hub.seals = 0
+	room.hub.training = 0
 	room.start_game()
 	assert(room.active and not room.start_panel.visible)
 	room.move_player(Vector2(0, -30))
@@ -48,6 +52,8 @@ func run() -> void:
 	assert(room.pointer == -1, "Losing focus must release movement")
 	room.reset_player()
 	assert(room.player == Vector2(240, 530))
+	for state in room.dungeon.rooms.values(): state["visits"] = 0
+	room.dungeon.enter(Vector2i.ZERO)
 	# Traverse every room in a snake, then return through the same doors.
 	var route: Array[Vector2i] = []
 	for y in range(5):

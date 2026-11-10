@@ -66,6 +66,9 @@ func run() -> void:
 
 	var room = load("res://scenes/room.tscn").instantiate()
 	root.add_child(room)
+	room.hub.enabled = false
+	room.hub.training = 0
+	room.hub.seals = 0
 	room.start_game()
 	room.combat.progression.add_xp(4)
 	room._show_level_up()
