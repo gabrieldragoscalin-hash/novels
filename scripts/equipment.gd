@@ -2,9 +2,12 @@ extends RefCounted
 ## Item templates. Hub stores individually identified copies, levels and rarities.
 const MAX_LEVEL := 5
 const ITEMS := {
-	"bow": {"name": "Ranger bow", "slot": "weapon", "description": "Balanced bolts. Reliable attack speed."},
-	"crossbow": {"name": "Iron crossbow", "slot": "weapon", "description": "Heavy, slower bolts; pierces one enemy."},
-	"wand": {"name": "Ember wand", "slot": "weapon", "description": "Fast magic orbs with 10% base critical chance."},
+	"bow": {"name": "Ranger bow", "slot": "weapon", "description": "Normal arrows with balanced damage and speed."},
+	"crossbow": {"name": "Iron crossbow", "slot": "weapon", "description": "Bigger arrows, slower attacks and higher damage."},
+	"wand": {"name": "Ember wand", "slot": "weapon", "description": "Magic beams that pass through obstacles."},
+	"sword": {"name":"Vanguard sword","slot":"weapon","description":"Slashes a forward arc at close range."},
+	"hammer": {"name":"Earthshaker hammer","slot":"weapon","description":"Forward cone shockwaves hit an area."},
+	"chakram": {"name":"Gale chakram","slot":"weapon","description":"Thrown disc chains to three more enemies with reduced damage."},
 	"vest": {"name": "Warden vest", "slot": "armor", "description": "Adds maximum health."},
 	"boots": {"name": "Scout boots", "slot": "boots", "description": "Adds movement speed."},
 	"hood": {"name": "Pathfinder hood", "slot": "headgear", "description": "Adds maximum health."},
@@ -24,12 +27,21 @@ static func stats(id: String, level: int) -> Dictionary:
 			result["damage"] = 2 + level - 1
 			result["interval"] = 0.72
 			result["projectile_speed"] = 470.0
-			result["pierce"] = 1
+			result["pierce"] = 0
 		"wand":
 			result["damage"] = 1 + int((level - 1) / 2)
 			result["interval"] = 0.34
 			result["projectile_speed"] = 320.0
 			result["critical"] = 0.1
+		"sword":
+			result["damage"] = 3 + level - 1
+			result["interval"] = 0.65
+		"hammer":
+			result["damage"] = 4 + level - 1
+			result["interval"] = 1.0
+		"chakram":
+			result["damage"] = 2 + level - 1
+			result["interval"] = 0.7
 		"vest": result["health"] = 1 + level
 		"hood": result["health"] = level
 		"pants": result["movement"] = 0.05 + (level - 1) * 0.02

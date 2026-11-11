@@ -336,3 +336,25 @@ func record_floor(value: int) -> void:
 
 func pet_slot_unlocked() -> bool:
 	return highest_floor >= 10
+
+# Ascending passes cascade common -> uncommon -> rare -> epic, never consume epic.
+func quick_synthesis() -> int:
+	var merged := 0
+	for rarity in range(3):
+		var changed := true
+		while changed:
+			changed = false
+			var order: Array[String] = sorted_items(true)
+			# Prefer equipped bases, then the highest level, retaining invested levels.
+			order.sort_custom(func(a,b):
+				if equipped.values().has(a) != equipped.values().has(b): return equipped.values().has(a)
+				return inventory[a]["level"] > inventory[b]["level"] if inventory[a]["level"] != inventory[b]["level"] else a < b)
+			for uid in order:
+				if inventory[uid]["rarity"] != rarity: continue
+				var ingredients := synthesis_candidates(uid)
+				# Spend the lowest-level copies first.
+				ingredients.sort_custom(func(a,b): return inventory[a]["level"] < inventory[b]["level"] if inventory[a]["level"] != inventory[b]["level"] else a < b)
+				if ingredients.size() < 3: continue
+				var selected: Array[String] = [ingredients[0],ingredients[1],ingredients[2]]
+				if synthesize(uid,selected): merged += 1; changed = true; break
+	return merged

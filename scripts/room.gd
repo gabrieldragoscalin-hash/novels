@@ -467,17 +467,60 @@ func _draw() -> void:
 	for bullet in combat.hostile_bullets:
 		draw_circle(bullet["pos"] + Vector2(0, -16), 6, Color("ff786f"))
 	for bullet in combat.bullets:
-		var tip: Vector2 = bullet["pos"] + Vector2(0, -16)
-		var bolt_color := Color("96c9ff") if combat.progression.weapon == "wand" else Color("f6c96c")
-		if bullet.get("critical", false): bolt_color = Color("ff9773")
-		draw_line(tip - bullet["velocity"].normalized() * 12, tip, bolt_color, 3)
-		draw_circle(tip, 3, bolt_color)
+		var tip: Vector2 = bullet["pos"] + Vector2(0,-16)
+		var direction: Vector2 = bullet["velocity"].normalized()
+		var kind: String = bullet.get("kind",combat.progression.weapon)
+		var radius: float = bullet.get("radius",4.0)
+		if kind == "chakram":
+			draw_arc(tip,9,clock*12,clock*12+5.4,18,Color("8ce7c3"),3)
+		elif kind == "rolling_meteor":
+			draw_circle(tip,radius,Color("bd6c42")); draw_arc(tip,radius,clock*5,clock*5+3,16,Color("ffd48a"),3)
+		elif kind == "wand":
+			draw_line(tip-direction*34,tip,Color("6b94e9"),7)
+			draw_line(tip-direction*34,tip,Color("d1e9ff"),3)
+		else:
+			var color := Color("ff956b") if bullet.get("explosive",false) else Color("f6c96c")
+			var length := radius*3
+			draw_line(tip-direction*length,tip,color,maxf(2,radius*0.5))
+			draw_line(tip-direction*radius+direction.orthogonal()*radius*0.6,tip,color,2)
+			draw_line(tip-direction*radius-direction.orthogonal()*radius*0.6,tip,color,2)
+	_draw_weapon_effects()
 	for impact in combat.impacts:
 		draw_arc(impact["pos"] + Vector2(0, -16), (0.22 - impact["life"]) * 85 + 3, 0, TAU, 12, Color(1, 0.8, 0.4, impact["life"] / 0.22), 2)
 	if pointer != -1 or pointer_mouse:
 		draw_circle(stick_origin, 48, Color(0.5, 0.75, 0.85, 0.12))
 		draw_arc(stick_origin, 48, 0, TAU, 48, Color("7193a6"), 2)
 		draw_circle(stick_origin + (stick_position - stick_origin).limit_length(45), 20, Color("48b9a8"))
+
+func _draw_weapon_effects() -> void:
+	for meteor in combat.arsenal.meteors:
+		var pos: Vector2 = meteor["pos"]
+		var radius: float = meteor["radius"]
+		draw_arc(pos,radius,0,TAU,28,Color(1,0.5,0.25,0.65),2)
+		var falling: Vector2 = pos+Vector2(0,-16-meteor["delay"]*240)
+		draw_line(falling+Vector2(-12,-24),falling,Color("f3a250"),7)
+		draw_circle(falling,radius*0.55,Color("c07647"))
+	for effect in combat.arsenal.effects:
+		var kind: String = effect["kind"]
+		var pos: Vector2 = effect["pos"]+Vector2(0,-16)
+		var fade: float = effect["life"]/effect["duration"]
+		if kind == "laser":
+			draw_line(pos,effect["end"]+Vector2(0,-16),Color(0.4,0.7,1,fade*0.7),7)
+			draw_line(pos,effect["end"]+Vector2(0,-16),Color(0.8,0.95,1,fade),2)
+		elif kind == "explosion":
+			draw_circle(pos,effect["radius"]*(1-fade*0.3),Color(1,0.45,0.15,fade*0.3))
+			draw_arc(pos,effect["radius"]*(1-fade*0.3),0,TAU,32,Color(1,0.8,0.3,fade),3)
+		else:
+			var angle: float = effect["direction"].angle()
+			var spread: float = effect["angle"]
+			if kind == "wave":
+				for wave in range(3): draw_arc(pos,effect["radius"]*(1-fade*0.65)-wave*10,angle-spread,angle+spread,24,Color(0.8,0.65,0.35,fade),3)
+			else:
+				draw_arc(pos,effect["radius"],angle-spread,angle+spread,24,Color(0.75,0.9,1,fade),5)
+				var sweep: float = lerpf(-spread,spread,1-fade) * (-1 if effect["reverse"] else 1)
+				draw_line(pos,pos+Vector2.from_angle(angle+sweep)*effect["radius"],Color(0.9,0.96,1,fade),4)
+	if combat.arsenal.charge > 0:
+		draw_arc(player+Vector2(0,-18),24,-PI/2,-PI/2+TAU*combat.arsenal.charge/3,32,Color("f6d58a"),4)
 
 func _draw_shadow(center: Vector2, radii: Vector2, color: Color) -> void:
 	var points := PackedVector2Array()
@@ -564,7 +607,7 @@ func _show_level_up(title: String = "") -> void:
 		if id == "coins":
 			card_buttons[index].text = "+%d coins\nSave currency instead of an upgrade" % combat.progression.coin_reward()
 		else:
-			var info: Array = combat.progression.UPGRADES[id]
+			var info: Array = combat.progression.upgrade_info(id)
 			card_buttons[index].text = "%s\n%s" % [info[0], info[1]]
 	level_panel.show()
 
@@ -720,7 +763,7 @@ func _begin_trade() -> void:
 	if services.state().get("trade_used", false): return
 	var options: Array = []
 	for id in services.tradable_owned():
-		options.append({"text": "Exchange one %s" % combat.progression.UPGRADES[id][0], "action": _trade_select_old.bind(id)})
+		options.append({"text": "Exchange one %s" % combat.progression.upgrade_info(id)[0], "action": _trade_select_old.bind(id)})
 	_menu("Upgrade trader", "Choose the upgrade rank to surrender.\nNo upgrade is removed until you confirm." if not options.is_empty() else "You need an owned upgrade and three eligible replacements.", options)
 
 func _trade_select_old(old: String) -> void:
@@ -731,8 +774,8 @@ func _trade_select_old(old: String) -> void:
 	var options: Array = []
 	if offered.size() == 3:
 		for replacement in offered:
-			options.append({"text": combat.progression.UPGRADES[replacement][0], "action": _trade_finish.bind(old, replacement, offered)})
-	_menu("Choose a replacement", "Surrender one %s for one of these three." % combat.progression.UPGRADES[old][0] if offered.size() == 3 else "Not enough eligible replacements. Nothing spent.", options)
+			options.append({"text": combat.progression.upgrade_info(replacement)[0], "action": _trade_finish.bind(old, replacement, offered)})
+	_menu("Choose a replacement", "Surrender one %s for one of these three." % combat.progression.upgrade_info(old)[0] if offered.size() == 3 else "Not enough eligible replacements. Nothing spent.", options)
 
 func _trade_finish(old: String, replacement: String, offered: Array[String]) -> void:
 	if services.trade(old, replacement, offered): _close_service()

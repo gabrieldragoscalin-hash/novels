@@ -1,21 +1,25 @@
 extends RefCounted
 ## All values belong to one run. Upgrade offers are generated once per level.
 const UPGRADES := {
-	"damage": ["Heavy bolts", "+1 damage per shot"],
-	"attack_speed": ["Quick draw", "Fire 15% faster"],
-	"movement": ["Light feet", "+10% movement speed"],
-	"piercing": ["Piercing bolts", "Pass through 1 additional enemy"],
-	"health": ["Vitality", "+2 max HP and heal 2 HP"],
-	"critical": ["Deadeye", "+10% chance for double damage"],
-	"multishot": ["Split volley", "+1 side bolt per attack"],
-	"ricochet": ["Ricochet", "Bolts bounce off 1 additional wall"],
-	"frost": ["Frostbite", "Hits slow enemies for 2 seconds"],
-	"burn": ["Ember touch", "Hits burn for +1 damage/s for 3s"],
-	"magnet": ["Gatherer", "+40 XP pickup attraction range"],
-	"experience": ["Fast learner", "+20% experience gained"],
-	"regeneration": ["Second wind", "Recover 1 HP every 12s (faster per rank)"]
+	"damage":["Increased damage","+1 damage"],
+	"attack_speed":["Increased attack speed","Attack 15% faster"],
+	"movement":["Increased move speed","+10% movement speed"],
+	"experience":["Increased EXP gain","+20% experience gained"],
+	"piercing":["Punchthrough","Pass through one more enemy"],
+	"multishot":["Extra projectile","+1 parallel projectile"],
+	"multiple_shots":["Multiple Shots","+1 sequential attack per cycle"],
+	"ricochet":["Ricochet","Bounce to one more enemy; never off walls"],
+	"follow":["Follow","Projectiles home toward unhit enemies"],
+	"see_all":["See All","Attacks pass through obstacles"],
+	"arrow_split":["Arrow split","Split in 3 after the final hit.\nReplaces Explosive arrows."],
+	"stop_aim":["Stop and Aim","Stop to charge; move/3s to fire.\nDouble damage; always penetrates."],
+	"explosive":["Explosive arrows","Impact +70% splash.\nReplaces Arrow split."],
+	"perpetuum":["Perpetuum","Continuous laser.\nReplaces Magic Meteor."],
+	"meteor":["Magic Meteor","Falling area damage.\nReplaces Perpetuum."],
+
 }
-const CAPS := {"attack_speed": 8, "movement": 5, "piercing": 5, "critical": 5, "multishot": 2, "ricochet": 2, "frost": 3, "burn": 3, "magnet": 4, "experience": 3, "regeneration": 3}
+const ACTIVE := ["damage","attack_speed","movement","experience","piercing","multishot","multiple_shots","ricochet","follow","see_all","arrow_split","stop_aim","explosive","perpetuum","meteor"]
+const CAPS := {"attack_speed":8,"movement":5,"experience":3,"piercing":5,"multishot":5,"multiple_shots":5,"ricochet":5,"follow":1,"see_all":1,"arrow_split":1,"stop_aim":1,"explosive":1,"perpetuum":1,"meteor":1}
 var weapon := "bow"
 var weapon_level := 1
 var base_damage := 1
@@ -44,6 +48,7 @@ var slow_time := 0.0
 var pending := 0
 var ranks: Dictionary = {}
 var offers: Array[String] = []
+var seen_once: Array[String] = []
 var rng := RandomNumberGenerator.new()
 
 func _init() -> void:
@@ -65,7 +70,7 @@ func add_xp(amount: int) -> void:
 func _roll_offers() -> void:
 	var pool := available_upgrades()
 	offers.clear()
-	for i in range(2):
+	for i in range(mini(2,pool.size())):
 		var index := rng.randi_range(0, pool.size() - 1)
 		offers.append(pool[index])
 		pool.remove_at(index)
@@ -78,7 +83,7 @@ func choose(index: int) -> String:
 	if pending <= 0 or index < 0 or index >= offers.size(): return ""
 	var id := offers[index]
 	if id == "coins": coins += coin_reward()
-	else: ranks[id] += 1
+	else: grant_upgrade(id)
 	pending -= 1
 	offers.clear()
 	if pending > 0: _roll_offers()
@@ -94,11 +99,15 @@ func movement_multiplier() -> float:
 	return (1.0 + gear_movement + ranks["movement"] * 0.1) * (0.65 if slow_time > 0 else 1.0)
 
 func max_health() -> int:
-	return base_health + ranks["health"] * 2
+	return base_health
 
 func available_upgrades() -> Array[String]:
 	var pool: Array[String] = []
-	for id in UPGRADES:
+	for id in ACTIVE:
+		if id in ["arrow_split","stop_aim","explosive"] and weapon not in ["bow","crossbow"]: continue
+		if id in ["perpetuum","meteor"] and weapon != "wand": continue
+		if id == "see_all" and (weapon == "wand" or seen_once.has(id)): continue
+		if id in ["piercing","ricochet","follow"] and weapon in ["sword","hammer"]: continue
 		if CAPS.has(id) and ranks[id] >= CAPS[id]: continue
 		pool.append(id)
 	return pool
@@ -117,7 +126,7 @@ func xp_multiplier() -> float:
 	return 1.0 + gear_xp + ranks["experience"] * 0.2
 
 func critical_chance() -> float:
-	return minf(0.75, base_critical + ranks["critical"] * 0.1)
+	return minf(0.75,base_critical)
 
 func apply_loadout(stats: Dictionary) -> void:
 	weapon = stats["weapon"]
@@ -130,3 +139,22 @@ func apply_loadout(stats: Dictionary) -> void:
 	gear_movement = stats["movement"]
 	gear_xp = stats["xp"]
 	base_health += stats["health"]
+
+func grant_upgrade(id: String) -> void:
+	if not ranks.has(id): return
+	var opposite: String = {"arrow_split":"explosive","explosive":"arrow_split","perpetuum":"meteor","meteor":"perpetuum"}.get(id,"")
+	if not opposite.is_empty(): ranks[opposite] = 0
+	ranks[id] += 1
+	if id == "see_all" and not seen_once.has(id): seen_once.append(id)
+
+func upgrade_info(id: String) -> Array:
+	if id == "multishot" and weapon == "sword": return ["Extra projectile","+1 alternating slash per attack"]
+	if id == "multishot" and weapon == "hammer": return ["Extra projectile","Wider cone; unchanged reach"]
+	if weapon == "wand" and ranks["meteor"] > 0:
+		if id == "piercing": return ["Meteor Size","+20% base meteor radius per rank"]
+		if id == "ricochet": return ["Meteor Rain","Cast on one more enemy per attack"]
+		if id == "follow": return ["Telekinesis","Roll after impact for 25% damage"]
+	return UPGRADES[id]
+
+func through_obstacles() -> bool:
+	return weapon == "wand" or ranks["see_all"] > 0

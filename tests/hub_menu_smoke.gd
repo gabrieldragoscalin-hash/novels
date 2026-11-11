@@ -16,6 +16,16 @@ func run() -> void:
 	menu.select_tab(1); assert(menu.inventory_grid.get_child_count() == h.inventory.size())
 	menu._toggle_synthesis(); assert(menu.synthesis_mode and menu.synthesis_top.visible)
 	for button in menu.slot_buttons.values(): assert(not button.visible)
+	var base: String = h.equipped["weapon"]
+	h.find_equipment("wand")
+	for i in range(3): h.find_equipment("bow")
+	menu._item_clicked(base)
+	await process_frame
+	assert(menu.inventory_grid.get_child_count() == 3, "Only valid ingredients are visible")
+	for button in menu.inventory_grid.get_children(): assert(not button.disabled)
+	menu._clear_synthesis()
+	menu._quick_synthesis()
+	assert(h.inventory[base]["rarity"] == 1)
 	menu._toggle_synthesis(); menu.dungeon_requested.connect(func(): departures += 1)
 	menu.select_tab(2); assert(departures == 0)
 	menu.dungeon_button.pressed.emit(); assert(departures == 1)

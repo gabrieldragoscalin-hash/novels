@@ -35,7 +35,7 @@ have teal outlines. All identities are shown in this prototype.
 Starter Common bow level1: 1 damage, 0.45s firing interval, movement185, HP6.
 Equipment and perks modify these values. Contact/projectiles deal 1 damage;
 hit immunity lasts 1s, arrival protection 0.7s. Bosses telegraph for 0.65s.
-Pillars block shots. Boss death clears hostile projectiles.
+Pillars block ordinary attacks. Boss death clears hostile projectiles.
 
 Normal enemies give 2 XP, bosses 8. Levels require 4,6,8,... XP. Coin choice:20.
 The XP magnet starts at radius110. Rarity multipliers and enhancement are defaults:
@@ -43,24 +43,10 @@ Common1, Uncommon1.15, Rare1.35, Epic1.7, Legendary2.3, Mythic3.6, with +0.25 pe
 synthesis enhancement. Weapons additionally gain +1 damage per enhancement;
 health-bearing equipment gains +1 HP per enhancement. Base item levels remain1–5.
 
-| Card | Effect per rank | Cap |
-| --- | --- | ---: |
-| Heavy bolts | +1 damage | None |
-| Quick draw | 15% faster firing | 8 |
-| Light feet | +10% movement | 5 |
-| Piercing bolts | +1 enemy pierced | 5 |
-| Vitality | +2 max HP, heal2 | None |
-| Deadeye | +10% double-damage chance | 5 |
-| Split volley | +1 side projectile | 2 |
-| Ricochet | +1 wall/pillar bounce | 2 |
-| Frostbite | 15% slow for2s | 3 |
-| Ember touch | 1 burn damage/s for3s | 3 |
-| Gatherer | +40 XP attraction radius | 4 |
-| Fast learner | +20% XP | 3 |
-| Second wind | Heal1 every12/8/6s | 3 |
-
-Fractional XP is retained. A projectile cannot hit the same enemy twice. Burn kills
-use the same single reward path. Equipment is not part of the trader's rank pool.
+Weapon-specific attacks, card eligibility, rank caps and interaction tuning are
+in [WEAPONS_SPEC.md](WEAPONS_SPEC.md). Wall ricochet and the old status cards have
+been replaced. Fractional XP and damage are retained; individual projectiles
+cannot hit the same enemy twice. Wands/See All bypass pillars; other attacks do not.
 
 ## Economy defaults
 
@@ -132,7 +118,7 @@ progress. Current runs are not saved; stored progress and coins survive death.
 - `scripts/hub_menu.gd`: shop, inventory, synthesis, perks, reserved gem UI.
 - `scripts/equipment.gd`: templates, item-level and rarity stat defaults.
 - `scripts/dungeon.gd`: room composition, enemies, floor limit.
-- `scripts/combat.gd`, `progression.gd`, `services.gd`: run combat/rewards.
+- `scripts/weapons.gd`, `combat.gd`, `progression.gd`, `services.gd`: run combat/rewards.
 
 Tests cover all synthesis recipes, duplicate identity, rejection without partial
 consumption, floor-key limits across reloads/days, pity and normal-gold resets,

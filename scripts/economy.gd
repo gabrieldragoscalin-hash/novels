@@ -29,7 +29,7 @@ static func part_for(slot: String) -> String:
 static func recipe(item: Dictionary) -> Dictionary:
 	var rarity: int = item["rarity"]
 	var plus: int = item["plus"]
-	if rarity == 0: return {"count":3,"exact":false,"fodder_plus":0,"rarity":1,"plus":0}
+	if rarity == 0: return {"count":3,"exact":true,"fodder_plus":0,"rarity":1,"plus":0}
 	if rarity in [1,2]: return {"count":3,"exact":true,"fodder_plus":0,"rarity":rarity+1,"plus":0}
 	if rarity == 3 and plus == 0: return {"count":2,"exact":false,"fodder_plus":0,"rarity":3,"plus":1}
 	if rarity == 3 and plus == 1: return {"count":1,"exact":true,"fodder_plus":1,"rarity":4,"plus":0}

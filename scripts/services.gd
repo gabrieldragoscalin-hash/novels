@@ -105,9 +105,8 @@ func trade(old: String, replacement: String, offered: Array[String]) -> bool:
 	if state()["role"] != "bonus" or (state()["service"] != "trader" and not state().get("wheel_trade", false)): return false
 	if state().get("trade_used", false) or not combat.progression.available_upgrades().has(replacement) or not offered.has(replacement) or not owned().has(old) or old == replacement: return false
 	combat.progression.ranks[old] -= 1
-	combat.progression.ranks[replacement] += 1
+	combat.progression.grant_upgrade(replacement)
 	combat.health = mini(combat.health, combat.progression.max_health())
-	if replacement == "health": combat.health = mini(combat.health + 2, combat.progression.max_health())
 	state()["used"] = true
 	state()["trade_used"] = true
 	return true

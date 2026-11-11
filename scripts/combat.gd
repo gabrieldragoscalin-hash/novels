@@ -8,6 +8,7 @@ const FIRE_INTERVAL := 0.45
 const BULLET_SPEED := 390.0
 const MAX_HEALTH := 6
 var progression = Progression.new()
+var arsenal
 var pickups: Array = []
 var item_drops: Array = []
 var collected_items: Array = []
@@ -29,6 +30,7 @@ var bounds: Rect2
 var obstacles: Array[Rect2]
 
 func _init(room_bounds: Rect2, pillars: Array[Rect2]) -> void:
+	arsenal = preload("res://scripts/weapons.gd").new(self)
 	bounds = room_bounds
 	obstacles = pillars
 	nav.region = Rect2i(0, 0, 25, 25)
@@ -42,6 +44,7 @@ func _init(room_bounds: Rect2, pillars: Array[Rect2]) -> void:
 			nav.set_point_solid(cell, blocked(nav.get_point_position(cell), 15))
 
 func enter(state: Dictionary, player: Vector2) -> void:
+	arsenal.reset(player)
 	bullets.clear()
 	hostile_bullets.clear()
 	room_state = state
@@ -103,80 +106,10 @@ func tick(delta: float, player: Vector2) -> void:
 	grace_time = maxf(0, grace_time - delta)
 	fire_time -= delta
 	progression.slow_time = maxf(0, progression.slow_time - delta)
-	if progression.ranks["regeneration"] > 0:
-		regeneration_time -= delta
-		if regeneration_time <= 0:
-			health = mini(progression.max_health(), health + 1)
-			regeneration_time = 12.0 / (1.0 + (progression.ranks["regeneration"] - 1) * 0.5)
 	for impact in impacts: impact["life"] -= delta
 	impacts = impacts.filter(func(impact): return impact["life"] > 0)
-	for enemy in enemies:
-		if enemy["hp"] <= 0: continue
-		enemy["frost_time"] = maxf(0, enemy.get("frost_time", 0.0) - delta)
-		if enemy.get("burn_time", 0.0) > 0:
-			var burning_delta: float = minf(delta, enemy["burn_time"])
-			enemy["burn_time"] -= burning_delta
-			enemy["burn_tick"] = enemy.get("burn_tick", 1.0) - burning_delta
-			while enemy["burn_tick"] <= 0 and enemy["hp"] > 0:
-				enemy["burn_tick"] += 1.0
-				_damage_enemy(enemy, enemy.get("burn_damage", 1))
-	# Target the nearest enemy with a clear shot. Moving never suppresses firing.
-	var target: Dictionary = {}
-	var closest := INF
-	for enemy in enemies:
-		if enemy["hp"] <= 0: continue
-		enemy["flash"] = maxf(0, enemy["flash"] - delta)
-		var distance: float = player.distance_squared_to(enemy["pos"])
-		if distance < closest and not wall_between(player, enemy["pos"]):
-			target = enemy
-			closest = distance
-	if not target.is_empty() and fire_time <= 0:
-		var angles := [0.0, -0.22, 0.22]
-		for shot in range(1 + progression.ranks["multishot"]):
-			var critical: bool = progression.rng.randf() < progression.critical_chance()
-			bullets.append({"pos": player, "velocity": player.direction_to(target["pos"]).rotated(angles[shot]) * progression.projectile_speed, "damage": progression.damage() * (2 if critical else 1), "critical": critical, "life": 1.6, "hits": [], "remaining": 1 + progression.base_pierce + progression.ranks["piercing"], "bounces": progression.ranks["ricochet"]})
-		fire_time = progression.fire_interval()
-	# Small swept steps prevent projectiles skipping walls or enemies on slow frames.
-	for bullet in bullets:
-		if not bullet.has("hits"): bullet["hits"] = []
-		if not bullet.has("remaining"): bullet["remaining"] = 1
-		bullet["life"] -= delta
-		if bullet["life"] <= 0: continue
-		var motion: Vector2 = bullet["velocity"] * delta
-		var steps := maxi(1, int(ceil(motion.length() / 5.0)))
-		for step in range(steps):
-			var next: Vector2 = bullet["pos"] + bullet["velocity"] * delta / steps
-			if not bounds.grow(-3).has_point(next) or wall_between(bullet["pos"], next):
-				if bullet.get("bounces", 0) > 0:
-					bullet["bounces"] -= 1
-					var x_probe := Vector2(next.x, bullet["pos"].y)
-					if not bounds.grow(-3).has_point(x_probe) or wall_between(bullet["pos"], x_probe): bullet["velocity"].x *= -1
-					else: bullet["velocity"].y *= -1
-					continue
-				bullet["life"] = 0
-				break
-			bullet["pos"] = next
-			var hit := false
-			for enemy_index in range(enemies.size()):
-				var enemy: Dictionary = enemies[enemy_index]
-				if enemy["hp"] > 0 and not bullet["hits"].has(enemy_index) and next.distance_to(enemy["pos"]) <= (27 if enemy.get("kind", "") == "boss" else 17):
-					_damage_enemy(enemy, bullet.get("damage", progression.damage()))
-					if enemy["hp"] > 0:
-						if progression.ranks["frost"] > 0:
-							enemy["frost_time"] = 2.0
-							enemy["frost_strength"] = progression.ranks["frost"] * 0.15
-						if progression.ranks["burn"] > 0:
-							enemy["burn_time"] = 3.0
-							enemy["burn_damage"] = progression.ranks["burn"]
-							if not enemy.has("burn_tick"): enemy["burn_tick"] = 1.0
-					bullet["hits"].append(enemy_index)
-					bullet["remaining"] -= 1
-					if bullet["remaining"] <= 0: bullet["life"] = 0
-					impacts.append({"pos": next, "life": 0.22})
-					hit = bullet["life"] <= 0
-					break
-			if hit: break
-	bullets = bullets.filter(func(bullet): return bullet["life"] > 0)
+	for enemy in enemies: enemy["flash"] = maxf(0,enemy.get("flash",0.0)-delta)
+	arsenal.tick(delta,player)
 	for index in range(item_drops.size()-1,-1,-1):
 		if item_drops[index]["pos"].distance_to(player) < 32:
 			collected_items.append(item_drops[index])
@@ -194,7 +127,6 @@ func tick(delta: float, player: Vector2) -> void:
 		if not enemy["path"].is_empty(): destination = enemy["path"][0]
 		var kind: String = enemy.get("kind", "normal")
 		var speed: float = ENEMY_SPEED + (enemy.get("tier", 1) - 1) * 6
-		if enemy.get("frost_time", 0.0) > 0: speed *= 1.0 - enemy.get("frost_strength", 0.15)
 		if kind == "brute": speed *= 0.65
 		if kind == "boss": speed *= 0.65
 		if kind == "shooter" and enemy["pos"].distance_to(player) < 160 and not wall_between(enemy["pos"], player): speed = 0
@@ -222,7 +154,7 @@ func _collect_xp(delta: float, player: Vector2) -> void:
 	for i in range(pickups.size() - 1, -1, -1):
 		var pickup: Dictionary = pickups[i]
 		var distance: float = pickup["pos"].distance_to(player)
-		if distance <= 110 + progression.ranks["magnet"] * 40 and not wall_between(pickup["pos"], player):
+		if distance <= 110 and not wall_between(pickup["pos"], player):
 			pickup["pos"] = pickup["pos"].move_toward(player, 240 * delta)
 		if pickup["pos"].distance_to(player) <= 20:
 			var amount: int = pickup["amount"]
@@ -236,7 +168,6 @@ func _collect_xp(delta: float, player: Vector2) -> void:
 func apply_choice(index: int) -> bool:
 	var choice: String = progression.choose(index)
 	if choice.is_empty(): return false
-	if choice == "health": health = mini(health + 2, progression.max_health())
 	return true
 
 func hurt(amount: int) -> void:
@@ -291,7 +222,7 @@ func _tick_trap(delta: float, player: Vector2) -> void:
 		for x in [180, 240, 300]:
 			hostile_bullets.append({"pos": Vector2(x, 195), "velocity": Vector2(0, 140), "life": 3.0})
 
-func _damage_enemy(enemy: Dictionary, amount: int) -> void:
+func _damage_enemy(enemy: Dictionary, amount: float) -> void:
 	if enemy["hp"] <= 0: return
 	enemy["hp"] -= amount * (1.0 + progression.boss_damage_bonus if enemy.get("kind", "") == "boss" else 1.0)
 	enemy["flash"] = 0.13

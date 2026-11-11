@@ -11,6 +11,8 @@ var room_picker: OptionButton
 var copies: SpinBox
 var run_buttons: Array[Button] = []
 var item_ids: Array = []
+var upgrade_picker: OptionButton
+var upgrade_ids: Array[String] = []
 var god_button: Button
 
 func setup(controller) -> void:
@@ -63,6 +65,8 @@ func setup(controller) -> void:
 	body.add_child(floor_picker)
 	_action("Start selected floor",start_floor)
 	_note("CURRENT RUN")
+	upgrade_picker = OptionButton.new(); body.add_child(upgrade_picker)
+	_action("Add selected run upgrade",give_upgrade,true)
 	god_button = _action("God mode",toggle_god,true)
 	_action("Heal to full",heal,true)
 	_action("+100 dungeon flares",flares,true)
@@ -91,6 +95,7 @@ func open() -> void:
 	game._release_stick()
 	for button in run_buttons: button.disabled = game.in_hub or not game.active
 	god_button.text = "God mode: %s" % ("ON" if game.combat.invincible else "OFF")
+	_refresh_upgrades()
 	status.text = "Combat paused. Permanent grants are saved."
 	show()
 
@@ -168,3 +173,16 @@ func _jump(pos: Vector2i) -> void:
 	game._release_stick(); game._enter_current(); game._update_room_label()
 	game._close_service()
 	hide()
+
+func _refresh_upgrades() -> void:
+	upgrade_ids = game.combat.progression.available_upgrades()
+	upgrade_picker.clear()
+	for id in upgrade_ids: upgrade_picker.add_item(game.combat.progression.upgrade_info(id)[0])
+	upgrade_picker.disabled = game.in_hub or not game.active
+
+func give_upgrade() -> void:
+	if game.in_hub or not game.active or upgrade_picker.selected < 0: return
+	var id: String = upgrade_ids[upgrade_picker.selected]
+	game.combat.progression.grant_upgrade(id)
+	status.text = "Added: " + game.combat.progression.upgrade_info(id)[0]
+	_refresh_upgrades()

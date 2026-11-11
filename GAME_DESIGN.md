@@ -1,6 +1,6 @@
 # Game design — current working specification
 
-Status: playable three-floor ranged roguelite prototype. This is a living design.
+Status: playable three-floor action roguelite prototype. This is a living design.
 [ECONOMY_SPEC.md](ECONOMY_SPEC.md) is the detailed economy/synthesis contract;
 [BALANCING.md](BALANCING.md) lists implementation defaults, controls and testing.
 
@@ -8,8 +8,8 @@ Status: playable three-floor ranged roguelite prototype. This is a living design
 
 Browser first, PC-download and mobile-adaptable Godot 4.6.3 / GDScript project.
 Three-quarter top-down presentation inspired by the camera angle of Archero, with
-original placeholder visuals and mechanics. Automatic ranged attacks continue
-while moving. Melee weapons and range upgrades are planned for later.
+original placeholder visuals and mechanics. Automatic attacks continue while moving. Six weapon families are playable;
+[WEAPONS_SPEC.md](WEAPONS_SPEC.md) defines their attacks and upgrade interactions.
 
 Prepare at the menu hub → start a fresh dungeon → explore/fight/build the character
 → defeat the exit boss → descend through a harder version of the same layout.
@@ -74,8 +74,20 @@ All floor-specific encounters, stock, rewards and uses refresh on descent.
   uncollected crystals and item pickups remain in their rooms.
 - Level-up pauses combat and movement. Choose one of two distinct upgrades or a
   persistent coin reward. Excess XP is retained and additional choices queue.
-- Thirteen card upgrades: damage, attack speed, movement, piercing, max HP/healing,
-  critical hits, multishot, ricochet, frost, burn, XP attraction, XP gain, regeneration.
+- Shared cards: damage, attack speed, movement, EXP gain, Punchthrough, Extra
+  projectile, Multiple Shots, enemy Ricochet, Follow and See All. Extra projectile
+  fires parallel ranged/chakram shots, alternating sword slashes, or wider hammer
+  cones. Multiple Shots adds sequential attacks within each attack cycle.
+- Bow/crossbow cards: Arrow split, Stop and Aim, Explosive arrows. Split and
+  Explosive replace one another; Stop and Aim charges while stationary, releases
+  on movement or after three seconds, doubles damage and always penetrates.
+- Wand cards: Perpetuum continuous laser or Magic Meteor, replacing one another.
+  Meteor converts Punchthrough/Ricochet/Follow into Size/Rain/Telekinesis.
+- See All passes through obstacles, is never offered to wands, and never reappears
+  after selection in that run. Wands pass through obstacles inherently.
+- All attack forms, exact interactions and test tuning are recorded in
+  [WEAPONS_SPEC.md](WEAPONS_SPEC.md). Old status/healing/critical/magnet/regen cards
+  are retired. No additional melee-specific cards are designed yet.
 - Coin choices, loot and wheel coin rewards use the persistent coin wallet.
 - The permanent Starting upgrade perk gives two upgrades without a coin option,
   preventing free currency farming by repeatedly starting and abandoning runs.
@@ -151,6 +163,11 @@ Floors11–14 alternate copper4/silver4; floor15 gold3, continuing thereafter.
 Synthesis replaces the character area with a top-left base slot and ingredient
 slots. The inventory remains below, grouped by duplicates, highest rarity first.
 The exact eight recipes through bright-orange Mythic are in ECONOMY_SPEC.md.
+Common now requires three OTHER common copies of the exact same item, matching
+Uncommon and Rare identity requirements. Once a base is selected, the inventory
+shows only valid ingredient copies. Quick synthesis repeatedly combines eligible
+Common/Uncommon/Rare bases, including Rare→Epic, never consuming Epic or higher.
+It protects equipped ingredients and prefers equipped/high-level bases.
 The base retains its level and equipped identity; additional equipped copies are
 protected from consumption. There is no automatic duplicate conversion.
 
@@ -174,5 +191,5 @@ Retired prototype scrap, generic keys, seals and training are archived without
 inventing an exchange rate. Current-run state is not saved.
 
 Future: defined gem tasks/earning, the remaining eight perk effects, higher floors,
-melee, further rarities, pets/spirit content, more item templates/affixes, adjacency
+melee-specific upgrades, further rarities, pets/spirit content, more item templates/affixes, adjacency
 constraints, final art/audio, richer combat and an authoritative account backend.

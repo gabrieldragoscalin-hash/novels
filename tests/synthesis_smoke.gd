@@ -42,6 +42,17 @@ func run() -> void:
 	var mythic: String = h._add_item("bow",5,0)
 	var none: Array[String] = []
 	assert(not h.synthesize(mythic,none))
+	# Common now requires exact identity too; quick merge cascades through rare bases.
+	var quick = Hub.new(false)
+	var equipped: String = quick.equipped["weapon"]
+	quick.inventory[equipped]["level"] = 4
+	var other: String = quick.find_equipment("wand")
+	assert(not quick.synthesis_candidates(equipped).has(other))
+	for i in range(63): quick.find_equipment("bow")
+	assert(quick.quick_synthesis() == 21)
+	assert(quick.inventory.size() == 2 and quick.inventory[equipped]["rarity"] == 3)
+	assert(quick.inventory[equipped]["level"] == 4 and quick.equipped["weapon"] == equipped)
+	assert(quick.quick_synthesis() == 0 and quick.inventory.has(other))
 	# Parts, not scrap or duplicates, level an individual item.
 	base = h.equipped["weapon"]
 	h.parts["armor"] = 100

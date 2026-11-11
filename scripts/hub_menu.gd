@@ -160,6 +160,7 @@ func _build_inventory() -> void:
 		var ingredient := _button(synthesis_top,"",Vector2(42+index*130,285),Vector2(116,78),_remove_ingredient.bind(index))
 		synthesis_ingredients.append(ingredient)
 	synthesis_label = _label(synthesis_top,"",Vector2(42,378),12,Color("bad2d0"))
+	_button(synthesis_top,"Quick synthesis",Vector2(42,510),Vector2(364,38),_quick_synthesis)
 	synthesis_commit = _button(synthesis_top,"Synthesize",Vector2(42,450),Vector2(396,44),_commit_synthesis)
 	synthesis_top.hide()
 	for side in range(2):
@@ -275,7 +276,9 @@ func refresh() -> void:
 	synthesis_toggle.text = "Equipment" if synthesis_mode else "Synthesis"
 	_clear_grid(inventory_grid)
 	var count := 0
+	var eligible: Array = hub.synthesis_candidates(synthesis_base) if synthesis_mode and not synthesis_base.is_empty() else []
 	for uid in hub.sorted_items(synthesis_mode):
+		if synthesis_mode and not synthesis_base.is_empty() and not eligible.has(uid): continue
 		if not synthesis_mode and not filter_slot.is_empty() and Gear.ITEMS[hub.item_type(uid)]["slot"] != filter_slot: continue
 		_add_item(inventory_grid,uid)
 		count += 1
@@ -369,6 +372,13 @@ func _item_clicked(uid: String) -> void:
 
 func _remove_ingredient(index: int) -> void:
 	if index < synthesis_fodder.size(): synthesis_fodder.remove_at(index); refresh()
+
+func _quick_synthesis() -> void:
+	synthesis_base = ""; synthesis_fodder.clear()
+	var count: int = hub.quick_synthesis()
+	inventory_note.text = "Quick synthesis: %d merges" % count
+	synthesis_requested.emit(); refresh()
+	inventory_note.text = "Quick synthesis: %d merges (through Rare bases)" % count
 
 func _refresh_synthesis() -> void:
 	synthesis_base_button.text = "Select base item" if synthesis_base.is_empty() else _synthesis_slot_name(synthesis_base)

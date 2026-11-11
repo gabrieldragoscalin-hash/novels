@@ -39,7 +39,7 @@ Each chest type has its own saved pity counter, shared between payment methods:
 
 | Base | Required additional copies | Result |
 | --- | --- | --- |
-| Grey | 3 grey of same equipment category/slot | Green |
+| Grey | 3 grey of exact same item | Green |
 | Green | 3 green of exact same item | Blue |
 | Blue | 3 blue of exact same item | Purple |
 | Purple | 2 purple of same category/slot | Purple +1 |
@@ -49,7 +49,7 @@ Each chest type has its own saved pity counter, shared between payment methods:
 | Yellow +2 | 1 yellow +2 of exact same item | Bright-orange Mythic |
 
 "Three other" means FOUR total including the selected base. Category means the
-equipment slot (e.g. any weapon for grey/purple/yellow category recipes). Matching
+equipment slot (e.g. any weapon for purple/yellow category recipes). Matching
 stages must match rarity AND enhancement; yellow +1 cannot fill a plain-yellow
 ingredient slot. Mythic is the current end of the synthesis chain.
 
@@ -106,3 +106,14 @@ future expansion and tests, without enabling floor 4 now.
   no longer sell keys or seals; their permanent offers are common item copies.
 - UTC reset uses the device clock until an authoritative backend is introduced.
   The implementation does not claim anti-tamper protection or cloud account sync.
+
+## Quick synthesis and ingredient filtering
+
+Common, Uncommon and Rare all require three other copies of the exact same item.
+After selecting a base, show only eligible ingredients in the inventory grid;
+the base remains in the upper slot and can be cleared there. Selected ingredients
+remain visible and can be removed with a tap or through the upper slots.
+Quick synthesis cascades Common→Uncommon→Rare→Epic until no eligible groups remain.
+Rare bases are included; Epic bases and higher are never consumed automatically.
+Equipped copies are protected as ingredients, and equipped/highest-level bases are
+preferred. Lowest-level ingredients are used first. No coins or parts are charged.

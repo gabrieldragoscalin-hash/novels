@@ -24,13 +24,15 @@ healer; and a full-screen hub menu with an eight-slot **Inventory**, individual 
 parts upgrades, rarity synthesis, typed keys, chest pity, and coin-bought perks. Inventory shows four
 slots on each side of the character, with locked Pet/Spirit spaces beneath.
 Bottom tabs: **Shop, Inventory, Play, Perks, Miscellaneous**. Menus pause combat.
-There are 13 temporary run upgrades, including critical hits, multishot, ricochet,
-frost, burn, regeneration and XP bonuses. Doors stay open; room rewards and enemy
+Six weapons have distinct arrows, beams, melee arcs, shockwaves and chaining discs.
+Run cards include parallel projectiles, bursts, enemy ricochet, homing, obstacle
+bypass, charged/split/explosive arrows, continuous lasers and meteors.
+[WEAPONS_SPEC.md](WEAPONS_SPEC.md) records the exact rules. Doors stay open; room rewards and enemy
 state cannot be farmed by revisiting.
 
 Use [`?seed=9`](https://gabrieldragoscalin-hash.github.io/novels/?seed=9) to repeat a
 layout for balance testing. These numbers are defaults, not a claim of fair balance.
-Art is original procedural placeholder graphics. Melee, advanced room adjacency
+Art is original procedural placeholder graphics. Advanced room adjacency
 constraints, floors 4+, final art/audio, and cloud accounts are not implemented.
 
 The shop has six daily coin offers and copper/silver/gold item chests with saved
@@ -100,3 +102,8 @@ no clear rewards. God mode resets on a new run; equipment/perks apply on the nex
 run as usual. Wallet/item/perk changes are saved locally and remain after reload.
 Gem grants here are testing controls, not task rewards or purchases. Cheats are
 intentionally public in this prototype and should be removed before release.
+
+Synthesis now filters the inventory to eligible ingredients after choosing a base.
+Common requires identical copies too. **Quick synthesis** combines matching copies
+through Rare bases (Rare→Epic), protecting equipped ingredients. In Cheats, use
+**Add selected run upgrade** to test specific weapon combinations.

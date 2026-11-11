@@ -37,13 +37,13 @@ func run() -> void:
 	combat.grace_time = 0
 	combat.tick(10, Vector2(240, 530))
 	assert(combat.health == 6 and combat.enemies[0]["hp"] == 3, "Combat must freeze while choosing")
-	combat.progression.offers.assign(["damage", "health", "coins"])
+	combat.progression.offers.assign(["damage", "movement", "coins"])
 	assert(combat.apply_choice(0) and combat.progression.damage() == 2)
 	combat.progression.add_xp(combat.progression.required_xp())
-	combat.progression.offers.assign(["health", "damage", "coins"])
+	combat.progression.offers.assign(["movement", "damage", "coins"])
 	combat.health = 3
 	combat.apply_choice(0)
-	assert(combat.health == 5 and combat.progression.max_health() == 8)
+	assert(combat.health == 3 and combat.progression.movement_multiplier() > 1.0)
 
 	var dungeon = Dungeon.new()
 	combat.enter(dungeon.rooms[Vector2i.ZERO], Vector2(240, 530))

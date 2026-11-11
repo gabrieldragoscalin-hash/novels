@@ -100,7 +100,7 @@ with sync_playwright() as p:
         for(let i=0;i<keys.length;i++)if(String(keys[i]).endsWith('/hub.json')){
           const d=JSON.parse(new TextDecoder().decode(new Uint8Array(values[i].contents)));
           d.coins=2000;d.gems=1000;d.keys={copper:1,silver:1,gold:1};d.parts={armor:0,accessory:0,weapon:0};
-          d.inventory={};['bow','bow','crossbow','wand'].forEach((type,j)=>d.inventory['fixture_'+j]={type,rarity:0,plus:0,level:1});
+          d.inventory={};['bow','bow','bow','bow'].forEach((type,j)=>d.inventory['fixture_'+j]={type,rarity:0,plus:0,level:1});
           Object.keys(d.equipped).forEach(slot=>d.equipped[slot]=slot==='weapon'?'fixture_0':'');
           d.pity={copper:0,silver:0,gold:34};d.perks={starting_upgrade:0,starting_hp:0,dodge:0,boss_damage:0};d.perk_purchases=0;
           values[i].contents=new TextEncoder().encode(JSON.stringify(d));values[i].timestamp=new Date();
@@ -111,7 +111,8 @@ with sync_playwright() as p:
     }"""
     page.evaluate(write_js);page.goto(url,wait_until='networkidle');page.wait_for_timeout(4000)
     tab(1);tap(378,121);capture('economy-synthesis-empty.png')
-    for x in [73,179,285,391]:tap(x,660)
+    tap(73,660) # Base; the grid now filters out the base and invalid items.
+    for x in [73,179,285]:tap(x,660)
     capture('economy-synthesis-ready.png');tap(240,472)
     merged=saved_when(lambda d:len(d['inventory'])==1 and d['inventory']['fixture_0']['rarity']==1)
     assert merged['equipped']['weapon']=='fixture_0'

@@ -27,7 +27,10 @@ func run() -> void:
 	menu.floor_picker.select(2); menu.start_floor()
 	assert(game.active and not menu.visible and game.dungeon.floor_number == 3)
 	assert(game.hub.keys["copper"] == 35, "Skipping floors must not pay floor keys")
-	menu.open(); menu.toggle_god()
+	menu.open()
+	menu.upgrade_picker.select(menu.upgrade_ids.find("ricochet")); menu.give_upgrade()
+	assert(game.combat.progression.ranks["ricochet"] == 1)
+	menu.toggle_god()
 	game.combat.grace_time = 0; game.combat.hurt_time = 0
 	var hp: int = game.combat.health; game.combat.hurt(99); assert(game.combat.health == hp)
 	var clock: float = game.clock; game._physics_process(1.0); assert(game.clock == clock)
