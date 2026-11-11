@@ -18,7 +18,7 @@ func run() -> void:
 		var previous_services := {}
 		var previous_start: Vector2i = d.start
 		var previous_exit: Vector2i = d.exit
-		for f in range(1, 4):
+		for f in range(1, Dungeon.MAX_FLOOR+1):
 			var counts := {}
 			var services_seen := {}
 			assert(d.rooms[d.start]["base"] != "bonus" and d.rooms[d.exit]["base"] != "bonus")
@@ -45,7 +45,7 @@ func run() -> void:
 			assert(d.rooms[d.exit]["enemies"].size() == 1 and d.rooms[d.exit]["enemies"][0]["kind"] == "boss")
 			if f == 1:
 				for spec in [["start",1],["boss",1],["bonus",5],["combat",7],["empty",3],["loot",4],["trap",4]]: assert(counts[spec[0]] == spec[1])
-			if f < 3:
+			if f < Dungeon.MAX_FLOOR:
 				for cell in d.rooms:
 					d.rooms[cell]["summoned_shop"] = true
 					d.rooms[cell]["trade_used"] = true
@@ -54,8 +54,8 @@ func run() -> void:
 				assert(d.start != previous_start and d.exit != previous_exit)
 				previous_start = d.start
 				previous_exit = d.exit
-		assert(not d.advance() and d.completed and d.floor_number == 3)
-		assert(not d.advance() and d.floor_number == 3)
+		assert(not d.advance() and d.completed and d.floor_number == Dungeon.MAX_FLOOR)
+		assert(not d.advance() and d.floor_number == Dungeon.MAX_FLOOR)
 
 	var d = Dungeon.new(9)
 	var c = Combat.new(BOUNDS, [])
@@ -104,7 +104,7 @@ func run() -> void:
 	room.combat.progression.base_health = 100
 	room.combat.health = 100
 	room.combat.progression.ranks["damage"] = 7
-	for f in range(1, 4):
+	for f in range(1, Dungeon.MAX_FLOOR+1):
 		room.dungeon.enter(room.dungeon.exit)
 		room.player = Vector2(240, 530)
 		room._enter_current()
@@ -118,11 +118,11 @@ func run() -> void:
 		assert(room.combat.alive_count() == 0, "Boss must be defeatable with real projectiles")
 		assert(room.combat.progression.flares == before + 50 + (f - 1) * 10)
 		room._advance_floor()
-		if f < 3:
+		if f < Dungeon.MAX_FLOOR:
 			await room.transition_finished
 			assert(room.dungeon.floor_number == f + 1 and room.combat.progression.damage() == 8)
 		else: assert(room.dungeon.completed and not room.active and room.death_panel.visible)
-	# Floor-three empty rooms award tier-two enemy flares plus the one-time room reward.
+	# Awakened empty rooms pay their floor-specific completion reward only once.
 	for cell in room.dungeon.rooms:
 		if room.dungeon.rooms[cell]["role"] == "empty":
 			room.dungeon.enter(cell)
@@ -132,8 +132,8 @@ func run() -> void:
 			for enemy in room.combat.enemies: enemy["hp"] = 0
 			room.combat.tick(0.01, room.player)
 			room.combat.tick(0.01, room.player)
-			assert(room.combat.progression.flares == before + 5)
+			assert(room.combat.progression.flares == before + room.dungeon.empty_flares())
 			break
-	print("PASS: 80 seeded maps × 3 floors, identity, S/E, room counts, services, traps, rewards, purchases, hub, real boss combat, floor cap, awakened empty rooms")
+	print("PASS: 80 seeded maps × 5 floors, identity, S/E, room counts, services, traps, rewards, purchases, hub, real boss combat, floor cap, awakened empty rooms")
 	room.queue_free()
 	quit(0)

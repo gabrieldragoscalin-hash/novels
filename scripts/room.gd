@@ -15,6 +15,7 @@ var combat = CombatState.new(FLOOR, PILLARS)
 var hub = HubState.new()
 var services
 var seed_override := -1
+var run_time := 0.0
 var in_hub := true
 var interacting := false
 var service_panel: Panel
@@ -77,7 +78,7 @@ func _build_ui() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui.add_child(root)
 	_label(root, "THE DUNGEON", Vector2(28, 25), 25, Color("eee5cc"))
-	_label(root, "THREE FLOORS   /   BALANCE PROTOTYPE", Vector2(29, 61), 11, Color("96a3b6"))
+	_label(root, "FIVE FLOORS   /   BALANCE PROTOTYPE", Vector2(29, 61), 11, Color("96a3b6"))
 	health_label = _label(root, "HP  6 / 6", Vector2(29, 83), 15, Color("69d4b8"))
 	encounter_label = _label(root, "", Vector2(245, 130), 11, Color("96a3b6"))
 	xp_label = _label(root, "", Vector2(29, 103), 11, Color("96c9ff"))
@@ -237,6 +238,7 @@ func restart_run() -> void:
 	if combat.progression.pending > 0: _show_level_up("STARTING UPGRADE")
 
 func _new_run() -> void:
+	run_time = 0.0
 	dungeon = DungeonState.new(seed_override)
 	combat = CombatState.new(FLOOR, PILLARS)
 	combat.progression.rng.seed = dungeon.seed_value + 101
@@ -316,6 +318,7 @@ func _physics_process(delta: float) -> void:
 	if cheat_menu != null and cheat_menu.visible: return
 	clock += delta
 	if active and not interacting and not transitioning and focused and combat.progression.pending == 0:
+		run_time += delta
 		var direction := Vector2.ZERO
 		if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT): direction.x -= 1
 		if Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT): direction.x += 1
@@ -395,16 +398,18 @@ func _transition_to(direction: Vector2i) -> void:
 	)
 
 func _update_room_label() -> void:
-	status_label.text = "%s • %s • FLOOR %d/3" % [dungeon.room_name(), dungeon.rooms[dungeon.current]["role"].to_upper(), dungeon.floor_number]
+	status_label.text = "%s • %s • FLOOR %d/%d" % [dungeon.room_name(), dungeon.rooms[dungeon.current]["role"].to_upper(), dungeon.floor_number,DungeonState.MAX_FLOOR]
 
 func _update_combat_labels() -> void:
 	health_label.text = "HP  %d / %d" % [combat.health, combat.progression.max_health()]
 	health_label.modulate = Color("ff8b83") if combat.hurt_time > 0.7 else Color.WHITE
 	xp_label.text = "L%d XP %d/%d • %d C • %d F" % [combat.progression.level, combat.progression.xp, combat.progression.required_xp(), combat.progression.coins, combat.progression.flares]
 	build_label.text = "DMG %d  •  RATE %.1f/s  •  SPEED +%d%%  •  PIERCE %d" % [combat.progression.damage(), 1.0 / combat.progression.fire_interval(), roundi((combat.progression.gear_movement + combat.progression.ranks["movement"] * 0.1) * 100), combat.progression.base_pierce + combat.progression.ranks["piercing"]]
-	seed_label.text = "SEED %d • %s Lv.%d • %d GEMS" % [dungeon.seed_value, combat.progression.weapon.to_upper(), combat.progression.weapon_level, hub.gems]
+	seed_label.text = "SEED %d • %s Lv.%d • %d:%02d ACTIVE" % [dungeon.seed_value, combat.progression.weapon.to_upper(), combat.progression.weapon_level,int(run_time)/60,int(run_time)%60]
 	var alive: int = combat.alive_count()
 	encounter_label.text = "%d ENEMIES  •  %d DEFEATED" % [alive, combat.kills] if alive > 0 else "ROOM SAFE  •  %d DEFEATED" % combat.kills
+	var style: String = dungeon.rooms[dungeon.current].get("encounter","")
+	if not style.is_empty(): encounter_label.text = "%s • %d LEFT" % [style.to_upper(),alive]
 	if combat.progression.slow_time > 0: encounter_label.text += " • SLOW"
 
 func _blocked(pos: Vector2) -> bool:
@@ -454,16 +459,23 @@ func _draw() -> void:
 	for pillar in PILLARS: actors.append({"y": pillar.end.y, "pillar": pillar})
 	actors.append({"y": player.y, "player": true})
 	for enemy in combat.enemies:
-		if enemy["hp"] > 0: actors.append({"y": enemy["pos"].y, "enemy": enemy})
+		if enemy["hp"] > 0 and not enemy.get("dormant",false): actors.append({"y": enemy["pos"].y, "enemy": enemy})
 	actors.sort_custom(func(a, b): return a["y"] < b["y"])
 	for actor in actors:
 		if actor.has("pillar"): _draw_pillar(actor["pillar"])
 		elif actor.has("enemy"): _draw_enemy(actor["enemy"])
 		elif combat.hurt_time <= 0 or int(clock * 14) % 2 == 0: _draw_player()
+	for hazard in combat.hazards:
+		var color := Color(1,0.3,0.2,0.65) if hazard["warning"]>0 else Color(1,0.65,0.2,0.85)
+		draw_circle(hazard["pos"],hazard["radius"],Color(color,0.15))
+		draw_arc(hazard["pos"],hazard["radius"],0,TAU,32,color,3)
 	for enemy in combat.enemies:
-		if enemy["hp"] > 0 and enemy.get("telegraph", 0.0) > 0:
+		if enemy["hp"]>0 and enemy.get("dormant",false) and dungeon.rooms[dungeon.current].get("wave_timer",-1.0)>0:
+			draw_arc(enemy["pos"],22,0,TAU,24,Color("e8b965"),3)
+			draw_string(font,enemy["pos"]+Vector2(-6,5),"!",HORIZONTAL_ALIGNMENT_LEFT,-1,18,Color("e8b965"))
+		if enemy["hp"] > 0 and not enemy.get("dormant",false) and enemy.get("telegraph", 0.0) > 0:
 			var origin: Vector2 = enemy["pos"]
-			draw_line(origin, origin + enemy["aim"] * 270, Color(1, 0.3, 0.3, 0.45), 4)
+			draw_line(origin,origin+enemy["aim"]*(150 if enemy.get("action","")=="charge" else 270),Color(1,0.6,0.2,0.7) if enemy.get("action","")=="charge" else Color(1,0.3,0.3,0.45),7 if enemy.get("action","")=="charge" else 3)
 	for bullet in combat.hostile_bullets:
 		draw_circle(bullet["pos"] + Vector2(0, -16), 6, Color("ff786f"))
 	for bullet in combat.bullets:
@@ -586,12 +598,16 @@ func _draw_enemy(enemy: Dictionary) -> void:
 	if enemy.get("kind", "") == "shooter": base = Color("be8be8")
 	if enemy.get("kind", "") == "brute": base = Color("db9a52")
 	if enemy.get("kind", "") == "boss": base = Color("e25151")
+	if enemy.get("kind", "") == "miniboss": base = Color("e3a63e")
+	if enemy.get("phase","")=="recover": base = base.darkened(0.4)
 	if enemy.get("frost_time", 0.0) > 0: base = Color("79bfe8")
 	if enemy.get("burn_time", 0.0) > 0: draw_arc(pos + Vector2(0, -13), 18, 0, TAU, 16, Color("f5a255"), 2)
 	var color := Color("ffecce") if enemy["flash"] > 0 else base
-	draw_circle(pos + Vector2(0, -13), 23 if enemy.get("kind", "") == "boss" else 15, color)
+	draw_circle(pos + Vector2(0, -13), 23 if enemy.get("kind", "") == "boss" else (20 if enemy.get("kind","")=="miniboss" else 15), color)
 	draw_colored_polygon(PackedVector2Array([pos + Vector2(-12, -20), pos + Vector2(-12, -33), pos + Vector2(-3, -25)]), color)
 	draw_colored_polygon(PackedVector2Array([pos + Vector2(12, -20), pos + Vector2(12, -33), pos + Vector2(3, -25)]), color)
+	if enemy.get("kind","") in ["boss","miniboss"] and dungeon.floor_number>=3 and enemy["hp"]<enemy["max_hp"]*0.5:
+		draw_arc(pos+Vector2(0,-13),27,clock*3,clock*3+5.5,24,Color("ffb24c"),3)
 	for x in [-5, 5]: draw_circle(pos + Vector2(x, -16), 2.5, Color("ffeaa4"))
 	draw_rect(Rect2(pos + Vector2(-17, -43), Vector2(34, 4)), Color("111a29"))
 	draw_rect(Rect2(pos + Vector2(-17, -43), Vector2(34.0 * enemy["hp"] / enemy.get("max_hp", 3), 4)), Color("ed8392"))
@@ -655,7 +671,7 @@ func _update_interact() -> void:
 	var state: Dictionary = dungeon.rooms[dungeon.current]
 	interact_button.disabled = combat.alive_count() > 0
 	match state["role"]:
-		"boss": interact_button.text = "Finish expedition" if dungeon.floor_number == 3 else "Descend to floor %d" % (dungeon.floor_number + 1)
+		"boss": interact_button.text = "Finish expedition" if dungeon.floor_number == DungeonState.MAX_FLOOR else "Descend to floor %d" % (dungeon.floor_number + 1)
 		"loot":
 			interact_button.text = "Chest opened" if state["used"] else "Open loot chest"
 			interact_button.disabled = interact_button.disabled or state["used"]
@@ -673,7 +689,7 @@ func _interact() -> void:
 			if services.loot():
 				_notice(state["reward"])
 				if combat.progression.pending > 0: _show_level_up("LOOT — CHOOSE A REWARD")
-				else: _menu("Loot secured", "+%d coins • 10 flares\n%s" % [15 + dungeon.floor_number * 5, state["reward"]], [])
+				else: _menu("Loot secured", "+%d coins • %d flares\n%s" % [15 + dungeon.floor_number * 5,20 if dungeon.floor_number%5==0 else 10,state["reward"]], [])
 		"bonus":
 			if state.get("summoned_shop", false): _open_shop()
 			elif state["service"] == "shop": _open_shop()
@@ -708,9 +724,9 @@ func _advance_floor() -> void:
 	else:
 		active = false
 		_release_stick()
-		outcome_title.text = "Three floors conquered!"
+		outcome_title.text = "Five floors conquered!"
 		outcome_title.add_theme_font_size_override("font_size", 21)
-		outcome_text.text = "Level %d • %d enemies defeated\n%d coins • %d flares remaining\nReturn to the hub. Floor 4 is disabled." % [combat.progression.level, combat.kills, combat.progression.coins, combat.progression.flares]
+		outcome_text.text = "Level %d • %d enemies defeated\n%d coins • %d flares remaining\nReturn to the hub. Floor 6 is disabled." % [combat.progression.level, combat.kills, combat.progression.coins, combat.progression.flares]
 		death_panel.show()
 
 func _menu(title: String, description: String, options: Array, columns: int = 1) -> void:

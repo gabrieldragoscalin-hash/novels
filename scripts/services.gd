@@ -29,7 +29,14 @@ func loot() -> bool:
 	combat.progression.coins += 15 + dungeon.floor_number * 5
 	var catalog: Array = hub.Equipment.ITEMS.keys()
 	var kind: String = catalog[dungeon.rng.randi_range(0,catalog.size()-1)]
-	var uid: String = hub.find_equipment(kind,1 if dungeon.rng.randf() < 0.2 else 0)
+	var roll_rarity: float = dungeon.rng.randf()*100
+	var odds: Array = [[80,20,0,0],[70,28,2,0],[55,40,5,0],[40,50,10,0],[0,70,28,2]][clampi(dungeon.floor_number-1,0,4)]
+	var rarity := 0
+	var total := 0.0
+	for i in range(odds.size()):
+		total += odds[i]
+		if roll_rarity<total: rarity = i; break
+	var uid: String = hub.find_equipment(kind,rarity)
 	room["reward"] = "Stored " + hub.item_name(uid)
 	if dungeon.rng.randf() < 0.05:
 		var roll: float = dungeon.rng.randf()
@@ -38,7 +45,7 @@ func loot() -> bool:
 		hub.save()
 		room["reward"] += "\nFound a %s key" % key_kind
 	hub.record_progress("loot")
-	# Better loot across the three floors without consuming an XP level.
+	# Better loot across the five floors without consuming an XP level.
 	if dungeon.floor_number >= 2: combat.progression.reward_choices()
 	return true
 

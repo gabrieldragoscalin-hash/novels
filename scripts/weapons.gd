@@ -20,7 +20,7 @@ func nearest(origin: Vector2, excluded: Array = [], clear: bool = true) -> int:
 	var distance := INF
 	for i in range(c.enemies.size()):
 		var enemy: Dictionary = c.enemies[i]
-		if enemy["hp"] <= 0 or excluded.has(i): continue
+		if enemy["hp"] <= 0 or enemy.get("dormant",false) or excluded.has(i): continue
 		if clear and not c.progression.through_obstacles() and c.wall_between(origin,enemy["pos"]): continue
 		var d: float = origin.distance_squared_to(enemy["pos"])
 		if d < distance: distance = d; best = i
@@ -94,7 +94,7 @@ func _melee(origin: Vector2, direction: Vector2, slash: int) -> void:
 	var angle := minf(1.4,0.45+p.ranks["multishot"]*0.14) if hammer else 1.1
 	effects.append({"kind":"wave" if hammer else "slash","pos":origin,"direction":direction,"radius":radius,"angle":angle,"reverse":slash%2==1,"life":0.24,"duration":0.24})
 	for enemy in c.enemies:
-		if enemy["hp"] <= 0: continue
+		if enemy["hp"] <= 0 or enemy.get("dormant",false): continue
 		var offset: Vector2 = enemy["pos"]-origin
 		if offset.length() > radius+12 or absf(direction.angle_to(offset)) > angle: continue
 		if not p.through_obstacles() and c.wall_between(origin,enemy["pos"]): continue
@@ -112,7 +112,7 @@ func _laser(origin: Vector2, direction: Vector2, target: int) -> void:
 	# Straight penetration chooses enemies in ray order.
 	var line: Array = []
 	for i in range(c.enemies.size()):
-		if c.enemies[i]["hp"] <= 0: continue
+		if c.enemies[i]["hp"] <= 0 or c.enemies[i].get("dormant",false): continue
 		var offset: Vector2 = c.enemies[i]["pos"]-origin
 		if offset.dot(direction) >= 0 and absf(offset.cross(direction)) < 18: line.append(i)
 	line.sort_custom(func(a,b): return origin.distance_squared_to(c.enemies[a]["pos"]) < origin.distance_squared_to(c.enemies[b]["pos"]))
@@ -156,7 +156,7 @@ func _tick_meteors(delta: float) -> void:
 func _explode(pos: Vector2,radius: float,damage: float) -> void:
 	effects.append({"kind":"explosion","pos":pos,"radius":radius,"life":0.3,"duration":0.3})
 	for enemy in c.enemies:
-		if enemy["hp"] > 0 and pos.distance_to(enemy["pos"]) <= radius+12: c._damage_enemy(enemy,damage)
+		if enemy["hp"] > 0 and not enemy.get("dormant",false) and pos.distance_to(enemy["pos"]) <= radius+12: c._damage_enemy(enemy,damage)
 
 func _finish(bullet: Dictionary) -> void:
 	bullet["life"] = 0
@@ -191,7 +191,7 @@ func _tick_bullets(delta: float) -> void:
 			bullet["pos"] = next
 			for index in range(c.enemies.size()):
 				var enemy: Dictionary = c.enemies[index]
-				if enemy["hp"]<=0 or bullet["hits"].has(index): continue
+				if enemy["hp"]<=0 or enemy.get("dormant",false) or bullet["hits"].has(index): continue
 				if next.distance_to(enemy["pos"]) > (23 if enemy.get("kind","")=="boss" else 13)+bullet.get("radius",4.0): continue
 				c._damage_enemy(enemy,bullet.get("damage",c.progression.damage()))
 				bullet["hits"].append(index)
@@ -218,7 +218,7 @@ func _tick_bullets(delta: float) -> void:
 func _enemy_ahead(bullet: Dictionary) -> bool:
 	var direction: Vector2 = bullet["velocity"].normalized()
 	for i in range(c.enemies.size()):
-		if c.enemies[i]["hp"]<=0 or bullet["hits"].has(i): continue
+		if c.enemies[i]["hp"]<=0 or c.enemies[i].get("dormant",false) or bullet["hits"].has(i): continue
 		var offset: Vector2 = c.enemies[i]["pos"]-bullet["pos"]
 		if offset.dot(direction)<=0 or absf(offset.cross(direction))>bullet.get("radius",4.0)+17: continue
 		if not bullet.get("through",false) and c.wall_between(bullet["pos"],c.enemies[i]["pos"]): continue

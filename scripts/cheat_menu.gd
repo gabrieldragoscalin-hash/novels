@@ -61,7 +61,7 @@ func setup(controller) -> void:
 	_action("Max all four perks",grant.bind("max_perks"))
 	_note("NEW TEST EXPEDITION • replaces current run")
 	floor_picker = OptionButton.new()
-	for floor_number in range(1,4): floor_picker.add_item("Start on floor %d" % floor_number)
+	for floor_number in range(1,game.DungeonState.MAX_FLOOR+1): floor_picker.add_item("Start on floor %d" % floor_number)
 	body.add_child(floor_picker)
 	_action("Start selected floor",start_floor)
 	_note("CURRENT RUN")
@@ -156,7 +156,9 @@ func level_up() -> void:
 	status.text = "Upgrade choice queued. Close to choose."
 
 func clear_room() -> void:
-	for enemy in game.combat.enemies: game.combat._damage_enemy(enemy,1000000)
+	for enemy in game.combat.enemies:
+		enemy["dormant"] = false
+		game.combat._damage_enemy(enemy,1000000)
 	game._claim_floor_reward()
 	status.text = "Room defeated. XP pickups and normal rewards retained."
 

@@ -1,6 +1,6 @@
 # Game design — current working specification
 
-Status: playable three-floor action roguelite prototype. This is a living design.
+Status: playable five-floor action roguelite prototype. This is a living design.
 [ECONOMY_SPEC.md](ECONOMY_SPEC.md) is the detailed economy/synthesis contract;
 [BALANCING.md](BALANCING.md) lists implementation defaults, controls and testing.
 
@@ -13,8 +13,8 @@ original placeholder visuals and mechanics. Automatic attacks continue while mov
 
 Prepare at the menu hub → start a fresh dungeon → explore/fight/build the character
 → defeat the exit boss → descend through a harder version of the same layout.
-Death or completion returns to the hub. The current expedition ends after floor 3;
-floor 4+ is not enabled. Saved inventory, coins, gems, keys, parts and perks survive
+Death or completion returns to the hub. The current expedition ends after floor 5;
+floor 6+ is not enabled. Saved inventory, coins, gems, keys, parts and perks survive
 runs. Run XP levels, card upgrades, health state and flares reset on a new run.
 
 ## Map and room identities
@@ -47,11 +47,11 @@ runs. Run XP levels, card upgrades, health state and flares reset on a new run.
 
 Combat rooms increase encounter strength. Loot rooms are free of defenders on
 floor 1, gain defenders and better rewards on floor 2, and grow harder on floor 3.
-Future floors divisible by 5 will use miniboss protection; those milestones are
-not part of the three-floor build.
+Floor 5 loot rooms have a miniboss treasure guardian and improved chest rarity
+odds. Later multiples of 5 will continue this milestone pattern.
 
 Initially empty rooms are empty on floors 1–2. On floor 3 they contain weaker,
-tier-2 enemies. They award their completion flares separately from enemy kills.
+tier-2 enemies. Floor 4 keeps tier 2; floor 5 uses tier 3. They award their completion flares separately from enemy kills.
 
 Trap rooms retain their identity but never repeat the same trap on consecutive
 floors. Current traps are a slow field, timed spikes, and a projectile volley.
@@ -64,9 +64,18 @@ All floor-specific encounters, stock, rewards and uses refresh on descent.
 ## Combat, XP and run choices
 
 - Touch: floating joystick anywhere except interface buttons. Keyboard: WASD/arrows.
-- Normal enemies chase, brutes are tougher/slower, shooters keep range/reposition.
-- Bosses start alone, chase slowly and telegraph spread projectiles. Future summons
-  may give XP only, never extra boss-room flares.
+- Chasers pressure the player. Shooters stop to aim, then fire 1/2/3/3/4-shot
+  bursts across floors 1–5, with fan finishes on floors 4–5. Brutes telegraph a
+  locked-direction charge, collide with obstacles, and recover without attacking.
+- Combat rooms use persistent Mixed/Swarm/Crossfire/Heavy/Ambush variants. Ambushes
+  have two waves, with marked arrivals; dormant enemies cannot be hit early or
+  bypassed to claim a room completion. Doors remain open throughout.
+- Bosses start alone. Floor 1 alternates spread and charge; floor 2 adds warned
+  ground zones; floors 3–5 combine spreads with ground zones and gain faster
+  recovery below half HP. Future summons may give XP only, never boss-room flares.
+- Stats and attack timings are recorded in BALANCING.md. Boss access remains
+  immediate: exploring earns upgrades, healing and better loot, rather than keys
+  or room-clear quotas to unlock the boss.
 - Pillars block both sides' projectiles. Doors remain open for retreat.
 - Dead and wounded enemies retain their state across room visits. Bullets do not
   travel across rooms. Brief hit invulnerability and arrival protection apply.
@@ -132,7 +141,7 @@ and enhancement. Duplicate finds remain separate items, never scrap.
 
 Two extra squares below the character are reserved and locked. Pet's milestone is
 first reaching floor 10 (saved permanently); Spirit unlocks later with its threshold
-still undefined. The current floor-3 cap makes Pet inaccessible for now.
+still undefined. The current floor-5 cap makes Pet inaccessible for now.
 Left-side events/battle pass and right-side daily/play-time rewards are deferred.
 Gems and tasks are also reserved until the user defines them.
 

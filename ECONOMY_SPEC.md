@@ -80,8 +80,8 @@ seals and key-training data should be archived in the save, not silently exchang
 for arbitrary new currencies. Save the new wallet, daily counters, pity counters,
 individual copies, parts, perk purchases and progress together atomically.
 
-The dungeon remains capped at floor 3; reward formulas support later floors for
-future expansion and tests, without enabling floor 4 now.
+The dungeon is now playable through floor 5; floor 6+ remains disabled.
+Daily floor rewards include floor 4: two silver keys, floor 5: one gold key.
 
 ## Current tuning defaults (not specified by the user)
 
@@ -93,7 +93,8 @@ future expansion and tests, without enabling floor 4 now.
 - Silver: common 38%, uncommon 32%, rare 26%, epic 3.5%, legendary 0.5%.
 - Gold: common 15%, uncommon 20%, rare 45%, epic 16%, legendary 4%.
   On a non-pity legendary gold drop, 10% are +1 (0.4% of ordinary gold opens).
-- Dungeon loot chests give an item copy (80% common / 20% uncommon) and have a
+- Floor-1 dungeon loot gives an item copy (80% common / 20% uncommon); later
+  floors improve rarity odds as listed in BALANCING.md. All loot chests have a
   5% key chance; conditional key odds are 70% copper / 25% silver / 5% gold.
   Normal enemies have a 2% chance to leave a common item pickup on the floor.
 - Item-level upgrades retain the current level-5 cap and cost 5 × current level

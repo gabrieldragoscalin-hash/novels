@@ -299,7 +299,7 @@ func refresh() -> void:
 	perk_label.text = "%s\nArmor %d • Accessory %d • Weapon %d parts\n%s" % [perk_message,hub.parts["armor"],hub.parts["accessory"],hub.parts["weapon"],"Eight perk effects are reserved; leveling remains locked." if hub.Economy.REQUIRE_RESERVED_PERKS else "Leveling begins after the four defined perks unlock."]
 	train_button.text = "Buy random perk • %d coins" % hub.perk_price()
 	train_button.disabled = not hub.can_buy_perk()
-	misc_label.text = "Best floor %d • local-device save\nEach floor pays keys for its first 3 daily clears.\nPet: first reach floor 10. Spirit: later.\nCurrent expedition cap: floor 3." % hub.highest_floor
+	misc_label.text = "Best floor %d • local-device save\nEach floor pays keys for its first 3 daily clears.\nPet: first reach floor 10. Spirit: later.\nCurrent expedition cap: floor 5." % hub.highest_floor
 	queue_redraw()
 
 func _add_item(grid: GridContainer, uid: String) -> void:

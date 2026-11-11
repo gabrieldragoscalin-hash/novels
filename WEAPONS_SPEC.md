@@ -124,4 +124,4 @@ These values are implementation choices for balance testing, not fixed design:
   is added. Each projectile tracks its own prior hits to prevent repeated rewards.
 
 The cheat menu now allows selecting a specific eligible run upgrade, so combinations
-can be tested without repeatedly rolling level-up cards. The floor-3 cap remains.
+can be tested without repeatedly rolling level-up cards. Progression currently ends after floor 5.

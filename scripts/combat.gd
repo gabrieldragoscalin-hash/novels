@@ -2,13 +2,15 @@ extends RefCounted
 var invincible := false
 ## Pure encounter state, shared with room storage; no enemy respawns on re-entry.
 const Progression = preload("res://scripts/progression.gd")
-const ENEMY_HP := 3
-const ENEMY_SPEED := 67.0
+const ENEMY_HP := 4
+const ENEMY_SPEED := 75.0
 const FIRE_INTERVAL := 0.45
 const BULLET_SPEED := 390.0
 const MAX_HEALTH := 6
 var progression = Progression.new()
 var arsenal
+var enemy_ai
+var hazards: Array = []
 var pickups: Array = []
 var item_drops: Array = []
 var collected_items: Array = []
@@ -30,6 +32,7 @@ var bounds: Rect2
 var obstacles: Array[Rect2]
 
 func _init(room_bounds: Rect2, pillars: Array[Rect2]) -> void:
+	enemy_ai = preload("res://scripts/enemy_ai.gd").new(self)
 	arsenal = preload("res://scripts/weapons.gd").new(self)
 	bounds = room_bounds
 	obstacles = pillars
@@ -47,6 +50,7 @@ func enter(state: Dictionary, player: Vector2) -> void:
 	arsenal.reset(player)
 	bullets.clear()
 	hostile_bullets.clear()
+	hazards.clear()
 	room_state = state
 	impacts.clear()
 	fire_time = 0.15
@@ -61,9 +65,17 @@ func enter(state: Dictionary, player: Vector2) -> void:
 	for enemy in enemies:
 		if enemy["hp"] <= 0: continue
 		if enemy["pos"].distance_to(player) < 90:
-			var best := Vector2(240, 270)
-			for point in [Vector2(240, 270), Vector2(192, 385), Vector2(288, 385), Vector2(240, 510)]:
-				if point.distance_to(player) > best.distance_to(player): best = point
+			var best: Vector2 = enemy["pos"]
+			var score := -1.0
+			for y in range(220,561,70):
+				for x in range(72,409,56):
+					var point := Vector2(x,y)
+					if blocked(point,18) or point.distance_to(player)<110: continue
+					var occupied := false
+					for other in enemies:
+						if other!=enemy and other["hp"]>0 and other["pos"].distance_to(point)<35: occupied = true; break
+					if not occupied and point.distance_squared_to(player)>score: score = point.distance_squared_to(player); best = point
+
 			enemy["pos"] = best
 		enemy["path"] = PackedVector2Array()
 		enemy["repath"] = 0.0
@@ -109,6 +121,7 @@ func tick(delta: float, player: Vector2) -> void:
 	for impact in impacts: impact["life"] -= delta
 	impacts = impacts.filter(func(impact): return impact["life"] > 0)
 	for enemy in enemies: enemy["flash"] = maxf(0,enemy.get("flash",0.0)-delta)
+	_tick_waves(delta)
 	arsenal.tick(delta,player)
 	for index in range(item_drops.size()-1,-1,-1):
 		if item_drops[index]["pos"].distance_to(player) < 32:
@@ -117,27 +130,12 @@ func tick(delta: float, player: Vector2) -> void:
 	_collect_xp(delta, player)
 	if progression.pending > 0: return
 	for enemy in enemies:
-		if enemy["hp"] <= 0: continue
-		enemy["repath"] -= delta
-		if enemy["repath"] <= 0:
-			enemy["repath"] = 0.3
-			enemy["path"] = nav.get_point_path(_cell(enemy["pos"]), _cell(player))
-			if enemy["path"].size() > 1: enemy["path"].remove_at(0)
-		var destination := player
-		if not enemy["path"].is_empty(): destination = enemy["path"][0]
-		var kind: String = enemy.get("kind", "normal")
-		var speed: float = ENEMY_SPEED + (enemy.get("tier", 1) - 1) * 6
-		if kind == "brute": speed *= 0.65
-		if kind == "boss": speed *= 0.65
-		if kind == "shooter" and enemy["pos"].distance_to(player) < 160 and not wall_between(enemy["pos"], player): speed = 0
-		var next: Vector2 = enemy["pos"].move_toward(destination, speed * delta)
-		if not blocked(next, 13): enemy["pos"] = next
-		if not enemy["path"].is_empty() and enemy["pos"].distance_to(destination) < 3:
-			enemy["path"].remove_at(0)
-		if enemy["pos"].distance_to(player) < (35 if kind == "boss" else 26):
+		if enemy["hp"]<=0 or enemy.get("dormant",false): continue
+		enemy_ai.tick(enemy,delta,player)
+		if enemy.get("phase","")!="recover" and enemy["pos"].distance_to(player)<(35 if enemy.get("kind","") in ["boss","miniboss"] else 26):
 			hurt(1)
-			if health <= 0: break
-		if kind in ["shooter", "boss"]: _enemy_shoot(enemy, delta, player)
+			if health<=0: break
+	_tick_hazards(delta,player)
 	_tick_hostile(delta, player)
 	_tick_trap(delta, player)
 	if room_state.get("role", "") == "empty" and floor_number >= 3 and alive_count() == 0 and not room_state.get("room_paid", false):
@@ -178,18 +176,8 @@ func hurt(amount: int) -> void:
 	health = maxi(0, health - amount)
 	hurt_time = 1.0
 
-func _enemy_shoot(enemy: Dictionary, delta: float, player: Vector2) -> void:
-	enemy["attack"] -= delta
-	if enemy["telegraph"] > 0:
-		enemy["telegraph"] -= delta
-		if enemy["telegraph"] <= 0:
-			var boss: bool = enemy["kind"] == "boss"
-			for angle in ([-0.55, -0.28, 0.0, 0.28, 0.55] if floor_number >= 2 else [-0.38, 0.0, 0.38]) if boss else [0.0]:
-				hostile_bullets.append({"pos": enemy["pos"], "velocity": enemy["aim"].rotated(angle) * (125 + floor_number * 12), "life": 4.0})
-			enemy["attack"] = 1.6 if boss else 2.4
-	elif enemy["attack"] <= 0:
-		enemy["telegraph"] = 0.65
-		enemy["aim"] = enemy["pos"].direction_to(player)
+func _enemy_shoot(enemy: Dictionary,delta: float,player: Vector2) -> void:
+	enemy_ai.shoot(enemy,delta,player)
 
 func _tick_hostile(delta: float, player: Vector2) -> void:
 	for bullet in hostile_bullets:
@@ -223,20 +211,43 @@ func _tick_trap(delta: float, player: Vector2) -> void:
 			hostile_bullets.append({"pos": Vector2(x, 195), "velocity": Vector2(0, 140), "life": 3.0})
 
 func _damage_enemy(enemy: Dictionary, amount: float) -> void:
-	if enemy["hp"] <= 0: return
-	enemy["hp"] -= amount * (1.0 + progression.boss_damage_bonus if enemy.get("kind", "") == "boss" else 1.0)
+	if enemy["hp"] <= 0 or enemy.get("dormant",false): return
+	enemy["hp"] -= amount * (1.0 + progression.boss_damage_bonus if enemy.get("kind", "") in ["boss","miniboss"] else 1.0)
 	enemy["flash"] = 0.13
 	if enemy["hp"] > 0: return
 	kills += 1
 	if enemy.get("kind", "normal") != "boss" and progression.rng.randf() < 0.02:
 		var catalog: Array = preload("res://scripts/equipment.gd").ITEMS.keys()
 		item_drops.append({"pos":enemy["pos"],"type":catalog[progression.rng.randi_range(0,catalog.size()-1)],"rarity":0})
-	pickups.append({"pos": enemy["pos"], "amount": 8 if enemy.get("kind", "normal") == "boss" else 2})
+	pickups.append({"pos": enemy["pos"], "amount": 8 if enemy.get("kind", "normal") == "boss" else (4 if enemy.get("kind","")=="miniboss" else 2)})
 	if enemy.get("kind", "normal") == "boss":
 		hostile_bullets.clear()
+		hazards.clear()
 		grace_time = maxf(grace_time, 0.5)
 		if not room_state.get("boss_paid", false):
 			progression.flares += 50 + 10 * (floor_number - 1)
 			room_state["boss_paid"] = true
 	else:
-		if room_state.get("role", "") != "boss": progression.flares += 2 if enemy.get("kind", "normal") == "brute" else 1
+		if room_state.get("role", "") != "boss": progression.flares += 2 if enemy.get("kind", "normal") in ["brute","miniboss"] else 1
+
+func _tick_waves(delta: float) -> void:
+	var active := 0
+	var dormant := 0
+	for enemy in enemies:
+		if enemy["hp"]<=0: continue
+		if enemy.get("dormant",false): dormant += 1
+		else: active += 1
+	if active>0 or dormant==0: return
+	if not room_state.has("wave_timer"): room_state["wave_timer"] = 0.9
+	room_state["wave_timer"] -= delta
+	if room_state["wave_timer"]<=0:
+		for enemy in enemies:
+			if enemy.get("dormant",false): enemy["dormant"] = false
+
+func _tick_hazards(delta: float,player: Vector2) -> void:
+	for hazard in hazards:
+		hazard["warning"] -= delta; hazard["life"] -= delta
+		if hazard["warning"]<=0 and not hazard["fired"]:
+			hazard["fired"] = true
+			if hazard["pos"].distance_to(player)<=hazard["radius"]: hurt(1)
+	hazards = hazards.filter(func(h): return h["life"]>0)
