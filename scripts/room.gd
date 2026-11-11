@@ -24,6 +24,8 @@ var service_description: Label
 var service_buttons: Array[Button] = []
 var interact_button: Button
 var hub_menu
+var cheat_menu
+var cheat_run_button: Button
 var outcome_title: Label
 var outcome_text: Label
 var run_token := ""
@@ -59,6 +61,7 @@ var font := ThemeDB.fallback_font
 func _ready() -> void:
 	_read_seed()
 	_build_ui()
+	_build_cheats(hub_menu.get_parent())
 	services = Services.new(dungeon, combat, hub)
 	_refresh_hub()
 	_update_room_label()
@@ -123,6 +126,7 @@ func _build_ui() -> void:
 		_refresh_hub()
 	)
 	hub_menu.synthesis_requested.connect(_synthesis_changed)
+	hub_menu.cheat_requested.connect(func(): cheat_menu.open())
 	death_panel = PanelContainer.new()
 	death_panel.position = Vector2(54, 250)
 	death_panel.size = Vector2(372, 240)
@@ -203,6 +207,20 @@ func _label(parent: Node, text: String, pos: Vector2, size: int, color: Color) -
 	parent.add_child(label)
 	return label
 
+func _build_cheats(root_control: Control) -> void:
+	var button := Button.new()
+	cheat_run_button = button
+	button.hide()
+	button.text = "Cheats"
+	button.position = Vector2(330,737)
+	button.size = Vector2(120,40)
+	root_control.add_child(button)
+	movement_blockers.append(button)
+	cheat_menu = preload("res://scripts/cheat_menu.gd").new()
+	root_control.add_child(cheat_menu)
+	cheat_menu.setup(self)
+	button.pressed.connect(func(): cheat_menu.open())
+
 func start_game() -> void:
 	if in_hub: _new_run()
 	in_hub = false
@@ -262,6 +280,7 @@ func _notification(what: int) -> void:
 		focused = true
 
 func _input(event: InputEvent) -> void:
+	if cheat_menu != null and cheat_menu.visible: return
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_E:
 		_interact()
 	if not active or interacting or combat.progression.pending > 0:
@@ -293,6 +312,8 @@ func _is_control_area(pos: Vector2) -> bool:
 	return true
 
 func _physics_process(delta: float) -> void:
+	cheat_run_button.visible = not in_hub
+	if cheat_menu != null and cheat_menu.visible: return
 	clock += delta
 	if active and not interacting and not transitioning and focused and combat.progression.pending == 0:
 		var direction := Vector2.ZERO

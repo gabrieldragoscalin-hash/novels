@@ -1,4 +1,5 @@
 extends RefCounted
+var invincible := false
 ## Pure encounter state, shared with room storage; no enemy respawns on re-entry.
 const Progression = preload("res://scripts/progression.gd")
 const ENEMY_HP := 3
@@ -239,7 +240,7 @@ func apply_choice(index: int) -> bool:
 	return true
 
 func hurt(amount: int) -> void:
-	if hurt_time > 0 or grace_time > 0 or health <= 0: return
+	if invincible or hurt_time > 0 or grace_time > 0 or health <= 0: return
 	if progression.rng.randf() < progression.dodge_chance:
 		hurt_time = 1.0
 		return

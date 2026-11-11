@@ -87,3 +87,16 @@ and origin; it is not synchronized across devices.
 
 Scripts are separated into dungeon generation, combat, progression, services,
 hub/equipment persistence, and the room/interface controller under `scripts/`.
+
+## Testing cheats
+
+Open **Miscellaneous → Cheat menu** in the hub, or **Cheats** during a run.
+Combat pauses while the menu is open. Grant coins/gems/typed keys/parts, set chest
+pity, reset daily allowances, create 1–20 copies of a selected item/rarity/stage,
+unlock or max the four perks, or start a fresh test expedition on floor 1–3.
+During runs: toggle god mode, heal, add flares/level choices, defeat the current
+room with normal rewards, or teleport to any room/boss. Skipping floors grants
+no clear rewards. God mode resets on a new run; equipment/perks apply on the next
+run as usual. Wallet/item/perk changes are saved locally and remain after reload.
+Gem grants here are testing controls, not task rewards or purchases. Cheats are
+intentionally public in this prototype and should be removed before release.

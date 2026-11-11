@@ -4,6 +4,7 @@ signal tab_changed(index: int)
 signal dungeon_requested
 signal item_requested(id: String)
 signal perk_requested
+signal cheat_requested
 signal synthesis_requested
 const Icons = preload("res://scripts/ui_icons.gd")
 const Gear = preload("res://scripts/equipment.gd")
@@ -226,6 +227,7 @@ func _build_misc() -> void:
 	var page := pages[4]
 	_label(page,"MISCELLANEOUS",Vector2(24,108),22)
 	misc_label = _label(page,"",Vector2(24,154),12,Color("bad2d0"))
+	_button(page,"Cheat menu • testing",Vector2(24,410),Vector2(432,48),func(): cheat_requested.emit())
 	_label(page,"GEMS & TASKS",Vector2(24,300),18)
 	_label(page,"Reserved until tasks and rewards are defined.\nGem purchases are not available.",Vector2(24,340),13,Color("bad2d0"))
 
