@@ -320,3 +320,18 @@ visual projectile launch positions start at the held weapon.
 **Reminder after the in-game animation pass:** rename and rework the item lineup,
 create sprites for all items, then work on the menus and home GUI. This is the
 next requested milestone; item icons/menu redesign have not been started here.
+
+## Projectile and attack VFX pass
+
+All weapon attacks now use animated painted effects: arrows and heavy bolts,
+magic lances and rune lasers, blade-ribbon slashes, erupting-stone hammer waves,
+spinning bladed chakrams, falling/rolling meteors, fiery explosions and hit sparks.
+Explosion art progresses through ignition, blast/debris, smoke and embers.
+
+Render density is bounded independently of damage simulation. Overlapping blasts
+can share one visual; meteor/rock sprites are spatially sampled under heavy load.
+Every impact still applies its existing damage budget. Rolling meteor collision
+uses swept segments and cached eligible enemies per cycle, including reinforcements
+when they activate. Performance and damage-preservation checks are documented in
+ART_DIRECTION.md. The next item rename/rework, all item sprites and menus/home GUI
+milestone remains queued after attack-animation tweaks.

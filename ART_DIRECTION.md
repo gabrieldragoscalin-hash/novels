@@ -157,8 +157,8 @@ unchanged; the new rotations need continued playtesting for dodge difficulty.
 Additional directional attack and death frames, bespoke boss animation sheets, armor cosmetics,
 production weapon/equipment/card icons, further biome asset packs, bespoke trap
 props, further room dressing, hub-wide illustrated scenery, and a final
-sound/music pass remain. Current vector attack effects/telegraphs are retained
-for gameplay clarity. Their replacement must preserve timing, area and contrast.
+sound/music pass remain. Attack effects use the painted animation atlases below. Warning markers remain
+vector-based for timing/area clarity, and firing ground hazards show a painted blast.
 
 ## Validation
 
@@ -185,3 +185,37 @@ Playwright's ffmpeg runtime is available.
 
 Next requested milestone after in-game animations: rename/rework items, create
 all item sprites, then update menus and the home GUI.
+
+## Animated attack effects
+
+Three transparent4×4 production atlases provide48 fixed-registration animation
+frames. `vfx_impact.png` contains an8-frame ignition/fire/debris/smoke explosion,
+falling meteor frames and rolling volcanic rock frames. `vfx_strikes.png` contains
+blade-ribbon slashes, erupting-stone shockwaves, flowing rune/filament lasers and
+physical spinning jade/gold chakrams. `vfx_shots.png` contains feathered arrows,
+heavy crossbow bolts, magical lances and hit sparks. These replace the old circle,
+cone and thick-line attack placeholders. Telegraphs remain distinct gameplay cues.
+
+`attack_vfx.gd` caches fixed-cell AtlasTextures; frames never normalize themselves
+to different opaque bounds. `attack_renderer.gd` advances frames alongside travel,
+spin and impact progress. Falling meteors have a landing flash, flame trail and
+clipped entry from above the room, followed by the animated blast. Ordinary and
+charged projectile sizes remain distinct; impact art follows the damage geometry.
+
+Presentation has explicit budgets:24 visible falling meteors,48 ordinary
+projectiles plus24 rolling rocks,48 active rendered effects and24 hit sparks.
+Near-overlapping blasts share visuals, and stored transient effects cap72.
+Sampling/coalescing is presentation-only: all meteor impacts still resolve.
+
+Rolling meteor physics uses swept collision and a per-cycle/per-frame eligibility
+cache rather than repeating5px collision substeps for every rock. Eligible lists
+refresh every update so newly active reinforcements still take damage. Shared
+per-cycle splash/rolling damage limits, attack cadence and rewards remain intact.
+The maximum-upgrade900-frame native workload improved from roughly9.5s to2.3s
+on this executor before browser rendering; this is not a measured iPhone FPS claim.
+
+`tests/attack_vfx_smoke.gd` validates all48 frames, sampling budgets, damage despite
+merged visuals and rolling collisions/reinforcement activation. `attack_stress.gd`
+exercises Meteor Rain, parallel shots, salvos, haste, enlarged meteors and rolling
+rocks together. `browser_attack_vfx.py` grants builds through the real cheat menu
+and captures explosive arrows, Perpetuum and maximum-upgrade meteors.

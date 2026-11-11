@@ -167,3 +167,14 @@ and tests/browser_animation_motion.py for continuity/rendering checks.
 
 Next milestone requested by the designer: rename and rework items, create all item
 sprites, then update menus and the home GUI.
+
+### Animated attacks and meteor performance
+
+Painted sprite animations replace projectile/impact placeholders for all six
+weapons, explosive arrows, Perpetuum and meteors. Falling rocks, fire/debris/smoke
+blasts, physical chakrams, blade streaks, stone shockwaves and rune lasers share
+cached fixed-cell atlases. Visual density is bounded independently of damage;
+rolling-meteor collision is swept and cached per cycle. The native worst-case
+Meteor Rain/Telekinesis benchmark is about4× faster on the development executor.
+Run tests/attack_vfx_smoke.gd, tests/attack_stress.gd and tests/browser_attack_vfx.py
+for animation, damage-preservation and heavy-build checks.

@@ -1,6 +1,9 @@
 extends RefCounted
 ## Attack scheduling/projectile simulation. Enemy rewards still belong to Combat.
 const Balance = preload("res://scripts/combat_balance.gd")
+const MAX_EFFECTS := 72
+var effect_cells: Dictionary = {}
+var rolling_candidates: Dictionary = {}
 var release_serial := 0
 var pose_time := 0.0
 var pose_direction := Vector2.DOWN
@@ -22,6 +25,7 @@ func _init(combat) -> void: combat_ref = weakref(combat)
 
 func reset(player: Vector2) -> void:
 	pose_time = 0.0; release_serial = 0
+	effect_cells.clear(); rolling_candidates.clear()
 	queued.clear(); effects.clear(); meteors.clear(); splash_hits.clear(); rolling_hits.clear(); cycle = 0; charge = 0; last_player = player
 
 func nearest(origin: Vector2, excluded: Array = [], clear: bool = true) -> int:
@@ -36,9 +40,14 @@ func nearest(origin: Vector2, excluded: Array = [], clear: bool = true) -> int:
 	return best
 
 func tick(delta: float, player: Vector2) -> void:
+	effect_cells.clear()
 	pose_time = maxf(0,pose_time-delta)
 	var p = c.progression
-	for effect in effects: effect["life"] -= delta
+	for effect in effects:
+		effect["life"] -= delta
+		if effect["kind"]=="explosion" and effect["life"]>effect["duration"]-0.08:
+			var cell := Vector2i((effect["pos"]/20.0).floor())
+			effect_cells["explosion:"+str(cell)] = effect
 	effects = effects.filter(func(e): return e["life"] > 0)
 	var moving := player.distance_squared_to(last_player) > 0.001
 	last_player = player
@@ -93,7 +102,7 @@ func _fire(player: Vector2, target: int, charged: bool, slash: int, attack_cycle
 			if next < 0: break
 			targets.append(next)
 			for extra in range(count):
-				meteors.append({"pos":c.enemies[next]["pos"]+direction.orthogonal()*(extra-(count-1)*0.5)*14,"delay":0.45/(1.0+0.1*p.ranks["reach"]),"radius":(27.0 if c.enemies[next].get("kind","")=="boss" else 17.0)*(1.0+p.ranks["piercing"]*0.2),"damage":p.roll_damage()*p.cycle_output(),"cycle":attack_cycle,"roll":p.ranks["follow"]>0})
+				meteors.append({"pos":c.enemies[next]["pos"]+direction.orthogonal()*(extra-(count-1)*0.5)*14,"delay":0.45/(1.0+0.1*p.ranks["reach"]),"duration":0.45/(1.0+0.1*p.ranks["reach"]),"radius":(27.0 if c.enemies[next].get("kind","")=="boss" else 17.0)*(1.0+p.ranks["piercing"]*0.2),"damage":p.roll_damage()*p.cycle_output(),"cycle":attack_cycle,"roll":p.ranks["follow"]>0})
 		return
 	for shot in range(count):
 		var origin: Vector2 = player+direction.orthogonal()*(shot-(count-1)*0.5)*12
@@ -112,7 +121,7 @@ func _melee(origin: Vector2, direction: Vector2, slash: int) -> void:
 	var hammer: bool = p.weapon == "hammer"
 	var radius: float = (125.0 if hammer else 88.0)*(1.0+p.ranks["reach"]*0.05)
 	var angle := minf(1.4,0.45+p.ranks["multishot"]*0.14) if hammer else 1.1
-	effects.append({"kind":"wave" if hammer else "slash","pos":origin,"direction":direction,"radius":radius,"angle":angle,"reverse":slash%2==1,"life":0.24,"duration":0.24})
+	_add_effect({"kind":"wave" if hammer else "slash","pos":origin,"direction":direction,"radius":radius,"angle":angle,"reverse":slash%2==1,"life":0.24,"duration":0.24})
 	for enemy in c.enemies:
 		if enemy["hp"] <= 0 or enemy.get("dormant",false): continue
 		var offset: Vector2 = enemy["pos"]-origin
@@ -157,32 +166,72 @@ func _laser(origin: Vector2, direction: Vector2, target: int) -> void:
 	else: _beam(origin,end)
 
 func _beam(a: Vector2,b: Vector2) -> void:
-	effects.append({"kind":"laser","pos":a,"end":b,"life":0.13,"duration":0.13})
+	_add_effect({"kind":"laser","pos":a,"end":b,"life":0.13,"duration":0.13})
 
 func _tick_meteors(delta: float) -> void:
-	for meteor in meteors:
+	var pending := 0
+	for i in range(meteors.size()):
+		var meteor: Dictionary = meteors[i]
 		meteor["delay"] -= delta
-		if meteor["delay"] > 0: continue
+		if meteor["delay"]>0:
+			meteors[pending] = meteor; pending += 1; continue
 		_explode(meteor["pos"],meteor["radius"],meteor["damage"],meteor.get("cycle",-1))
 		if meteor["roll"]:
 			var excluded: Array = []
-			for i in range(c.enemies.size()):
-				if c.enemies[i]["pos"].distance_to(meteor["pos"]) < 1: excluded.append(i)
+			for index in range(c.enemies.size()):
+				if c.enemies[index]["pos"].distance_squared_to(meteor["pos"])<1: excluded.append(index)
 			var next := nearest(meteor["pos"],excluded,false)
-			if next >= 0:
+			if next>=0:
 				c.bullets.append({"pos":meteor["pos"],"velocity":meteor["pos"].direction_to(c.enemies[next]["pos"])*(180*(1.0+0.1*c.progression.ranks["reach"])),"damage":meteor["damage"]*0.25,"radius":meteor["radius"],"life":6.0,"remaining":999,"hits":[],"through":true,"kind":"rolling_meteor","cycle":meteor.get("cycle",-1)})
-	meteors = meteors.filter(func(m): return m["delay"]>0)
+	meteors.resize(pending)
+
+func _add_effect(effect: Dictionary) -> void:
+	# Only presentation is merged/capped. Every meteor still resolves its damage.
+	var pos: Vector2 = effect["pos"]
+	var cell := Vector2i((pos/20.0).floor())
+	var key := str(effect["kind"])+":"+str(cell)
+	if effect["kind"]=="explosion" and effect_cells.has(key):
+		var previous: Dictionary = effect_cells[key]
+		previous["radius"] = maxf(previous["radius"],effect["radius"])
+		return
+	if effects.size()>=MAX_EFFECTS: effects.pop_front()
+	effects.append(effect)
+	if effect["kind"]=="explosion": effect_cells[key] = effect
+
+func _tick_rolling(bullet: Dictionary,delta: float) -> void:
+	# Rolling rocks travel straight through cover: one swept test replaces 5px substeps.
+	var start: Vector2 = bullet["pos"]
+	var end: Vector2 = start+bullet["velocity"]*delta
+	var key: int = bullet.get("cycle",-1)
+	if not rolling_hits.has(key): rolling_hits[key] = []
+	if not rolling_candidates.has(key):
+		var eligible: Array[int] = []
+		for index in range(c.enemies.size()):
+			if c.enemies[index]["hp"]>0 and not c.enemies[index].get("dormant",false) and not rolling_hits[key].has(index): eligible.append(index)
+		rolling_candidates[key] = eligible
+	var eligible: Array = rolling_candidates[key]
+	for i in range(eligible.size()-1,-1,-1):
+		var index: int = eligible[i]
+		var enemy: Dictionary = c.enemies[index]
+		var radius: float = (23 if enemy.get("kind","")=="boss" else 13)+bullet.get("radius",4.0)
+		if Geometry2D.get_closest_point_to_segment(enemy["pos"],start,end).distance_squared_to(enemy["pos"])>radius*radius: continue
+		c._damage_enemy(enemy,bullet["damage"])
+		rolling_hits[key].append(index); eligible.remove_at(i)
+		bullet["hits"].append(index)
+		if c.impacts.size()<72: c.impacts.append({"pos":enemy["pos"],"life":0.22})
+	bullet["pos"] = end
+	if not c.bounds.has_point(end): bullet["life"] = 0
 
 func _explode(pos: Vector2,radius: float,damage: float, attack_cycle: int = -1) -> void:
-	effects.append({"kind":"explosion","pos":pos,"radius":radius,"life":0.3,"duration":0.3})
-	for enemy in c.enemies:
-		if enemy["hp"] > 0 and not enemy.get("dormant",false) and pos.distance_to(enemy["pos"]) <= radius+12:
-			var index: int = c.enemies.find(enemy)
-			if attack_cycle>=0:
-				if not splash_hits.has(attack_cycle): splash_hits[attack_cycle] = []
-				if splash_hits[attack_cycle].has(index): continue
-				splash_hits[attack_cycle].append(index)
-			c._damage_enemy(enemy,damage)
+	_add_effect({"kind":"explosion","pos":pos,"radius":radius,"life":0.42,"duration":0.42})
+	if attack_cycle>=0 and not splash_hits.has(attack_cycle): splash_hits[attack_cycle] = []
+	for index in range(c.enemies.size()):
+		var enemy: Dictionary = c.enemies[index]
+		if enemy["hp"]<=0 or enemy.get("dormant",false): continue
+		if attack_cycle>=0 and splash_hits[attack_cycle].has(index): continue
+		if pos.distance_squared_to(enemy["pos"])>(radius+12)*(radius+12): continue
+		if attack_cycle>=0: splash_hits[attack_cycle].append(index)
+		c._damage_enemy(enemy,damage)
 
 func _finish(bullet: Dictionary) -> void:
 	bullet["life"] = 0
@@ -199,11 +248,14 @@ func _finish(bullet: Dictionary) -> void:
 			spawned.append(child)
 
 func _tick_bullets(delta: float) -> void:
+	rolling_candidates.clear()
 	for bullet in c.bullets:
 		if not bullet.has("hits"): bullet["hits"] = []
 		if not bullet.has("remaining"): bullet["remaining"] = 1
 		bullet["life"] -= delta
 		if bullet["life"] <= 0: _finish(bullet); continue
+		if bullet.get("kind","")=="rolling_meteor":
+			_tick_rolling(bullet,delta); continue
 		if bullet.get("follow",false):
 			var target := nearest(bullet["pos"],bullet["hits"],not bullet.get("through",false))
 			if target >= 0:
@@ -221,11 +273,6 @@ func _tick_bullets(delta: float) -> void:
 				var enemy: Dictionary = c.enemies[index]
 				if enemy["hp"]<=0 or enemy.get("dormant",false) or bullet["hits"].has(index): continue
 				if next.distance_to(enemy["pos"]) > (23 if enemy.get("kind","")=="boss" else 13)+bullet.get("radius",4.0): continue
-				if bullet.get("kind","")=="rolling_meteor":
-					var key: int = bullet.get("cycle",-1)
-					if not rolling_hits.has(key): rolling_hits[key] = []
-					if rolling_hits[key].has(index): bullet["hits"].append(index); continue
-					rolling_hits[key].append(index)
 				c._damage_enemy(enemy,bullet.get("damage",c.progression.damage()))
 				bullet["hits"].append(index)
 				c.impacts.append({"pos":next,"life":0.22})

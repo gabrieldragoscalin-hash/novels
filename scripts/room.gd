@@ -13,6 +13,7 @@ const FLOOR := Rect2(8, 166, 464, 438)
 const Bosses = preload("res://scripts/boss_roster.gd")
 const Architecture = preload("res://scripts/room_architecture.gd")
 const Layouts = preload("res://scripts/room_layouts.gd")
+const AttackRenderer = preload("res://scripts/attack_renderer.gd")
 const HeroAnimation = preload("res://scripts/hero_animation.gd")
 var hero_animation = HeroAnimation.new()
 var layout_index := 0
@@ -70,6 +71,7 @@ var font := ThemeDB.fallback_font
 
 func _ready() -> void:
 	Art.prepare()
+	AttackRenderer.Vfx.prepare()
 	_read_seed()
 	_build_ui()
 	_build_cheats(hub_menu.get_parent())
@@ -482,9 +484,12 @@ func _draw() -> void:
 		elif actor.has("content"): _draw_room_content()
 		elif combat.hurt_time <= 0 or int(clock * 14) % 2 == 0: _draw_player()
 	for hazard in combat.hazards:
-		var color := Color(1,0.3,0.2,0.65) if hazard["warning"]>0 else Color(1,0.65,0.2,0.85)
-		draw_circle(hazard["pos"],hazard["radius"],Color(color,0.15))
-		draw_arc(hazard["pos"],hazard["radius"],0,TAU,32,color,3)
+		if hazard["warning"]>0:
+			var color := Color(1,0.3,0.2,0.65)
+			draw_circle(hazard["pos"],hazard["radius"],Color(color,0.15))
+			draw_arc(hazard["pos"],hazard["radius"],0,TAU,32,color,3)
+		else:
+			AttackRenderer._stamp(self,"explosion",clampf(-hazard["warning"]/0.25,0,1),hazard["pos"],Vector2.ONE*hazard["radius"]*2.2,Vector2(0.5,0.5),0,Color(1,0.85,0.7))
 	for enemy in combat.enemies:
 		if enemy["hp"]>0 and enemy.get("dormant",false) and dungeon.rooms[dungeon.current].get("wave_timer",-1.0)>0:
 			draw_arc(enemy["pos"],22,0,TAU,24,Color("e8b965"),3)
@@ -502,33 +507,9 @@ func _draw() -> void:
 			elif action not in ["ground","eruption"]:
 				draw_line(origin,origin+enemy["aim"]*(150 if action in ["charge","hunt"] else 270),warning,7 if action in ["charge","hunt"] else 3)
 	for bullet in combat.hostile_bullets:
-		draw_circle(bullet["pos"] + Vector2(0, -16), 6, Color("ff786f"))
-	for bullet in combat.bullets:
-		var offset := Vector2(0,-16)
-		if bullet.get("art_from_player",false):
-			if not bullet.has("art_offset"): bullet["art_offset"] = hero_animation.muzzle-player
-			var travel: float = bullet["art_launch"].distance_to(bullet["pos"])/bullet["art_distance"]
-			offset = bullet["art_offset"].lerp(offset,clampf(travel,0,1))
-		var tip: Vector2 = bullet["pos"]+offset
-		var direction: Vector2 = bullet["velocity"].normalized()
-		var kind: String = bullet.get("kind",combat.progression.weapon)
-		var radius: float = bullet.get("radius",4.0)
-		if kind == "chakram":
-			draw_arc(tip,9,clock*12,clock*12+5.4,18,Color("8ce7c3"),3)
-		elif kind == "rolling_meteor":
-			draw_circle(tip,radius,Color("bd6c42")); draw_arc(tip,radius,clock*5,clock*5+3,16,Color("ffd48a"),3)
-		elif kind == "wand":
-			draw_line(tip-direction*34,tip,Color("6b94e9"),7)
-			draw_line(tip-direction*34,tip,Color("d1e9ff"),3)
-		else:
-			var color := Color("ff956b") if bullet.get("explosive",false) else Color("f6c96c")
-			var length := radius*3
-			draw_line(tip-direction*length,tip,color,maxf(2,radius*0.5))
-			draw_line(tip-direction*radius+direction.orthogonal()*radius*0.6,tip,color,2)
-			draw_line(tip-direction*radius-direction.orthogonal()*radius*0.6,tip,color,2)
+		AttackRenderer._stamp(self,"magic",fposmod(clock*5,1),bullet["pos"]+Vector2(0,-16),Vector2(32,22),Vector2(0.85,0.62),bullet["velocity"].angle(),Color(1.5,0.45,0.35))
+	AttackRenderer.draw_projectiles(self,combat.bullets,clock,player,hero_animation.muzzle)
 	_draw_weapon_effects()
-	for impact in combat.impacts:
-		draw_arc(impact["pos"] + Vector2(0, -16), (0.22 - impact["life"]) * 85 + 3, 0, TAU, 12, Color(1, 0.8, 0.4, impact["life"] / 0.22), 2)
 	_draw_player_marker()
 	if pointer != -1 or pointer_mouse:
 		draw_circle(stick_origin, 48, Color(0.5, 0.75, 0.85, 0.12))
@@ -539,34 +520,8 @@ func _draw_room_inlay() -> void:
 	Architecture.draw_plan(self,layout_index,clock)
 
 func _draw_weapon_effects() -> void:
-	for meteor in combat.arsenal.meteors:
-		var pos: Vector2 = meteor["pos"]
-		var radius: float = meteor["radius"]
-		draw_arc(pos,radius,0,TAU,28,Color(1,0.5,0.25,0.65),2)
-		var falling: Vector2 = pos+Vector2(0,-16-meteor["delay"]*240)
-		draw_line(falling+Vector2(-12,-24),falling,Color("f3a250"),7)
-		draw_circle(falling,radius*0.55,Color("c07647"))
-	for effect in combat.arsenal.effects:
-		var kind: String = effect["kind"]
-		var pos: Vector2 = effect["pos"]+Vector2(0,-16)
-		var fade: float = effect["life"]/effect["duration"]
-		if kind == "laser":
-			if effect["pos"].distance_to(player)<24: pos = hero_animation.muzzle
-			draw_line(pos,effect["end"]+Vector2(0,-16),Color(0.4,0.7,1,fade*0.7),7)
-			draw_line(pos,effect["end"]+Vector2(0,-16),Color(0.8,0.95,1,fade),2)
-		elif kind == "explosion":
-			draw_circle(pos,effect["radius"]*(1-fade*0.3),Color(1,0.45,0.15,fade*0.3))
-			draw_arc(pos,effect["radius"]*(1-fade*0.3),0,TAU,32,Color(1,0.8,0.3,fade),3)
-		else:
-			var angle: float = effect["direction"].angle()
-			var spread: float = effect["angle"]
-			if kind == "wave":
-				for wave in range(3): draw_arc(pos,effect["radius"]*(1-fade*0.65)-wave*10,angle-spread,angle+spread,24,Color(0.8,0.65,0.35,fade),3)
-			else:
-				draw_arc(pos,effect["radius"],angle-spread,angle+spread,24,Color(0.75,0.9,1,fade),5)
-				var sweep: float = lerpf(-spread,spread,1-fade) * (-1 if effect["reverse"] else 1)
-				draw_line(pos,pos+Vector2.from_angle(angle+sweep)*effect["radius"],Color(0.9,0.96,1,fade),4)
-	if combat.arsenal.charge > 0:
+	AttackRenderer.draw_effects(self,combat.arsenal,combat.impacts,clock,player,hero_animation.muzzle)
+	if combat.arsenal.charge>0:
 		draw_arc(player+Vector2(0,-18),24,-PI/2,-PI/2+TAU*combat.arsenal.charge/3,32,Color("f6d58a"),4)
 
 func _draw_shadow(center: Vector2, radii: Vector2, color: Color) -> void:

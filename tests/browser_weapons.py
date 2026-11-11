@@ -35,7 +35,7 @@ with sync_playwright() as p:
   if page.evaluate(read_js):break
   page.wait_for_timeout(200)
  page.route('**/__weapon_fixture.html',lambda route:route.fulfill(status=200,body='<html>fixture</html>',content_type='text/html'))
- for weapon in ['bow','crossbow','wand','sword','hammer','chakram']:
+ for weapon in os.environ.get('WEAPON_FILTER','bow,crossbow,wand,sword,hammer,chakram').split(','):
   page.goto('http://127.0.0.1:8765/__weapon_fixture.html');page.evaluate(write_js,weapon)
   page.goto(url,wait_until='networkidle');page.wait_for_timeout(3000)
   box=page.locator('canvas').bounding_box();scale=box['width']/480;h=box['height']/scale
@@ -49,11 +49,11 @@ with sync_playwright() as p:
   page.wait_for_timeout(250)
   if weapon in ['sword','hammer']:
    page.keyboard.down('w');page.wait_for_timeout(800);page.keyboard.up('w')
-  for frame in range(3):
-   page.wait_for_timeout(170)
+  for frame in range(int(os.environ.get("CAPTURE_FRAMES","3"))):
+   page.wait_for_timeout(60 if os.environ.get("CAPTURE_FRAMES") else 170)
    page.screenshot(path=f'/tmp/weapon-{weapon}-{frame}.png')
   assert not errors,(weapon,errors)
   print(weapon,'PASS',flush=True)
  context.close()
  browser.close()
- print(json.dumps({'result':'PASS','checks':['six saved weapon loadouts','mobile controls','actual boss encounter rendering'],'errors':errors}))
+ print(json.dumps({'result':'PASS','checks':['selected weapon loadouts','mobile controls','actual boss encounter rendering'],'errors':errors}))
