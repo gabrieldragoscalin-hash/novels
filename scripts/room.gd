@@ -619,7 +619,8 @@ func _draw_player() -> void:
 	if clock-last_move_time<0.12: key = ("walk_back_" if backwards else "walk_front_")+str(int(distance_walked/9.0)%4)
 	if attack>0 and not backwards: key = "attack_"+str(clampi(int((0.24-attack)/0.06),0,3))
 	var extension := sin(clampf(1.0-attack/0.24,0,1)*PI)*12 if attack>0 else 0.0
-	var hand := player+Vector2(aim.x*(11+extension),-24+aim.y*extension*0.3)
+	var grip_side := -1.0 if aim.x < -0.05 else 1.0
+	var hand := player+Vector2(grip_side*(13+extension),-24+aim.y*extension*0.3)
 	if backwards: WeaponArt.draw_held(self,combat.progression.weapon,hand,aim,attack,1.0,combat.arsenal.pose_reverse)
 	_sprite(key,player,50,Color.WHITE,aim.x<0)
 	if not backwards: WeaponArt.draw_held(self,combat.progression.weapon,hand,aim,attack,1.0,combat.arsenal.pose_reverse)
