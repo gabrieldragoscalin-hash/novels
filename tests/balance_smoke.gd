@@ -44,16 +44,17 @@ func run() -> void:
 	assert(enemy["pos"].x<227 and enemy["phase"]=="recover" and not c.blocked(enemy["pos"],13))
 	# Floor-2 ground attack locks locations and gives time to leave.
 	c = arena("boss",2); enemy = c.enemies[0]
-	enemy["sequence"] = 2; enemy["attack"] = 0.0; c.grace_time = 0
+	enemy["sequence"] = 1; enemy["attack"] = 0.0; c.grace_time = 0
 	c.enemy_ai.tick(enemy,0.01,PLAYER); assert(c.hazards.size()==2)
 	c._tick_hazards(0.5,PLAYER); assert(c.health==6)
 	c._tick_hazards(0.41,PLAYER); assert(c.health==5)
 	c.hurt_time = 0; c._tick_hazards(0.01,PLAYER); assert(c.health==5)
-	# Floor-3 boss combines ground markers and spread; half HP accelerates recovery.
+	# Floor-3 Hound marks a hunt trail then charges; half HP accelerates attacks.
 	c = arena("boss",3); enemy = c.enemies[0]
-	enemy["sequence"] = 2; enemy["attack"] = 0.0
-	c.enemy_ai.tick(enemy,0.01,PLAYER); assert(enemy["action"]=="combo" and c.hazards.size()==3)
-	c.enemy_ai.tick(enemy,0.66,PLAYER); assert(c.hostile_bullets.size()==7)
+	enemy["sequence"] = 1; enemy["attack"] = 0.0
+	c.enemy_ai.tick(enemy,0.01,PLAYER); assert(enemy["action"]=="hunt" and c.hazards.size()==3)
+	c.enemy_ai.tick(enemy,0.66,PLAYER); assert(enemy["phase"]=="charge")
+	enemy["phase"] = "idle"
 	enemy["hp"] = enemy["max_hp"]*0.4; enemy["attack"] = 0.0; enemy["telegraph"] = 0.0
 	c.enemy_ai.tick(enemy,0.01,PLAYER); assert(is_equal_approx(enemy["attack"],1.5))
 	# Dormant reinforcements count toward room completion, cannot be hit early,

@@ -10,7 +10,11 @@ const DungeonState = preload("res://scripts/dungeon.gd")
 const SPEED := 185.0
 const RADIUS := 12.0
 const FLOOR := Rect2(8, 166, 464, 438)
-const PILLARS: Array[Rect2] = [Rect2(108, 290, 38, 40), Rect2(334, 290, 38, 40), Rect2(108, 456, 38, 40), Rect2(334, 456, 38, 40)]
+const Bosses = preload("res://scripts/boss_roster.gd")
+const Layouts = preload("res://scripts/room_layouts.gd")
+const WeaponArt = preload("res://scripts/weapon_art.gd")
+var layout_index := 0
+var PILLARS: Array[Rect2] = [Rect2(108, 290, 38, 40), Rect2(334, 290, 38, 40), Rect2(108, 456, 38, 40), Rect2(334, 456, 38, 40)]
 var dungeon = DungeonState.new()
 var combat = CombatState.new(FLOOR, PILLARS)
 var hub = HubState.new()
@@ -56,6 +60,7 @@ var facing_y := 1
 var facing := 1.0
 var clock := 0.0
 var distance_walked := 0.0
+var last_move_time := -1.0
 var start_panel: Control
 var status_label: Label
 var movement_blockers: Array[Control] = []
@@ -371,6 +376,7 @@ func move_player(motion: Vector2) -> void:
 		if not _blocked(next): player.x = next.x
 		next = Vector2(player.x, clampf(player.y + step.y, FLOOR.position.y + RADIUS, FLOOR.end.y - RADIUS))
 		if not _blocked(next): player.y = next.y
+	if player.distance_to(old)>0.01: last_move_time = clock
 	distance_walked += player.distance_to(old)
 	if absf(motion.x) > 0.01: facing = signf(motion.x)
 	_check_door(motion)
@@ -431,6 +437,7 @@ func _draw() -> void:
 	var canvas := Rect2(0,142,480,476)
 	var variation: Color = [Color.WHITE,Color(0.96,1,0.98),Color(1,0.98,0.95)][posmod(dungeon.current.x+dungeon.current.y*5,3)]
 	draw_texture_rect(Art.ROOM,canvas,false,Art.floor_tint(dungeon.floor_number)*variation)
+	_draw_room_inlay()
 	var corruption := Art.stage(dungeon.floor_number)
 	if corruption>0: draw_texture_rect(Art.CORRUPTION,canvas,false,Color(1,1,1,corruption*0.85))
 	# Cardinal passage indicators match the unchanged collision/transition positions.
@@ -455,13 +462,13 @@ func _draw() -> void:
 		draw_colored_polygon(PackedVector2Array([pos + Vector2(0, -7), pos + Vector2(5, 0), pos + Vector2(0, 7), pos + Vector2(-5, 0)]), Color("96c9ff"))
 	var actors: Array = []
 	if raised_content: actors.append({"y":408,"content":true})
-	for pillar in PILLARS: actors.append({"y": pillar.end.y, "pillar": pillar})
+	for i in range(PILLARS.size()): actors.append({"y": PILLARS[i].end.y, "pillar": PILLARS[i], "ordinal":i})
 	actors.append({"y": player.y, "player": true})
 	for enemy in combat.enemies:
 		if enemy["hp"] > 0 and not enemy.get("dormant",false): actors.append({"y": enemy["pos"].y, "enemy": enemy})
 	actors.sort_custom(func(a, b): return a["y"] < b["y"])
 	for actor in actors:
-		if actor.has("pillar"): _draw_pillar(actor["pillar"])
+		if actor.has("pillar"): _draw_pillar(actor["pillar"],actor["ordinal"])
 		elif actor.has("enemy"): _draw_enemy(actor["enemy"])
 		elif actor.has("content"): _draw_room_content()
 		elif combat.hurt_time <= 0 or int(clock * 14) % 2 == 0: _draw_player()
@@ -475,7 +482,16 @@ func _draw() -> void:
 			draw_string(font,enemy["pos"]+Vector2(-6,5),"!",HORIZONTAL_ALIGNMENT_LEFT,-1,18,Color("e8b965"))
 		if enemy["hp"] > 0 and not enemy.get("dormant",false) and enemy.get("telegraph", 0.0) > 0:
 			var origin: Vector2 = enemy["pos"]
-			draw_line(origin,origin+enemy["aim"]*(150 if enemy.get("action","")=="charge" else 270),Color(1,0.6,0.2,0.7) if enemy.get("action","")=="charge" else Color(1,0.3,0.3,0.45),7 if enemy.get("action","")=="charge" else 3)
+			var action: String = enemy.get("action","")
+			var warning := Color(1,0.5,0.2,0.65)
+			if action=="ring":
+				draw_arc(origin,42+enemy["telegraph"]*28,0,TAU,40,warning,3)
+			elif action=="cross":
+				for i in range(4): draw_line(origin,origin+enemy["aim"].rotated(i*PI/2)*180,warning,3)
+			elif action=="spiral":
+				draw_arc(origin,52,clock*2,clock*2+PI*1.6,32,warning,4)
+			elif action not in ["ground","eruption"]:
+				draw_line(origin,origin+enemy["aim"]*(150 if action in ["charge","hunt"] else 270),warning,7 if action in ["charge","hunt"] else 3)
 	for bullet in combat.hostile_bullets:
 		draw_circle(bullet["pos"] + Vector2(0, -16), 6, Color("ff786f"))
 	for bullet in combat.bullets:
@@ -504,6 +520,37 @@ func _draw() -> void:
 		draw_circle(stick_origin, 48, Color(0.5, 0.75, 0.85, 0.12))
 		draw_arc(stick_origin, 48, 0, TAU, 48, Color("7193a6"), 2)
 		draw_circle(stick_origin + (stick_position - stick_origin).limit_length(45), 20, Color("48b9a8"))
+
+func _draw_room_inlay() -> void:
+	# Flat architectural dressing stays below actors and never implies a collider.
+	var gold := Color(0.78,0.63,0.35,0.28)
+	match layout_index:
+		0:
+			for radius in [92,105]: draw_arc(Vector2(240,385),radius,0,TAU,64,gold,1)
+			for i in range(8):
+				var axis := Vector2.from_angle(i*TAU/8)
+				draw_line(Vector2(240,385)+axis*95,Vector2(240,385)+axis*102,gold,3)
+		1:
+			for x in [72,304]:
+				var runner := Rect2(x,240,104,285)
+				draw_rect(runner,Color(0.24,0.08,0.11,0.25))
+				draw_rect(runner,gold,false,1)
+		2:
+			for pos in [Vector2(120,250),Vector2(360,250),Vector2(120,520),Vector2(360,520)]:
+				draw_colored_polygon(PackedVector2Array([pos+Vector2(0,-22),pos+Vector2(30,0),pos+Vector2(0,22),pos+Vector2(-30,0)]),Color(0.08,0.38,0.30,0.3))
+		3:
+			for y in [265,495]:
+				draw_line(Vector2(55,y),Vector2(425,y),Color(0.14,0.12,0.08,0.3),8)
+				for x in range(65,425,25): draw_line(Vector2(x,y-5),Vector2(x+8,y+5),gold,1)
+		4:
+			for i in range(6):
+				var base := Vector2(65+i*67,230 if i%2==0 else 545)
+				draw_arc(base,26+i*2,0.2,2.8,16,Color(0.08,0.36,0.25,0.35),7)
+		5:
+			for rect in PILLARS:
+				var center := rect.get_center()+Vector2(0,8)
+				_draw_shadow(center,Vector2(34,16),Color(0.10,0.06,0.03,0.35))
+				draw_arc(center,32,0,TAU,32,Color(0.7,0.35,0.12,0.24),2)
 
 func _draw_weapon_effects() -> void:
 	for meteor in combat.arsenal.meteors:
@@ -542,27 +589,40 @@ func _draw_shadow(center: Vector2, radii: Vector2, color: Color) -> void:
 		points.append(center + Vector2(cos(angle), sin(angle)) * radii)
 	draw_colored_polygon(points, color)
 
-func _sprite(key: String,feet: Vector2,height: float,tint: Color = Color.WHITE,flip: bool = false) -> void:
+func _sprite(key: String,feet: Vector2,height: float,tint: Color = Color.WHITE,flip: bool = false, lean: float = 0.0, stretch: Vector2 = Vector2.ONE) -> void:
 	var texture := Art.frame(key)
 	var width := height*texture.get_width()/texture.get_height()
-	if key in Art.PROP_KEYS and player.y<feet.y and player.y>feet.y-height and absf(player.x-feet.x)<width/2+12: tint.a *= 0.55
-	draw_set_transform(feet,0,Vector2(-1 if flip else 1,1))
+	if (key in Art.PROP_KEYS or key in ["statue","tomb","urns","barricade","roots","brazier"]) and player.y<feet.y and player.y>feet.y-height and absf(player.x-feet.x)<width/2+12: tint.a *= 0.55
+	draw_set_transform(feet,lean,Vector2(-1 if flip else 1,1)*stretch)
 	draw_texture_rect(texture,Rect2(-width*Art.pivot(key),-height,width,height),false,tint)
 	draw_set_transform(Vector2.ZERO)
 
-func _draw_pillar(pillar: Rect2) -> void:
+func _draw_pillar(pillar: Rect2, ordinal: int = 0) -> void:
 	var feet := Vector2(pillar.get_center().x,pillar.end.y)
-	_draw_shadow(feet+Vector2(0,1),Vector2(25,8),Color(0,0,0,0.32))
-	_sprite("pillar",feet,68,Art.floor_tint(dungeon.floor_number))
+	var key := Layouts.prop(layout_index,ordinal)
+	var height: float = {"pillar":72.0,"statue":82.0,"tomb":48.0,"urns":48.0,"barricade":47.0,"roots":68.0,"brazier":63.0}.get(key,68.0)
+	# Base overlaps a tight contact shadow; no detached oval below the stonework.
+	_draw_shadow(feet+Vector2(0,-3),Vector2(pillar.size.x*0.52,5),Color(0,0,0,0.48))
+	_sprite(key,feet+Vector2(0,2),height,Art.floor_tint(dungeon.floor_number))
+	if key=="brazier":
+		draw_circle(feet+Vector2(0,-42),10+sin(clock*12)*2,Color(1,0.65,0.2,0.13))
 
 func _draw_player() -> void:
 	if combat.barrier_ready and combat.barrier_time>0 and combat.progression.ranks["barrier"]>0: draw_arc(player+Vector2(0,-18),25,0,TAU,32,Color("81d5ff"),3)
 	_draw_shadow(player+Vector2(0,1),Vector2(15,6),Color(0,0,0,0.38))
-	var upwards := facing_y<0
+	var aim := Vector2(facing,facing_y*0.5).normalized()
 	var target: int = combat.arsenal.nearest(player)
-	if target>=0: upwards = combat.enemies[target]["pos"].y<player.y
-	var bob := absf(sin(distance_walked*0.065))*1.0
-	_sprite("hero_back" if upwards else "hero_front",player+Vector2(0,-bob),48,Color.WHITE,facing<0)
+	if target>=0: aim = player.direction_to(combat.enemies[target]["pos"])
+	var backwards := aim.y<0
+	var attack: float = combat.arsenal.pose_time
+	var key := "idle_back" if backwards else "idle_front"
+	if clock-last_move_time<0.12: key = ("walk_back_" if backwards else "walk_front_")+str(int(distance_walked/9.0)%4)
+	if attack>0 and not backwards: key = "attack_"+str(clampi(int((0.24-attack)/0.06),0,3))
+	var extension := sin(clampf(1.0-attack/0.24,0,1)*PI)*12 if attack>0 else 0.0
+	var hand := player+Vector2(aim.x*(11+extension),-24+aim.y*extension*0.3)
+	if backwards: WeaponArt.draw_held(self,combat.progression.weapon,hand,aim,attack,1.0,combat.arsenal.pose_reverse)
+	_sprite(key,player,50,Color.WHITE,aim.x<0)
+	if not backwards: WeaponArt.draw_held(self,combat.progression.weapon,hand,aim,attack,1.0,combat.arsenal.pose_reverse)
 
 func _draw_boundary(direction: Vector2i) -> void:
 	var rect: Rect2
@@ -611,13 +671,24 @@ func _draw_minimap() -> void:
 func _draw_enemy(enemy: Dictionary) -> void:
 	var pos: Vector2 = enemy["pos"]
 	var kind: String = enemy.get("kind","normal")
-	var height: float = {"normal":44.0,"shooter":50.0,"brute":52.0,"boss":78.0,"miniboss":66.0}.get(kind,44.0)
+	var height: float = {"normal":44.0,"shooter":50.0,"brute":52.0,"boss":108.0,"miniboss":66.0}.get(kind,44.0)
 	var recovering: bool = enemy.get("phase","")=="recover"
 	var tint := Color(0.68,0.68,0.72) if recovering else Color.WHITE
 	if enemy["flash"]>0: tint = Color(1.5,1.25,1.05)
 	_draw_shadow(pos+Vector2(0,1),Vector2(22 if kind in ["boss","miniboss","brute"] else 14,6),Color(0,0,0,0.38))
 	var bob: float = 0.0 if recovering else sin(clock*4+pos.x*0.02)*0.6
-	_sprite(kind,pos+Vector2(0,bob),height,tint,pos.x>player.x)
+	var key := "boss_"+str(dungeon.floor_number) if kind=="boss" else kind
+	var anticipation: float = enemy.get("telegraph",0.0)
+	var attacking: bool = enemy.get("phase","")=="charge"
+	if kind!="boss":
+		var frame_index := int(float(enemy.get("walk_distance",0.0))/12.0)%2
+		if anticipation>0: frame_index = 2
+		elif attacking or recovering or enemy.get("cast_time",0.0)>0 or (kind=="normal" and pos.distance_to(player)<48): frame_index = 3
+		key = kind+"_"+str(frame_index)
+	var lean := (-0.08 if anticipation>0 else (0.14 if attacking else 0.0))*(-1 if pos.x>player.x else 1)
+	var squash := Vector2(1.08,0.93) if anticipation>0 else (Vector2(0.94,1.06) if attacking else Vector2.ONE)
+	_sprite(key,pos+Vector2(0,bob),height,tint,pos.x>player.x,lean,squash)
+	if kind=="boss": draw_string(font,pos+Vector2(-62,-height-14),Bosses.name_for(dungeon.floor_number),HORIZONTAL_ALIGNMENT_CENTER,124,11,Color("f1c281"))
 	if kind in ["boss","miniboss"] and dungeon.floor_number>=3 and enemy["hp"]<enemy["max_hp"]*0.5:
 		draw_arc(pos+Vector2(0,-12),27,clock*3,clock*3+5.5,24,Color("ffb24c"),3)
 	var bar := Rect2(pos+Vector2(-18,-height-7),Vector2(36,4))
@@ -675,6 +746,9 @@ func _return_to_hub() -> void:
 	start_panel.show()
 
 func _enter_current() -> void:
+	layout_index = Layouts.index(dungeon.seed_value,dungeon.current)
+	PILLARS = Layouts.obstacles(layout_index)
+	combat.set_obstacles(PILLARS)
 	combat.enter(dungeon.rooms[dungeon.current], player)
 	services.enter()
 

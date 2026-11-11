@@ -472,10 +472,12 @@ func _draw() -> void:
 func _draw_character(center: Vector2) -> void:
 	draw_circle(center+Vector2(0,73),60,Color(0.35,0.65,0.63,0.07))
 	draw_arc(center+Vector2(0,70),60,0,TAU,40,Color("496666"),2)
-	var hero := Art.frame("hero_front")
+	var hero := Art.frame("portrait")
 	var height := 190.0
 	var width := height*hero.get_width()/hero.get_height()
-	draw_texture_rect(hero,Rect2(center+Vector2(-width*Art.pivot("hero_front"),76-height),Vector2(width,height)),false)
+	draw_texture_rect(hero,Rect2(center+Vector2(-width*Art.pivot("portrait"),76-height),Vector2(width,height)),false)
+	var weapon: String = hub.item_type(hub.equipped["weapon"])
+	preload("res://scripts/weapon_art.gd").draw_held(self,weapon,center+Vector2(-24,3),Vector2.DOWN,0.0,2.8,false,true)
 
 func _inventory_y(y: float) -> float:
 	return 160 + (y - 160) * inventory_scale

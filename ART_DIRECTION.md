@@ -51,13 +51,12 @@ Runtime loads cached AtlasTextures, with no full-atlas CPU readback or per-frame
 image scanning. Atlas textures are clipped to avoid neighboring-cell bleeding.
 
 Concept references have `.gdignore` and are excluded from the Web export. Runtime
-uses just the four production PNGs, not the full-resolution presentation sheets.
+uses the production PNGs, not the full-resolution presentation sheets.
 
 ## Gameplay integration
 
-The playable footprint remains464×438 world units. Collision rectangles,
-pathfinding, doors, spawn positions, hitboxes and all combat/economy tuning remain
-independent of artwork. Perspective comes from visible top faces, upright actors,
+The playable footprint remains464×438 world units. Room-specific collision rectangles and pathfinding follow six deterministic prop layouts.
+Doors and hitboxes stay fixed; equipment and damage tuning are unchanged. Perspective comes from visible top faces, upright actors,
 contact shadows and depth sorting; the navigation plane remains orthographic so
 phone controls behave exactly as before. The original diamond-shaped concept
 composition was adapted to an axis-aligned playable arena.
@@ -68,31 +67,71 @@ Pillar bases match existing collision footprints. Chests keep similar widths as
 their lids open. The wheel uses a rotating procedural face over its painted base.
 Outer map edges are closed visually; existing neighbor passages remain open.
 
-The hero has front/back idle poses, horizontal facing and subtle movement bob.
-Enemies have distinct silhouettes, idle motion, recovery tint and hit flashes.
-These are not full walk/attack sprite animations. Inventory uses the same hero;
-its appearance does not yet change with each armor item. The hub entry previews
-Sanctuary flooring and a painted portal. Raised props fade when the player is behind them. A small teal footprint ring
-is drawn above effects/props to keep the player readable while partly occluded. Health bars, aim/charge tells, spawn warnings and
-ground hazards stay high-contrast and are not baked into room art.
+The hero uses four-frame front/back walking cycles driven by distance traveled,
+plus four front-facing attack frames synchronized to actual weapon releases.
+Six held weapon sprites animate differently: bow draw/release, crossbow recoil,
+wand thrust, sword sweep (alternating on extra slashes), hammer windup/slam,
+and chakram spin. Back-facing attacks use the back sprite with animated weapons.
+The inventory uses a dedicated full-frontal pose holding the equipped weapon.
+Armor cosmetics are not implemented.
 
-Floors1–3 use the clean Sanctuary palette. Later floors receive subtle grading
-and increasingly visible crimson border roots. This remains region1, not the
-floor41–50 climax. Room variants have small palette shifts without changing
-geometry. Region2–5 production packs can use the same atlas/layout interface.
+Normal acolytes, casters, brutes and guardians each have two walking poses,
+a windup and an attack pose. Bosses have ten distinct painted silhouettes,
+anchored anticipation/lunge transforms, readable warnings, hit flashes and recovery.
+They do not yet have bespoke multi-frame directional sprite sheets.
+
+Six stable room arrangements include memorial statues/pillars, sarcophagi,
+reliquary urns, barricades, root gardens and braziers. A central cross preserves
+all four door routes and access to services. Enemy navigation rebuilds on entry;
+existing spawns inside props are projected to free navigation cells. Bases overlap
+tight contact shadows rather than floating above detached ovals. Tall props fade
+behind the player. The teal footprint remains visible above effects.
+
+Floors1–3 use the clean Sanctuary palette; floors4–10 gain crimson border roots.
+Future region packs reuse the catalog interface.
+
+### Floor bosses
+
+| Floor | Boss | Attack rotation |
+| --- | --- | --- |
+| 1 | The Headsman | Aimed fan, charge |
+| 2 | Jade Oracle | Ring, locked ground marks, fan |
+| 3 | Sanctuary Hound | Charge, marked hunt trail, charge |
+| 4 | Bell Wraith | Ring, cross volley, ground marks |
+| 5 | Cathedral Titan | Cross-shaped eruptions, charge, ground marks |
+| 6 | Thorn Hierophant | Spiral volley, fan, ground marks |
+| 7 | Jade Scorpion | Hunt trail, cross volley, charge |
+| 8 | Mirror Queen | Cross volley, ring, fan |
+| 9 | Cinder Stag | Charge, eruptions, spiral |
+| 10 | Fallen Regent | Ground/fan combo, ring, hunt, spiral |
+
+Ring/cross/spiral volleys lock orientation at warning start. Ground/hunt/eruption
+markers lock positions with at least0.9s warning. Enrage keeps the established
+half-health cadence increase. HP, damage, rewards and player power budgets remain
+unchanged; the new rotations need continued playtesting for dodge difficulty.
+
+### Added atlases
+
+- `hero.png`:4×4 walking, attack, portrait and idle poses.
+- `enemies.png`:4×4 two walk poses, windup and attack per enemy archetype.
+- `bosses.png`:5×2 unique floor bosses.
+- `objects.png`:4×3 six environment props and six held weapons.
 
 ## Remaining art work
 
-Full directional walking/attack/death animations, equipped-item cosmetics,
+Additional directional attack and death frames, bespoke boss animation sheets, armor cosmetics,
 production weapon/equipment/card icons, further biome asset packs, bespoke trap
-props, more room dressing and layouts, hub-wide illustrated scenery, and a final
+props, further room dressing, hub-wide illustrated scenery, and a final
 sound/music pass remain. Current vector attack effects/telegraphs are retained
 for gameplay clarity. Their replacement must preserve timing, area and contrast.
 
 ## Validation
 
 `tests/art_smoke.gd` checks all16 atlas frames, transparency, cache reuse, overlay
-center, stage progression and unchanged gameplay geometry/stats. Existing native
+center, stage progression and room collision and preserved player stats. Existing native
 combat/progression tests still run. Browser checks cover movement through the new
 art, actual late-floor encounters, inventory, phone/short-phone/desktop layout
 and rendering errors. Visual review on a real iPhone remains valuable.
+
+`tests/visuals_smoke.gd` validates all70 atlas regions, connected door/service paths
+in every layout, boss identities/rotations and release-synchronized attack poses.

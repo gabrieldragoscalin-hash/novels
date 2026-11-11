@@ -1,11 +1,15 @@
 extends RefCounted
-## Rendering-only asset catalog. Gameplay coordinates/collision never depend on art.
+## Rendering asset catalog. Room layouts own collision; atlas pixels never define it.
 const Layout = preload("res://scripts/art_regions.gd")
 const ROOM: Texture2D = preload("res://art/sanctuary/room.png")
 const CORRUPTION: Texture2D = preload("res://art/sanctuary/corruption.png")
 const ACTORS: Texture2D = preload("res://art/sanctuary/actors.png")
 const PROPS: Texture2D = preload("res://art/sanctuary/props.png")
 const ACTOR_KEYS := ["hero_front","hero_back","normal","shooter","brute","boss","miniboss","merchant"]
+const ENEMIES: Texture2D = preload("res://art/sanctuary/enemies.png")
+const HERO: Texture2D = preload("res://art/sanctuary/hero.png")
+const BOSSES: Texture2D = preload("res://art/sanctuary/bosses.png")
+const OBJECTS: Texture2D = preload("res://art/sanctuary/objects.png")
 const PROP_KEYS := ["pillar","chest_closed","chest_open","shop","healer","upgrade","wheel","exit"]
 const REGIONS := [
 	{"first":1,"last":10,"name":"The Fallen Sanctuary","production":true},
@@ -21,8 +25,12 @@ static func frame(key: String) -> AtlasTexture:
 	if frames.has(key): return frames[key]
 	var actor := ACTOR_KEYS.has(key)
 	var keys: Array = ACTOR_KEYS if actor else PROP_KEYS
-	assert(keys.has(key),"Unknown art frame: "+key)
+	assert(Layout.FRAMES.has(key),"Unknown art frame: "+key)
 	var source: Texture2D = ACTORS if actor else PROPS
+	if key.begins_with("boss_"): source = BOSSES
+	elif key.begins_with("normal_") or key.begins_with("shooter_") or key.begins_with("brute_") or key.begins_with("miniboss_"): source = ENEMIES
+	elif key in ["portrait","idle_back","idle_front","hurt"] or key.begins_with("walk_") or key.begins_with("attack_"): source = HERO
+	elif not keys.has(key): source = OBJECTS
 	var bounds: Array = Layout.FRAMES[key]
 	var texture := AtlasTexture.new()
 	texture.atlas = source

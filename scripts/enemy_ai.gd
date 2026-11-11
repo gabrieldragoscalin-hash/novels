@@ -1,4 +1,5 @@
 extends RefCounted
+const Bosses = preload("res://scripts/boss_roster.gd")
 const Dungeon = preload("res://scripts/dungeon.gd")
 var combat_ref: WeakRef
 var c:
@@ -6,6 +7,7 @@ var c:
 func _init(combat) -> void: combat_ref = weakref(combat)
 
 func tick(enemy: Dictionary,delta: float,player: Vector2) -> void:
+	enemy["cast_time"] = maxf(0,enemy.get("cast_time",0.0)-delta)
 	var kind: String = enemy.get("kind","normal")
 	if kind == "normal": _walk(enemy,delta,player); return
 	if kind == "shooter":
@@ -33,6 +35,7 @@ func _move(enemy: Dictionary,motion: Vector2) -> bool:
 	for i in range(steps):
 		var next: Vector2 = enemy["pos"]+motion/steps
 		if c.blocked(next,13): return false
+		enemy["walk_distance"] = enemy.get("walk_distance",0.0)+motion.length()/steps
 		enemy["pos"] = next
 	return true
 
@@ -83,7 +86,7 @@ func _heavy(enemy: Dictionary,delta: float,player: Vector2) -> void:
 		_walk(enemy,delta,player); return
 	var action := "charge"
 	if boss:
-		var sequence: Array = ["spread","charge"] if index==0 else (["spread","charge","ground"] if index==1 else ["spread","charge","combo"])
+		var sequence: Array = Bosses.sequence(index+1)
 		if enemy.get("kind","")=="miniboss": sequence = ["charge","spread"]
 		action = sequence[int(enemy.get("sequence",0))%sequence.size()]
 		enemy["sequence"] = int(enemy.get("sequence",0))+1
@@ -95,6 +98,12 @@ func _heavy(enemy: Dictionary,delta: float,player: Vector2) -> void:
 	if boss and index>=2 and enemy["hp"]<enemy["max_hp"]*0.5: enemy["attack"] *= 0.75
 	# Ground locations lock at warning start, giving a real window to dodge.
 	if action in ["ground","combo"]: _ground(player,index)
+	if action=="eruption": _eruption(enemy,index)
+	if action=="hunt":
+		# A three-point trail locks now, never tracks during detonation.
+		for offset in [-65.0,0.0,65.0]:
+			var point: Vector2 = (player+enemy["aim"]*offset).clamp(c.bounds.position+Vector2(40,40),c.bounds.end-Vector2(40,40))
+			c.hazards.append({"pos":point,"radius":30.0,"warning":1.1,"life":1.3,"fired":false})
 
 func _release(enemy: Dictionary,index: int,_player: Vector2) -> void:
 	match enemy["action"]:
@@ -105,9 +114,22 @@ func _release(enemy: Dictionary,index: int,_player: Vector2) -> void:
 			var angles: Array = []
 			for i in range(count): angles.append((i-(count-1)*0.5)*0.18)
 			_volley(enemy,angles,Dungeon.SHOT_SPEEDS[index])
-		"ground": pass
+		"ring":
+			var angles: Array = []
+			for i in range(8): angles.append(i*TAU/8.0+0.15*int(enemy.get("sequence",0)))
+			_volley(enemy,angles,Dungeon.SHOT_SPEEDS[index]*0.8)
+		"cross":
+			_volley(enemy,[0.0,PI/2,PI,-PI/2],Dungeon.SHOT_SPEEDS[index])
+		"spiral":
+			var angles: Array = []
+			for i in range(7): angles.append(i*0.58+int(enemy.get("sequence",0))*0.35)
+			_volley(enemy,angles,Dungeon.SHOT_SPEEDS[index]*0.85)
+		"hunt":
+			enemy["phase"] = "charge"; enemy["phase_time"] = 0.3
+		"ground", "eruption": pass
 
 func _volley(enemy: Dictionary,angles: Array,speed: float) -> void:
+	enemy["cast_time"] = 0.24
 	for angle in angles:
 		c.hostile_bullets.append({"pos":enemy["pos"],"velocity":enemy["aim"].rotated(angle)*speed,"life":4.0})
 
@@ -117,3 +139,8 @@ func _ground(player: Vector2,index: int) -> void:
 		var pos: Vector2 = player+offsets[i]
 		pos = pos.clamp(c.bounds.position+Vector2(40,40),c.bounds.end-Vector2(40,40))
 		c.hazards.append({"pos":pos,"radius":35.0+index*2,"warning":0.9,"life":1.15,"fired":false})
+
+func _eruption(enemy: Dictionary,index: int) -> void:
+	for offset in [Vector2.ZERO,Vector2(85,0),Vector2(-85,0),Vector2(0,85),Vector2(0,-85)]:
+		var point: Vector2 = (enemy["pos"]+offset).clamp(c.bounds.position+Vector2(45,45),c.bounds.end-Vector2(45,45))
+		c.hazards.append({"pos":point,"radius":32.0+index,"warning":1.15,"life":1.35,"fired":false})

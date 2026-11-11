@@ -18,7 +18,7 @@ floors, with moving starts/bosses, tougher encounters, and rotating services.
 Loot is unguarded on floor 1; defenders arrive on floor 2. Initially empty rooms
 awaken with weaker enemies on floor 3. Floor 5 loot rooms have miniboss guardians. Defeating the tenth boss ends the expedition.
 
-Core features: three enemy archetypes and a telegraphed boss; XP pickups and upgrade
+Core features: three enemy archetypes and ten distinct telegraphed floor bosses; XP pickups and upgrade
 choices; coins/flares; loot, three trap effects, shop, trader, free upgrade, wheel,
 healer; and a full-screen hub menu with an eight-slot **Inventory**, individual item copies,
 parts upgrades, rarity synthesis, typed keys, chest pity, and coin-bought perks. Inventory shows four
@@ -136,3 +136,14 @@ The Sanctuary art pack covers current floors1–10: painted room textures, trans
 hero/enemy/prop sprites, gradual corruption and matching hub character/portal art.
 Approved later-region concepts are preserved under `art/concepts` and excluded
 from browser downloads. This art pass does not change combat or collision rules.
+
+### Animated Sanctuary pass
+
+The hero has distance-driven front/back walk cycles and release-driven attack
+frames; mobs have walk/windup/attack poses. All six equipped weapons are visible
+and animate per type, with a dedicated frontal inventory character holding them.
+Six stable prop/collision layouts add memorials, crypts, reliquaries, barricades,
+root gardens and fire courts. Floors1–10 have unique boss silhouettes and attack
+rotations. Boss animation currently uses windup/lunge transforms; dedicated boss
+sprite animation sheets, death frames and armor cosmetics remain future work.
+See [ART_DIRECTION.md](ART_DIRECTION.md) for atlas and boss details.

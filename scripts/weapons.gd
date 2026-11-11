@@ -1,6 +1,9 @@
 extends RefCounted
 ## Attack scheduling/projectile simulation. Enemy rewards still belong to Combat.
 const Balance = preload("res://scripts/combat_balance.gd")
+var pose_time := 0.0
+var pose_direction := Vector2.DOWN
+var pose_reverse := false
 var cycle := 0
 var splash_hits: Dictionary = {}
 var rolling_hits: Dictionary = {}
@@ -17,6 +20,7 @@ var spawned: Array = []
 func _init(combat) -> void: combat_ref = weakref(combat)
 
 func reset(player: Vector2) -> void:
+	pose_time = 0.0
 	queued.clear(); effects.clear(); meteors.clear(); splash_hits.clear(); rolling_hits.clear(); cycle = 0; charge = 0; last_player = player
 
 func nearest(origin: Vector2, excluded: Array = [], clear: bool = true) -> int:
@@ -31,6 +35,7 @@ func nearest(origin: Vector2, excluded: Array = [], clear: bool = true) -> int:
 	return best
 
 func tick(delta: float, player: Vector2) -> void:
+	pose_time = maxf(0,pose_time-delta)
 	var p = c.progression
 	for effect in effects: effect["life"] -= delta
 	effects = effects.filter(func(e): return e["life"] > 0)
@@ -73,6 +78,9 @@ func _fire(player: Vector2, target: int, charged: bool, slash: int, attack_cycle
 	var p = c.progression
 	var direction: Vector2 = player.direction_to(c.enemies[target]["pos"])
 	if direction == Vector2.ZERO: direction = Vector2.UP
+	pose_time = 0.24
+	pose_direction = direction
+	pose_reverse = slash%2==1
 	var count: int = 1+p.ranks["multishot"]
 	if p.weapon in ["sword","hammer"]:
 		_melee(player,direction,slash); return

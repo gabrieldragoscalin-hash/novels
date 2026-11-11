@@ -37,6 +37,9 @@ func _init(room_bounds: Rect2, pillars: Array[Rect2]) -> void:
 	enemy_ai = preload("res://scripts/enemy_ai.gd").new(self)
 	arsenal = preload("res://scripts/weapons.gd").new(self)
 	bounds = room_bounds
+	set_obstacles(pillars)
+
+func set_obstacles(pillars: Array[Rect2]) -> void:
 	obstacles = pillars
 	nav.region = Rect2i(0,0,maxi(1,int(ceil((bounds.size.x-32)/16))),maxi(1,int(ceil((bounds.size.y-32)/16))))
 	nav.cell_size = Vector2(16, 16)
@@ -50,6 +53,9 @@ func _init(room_bounds: Rect2, pillars: Array[Rect2]) -> void:
 
 func enter(state: Dictionary, player: Vector2) -> void:
 	arsenal.reset(player)
+	# Existing spawn positions are projected away from the room-specific props.
+	for enemy in state["enemies"]:
+		if blocked(enemy["pos"],18): enemy["pos"] = nav.get_point_position(_cell(enemy["pos"]))
 	bullets.clear()
 	hostile_bullets.clear()
 	hazards.clear()

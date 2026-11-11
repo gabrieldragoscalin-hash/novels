@@ -39,9 +39,12 @@ with sync_playwright() as p:
   page.goto(url,wait_until='networkidle');page.wait_for_timeout(3000)
   box=page.locator('canvas').bounding_box();scale=box['width']/480;h=box['height']/scale
   def tap(x,y):page.touchscreen.tap(box['x']+x*scale,box['y']+y*scale);page.wait_for_timeout(150)
-  tap(240,540);tap(390,756)
+  tap(146,h-56)
+  page.screenshot(path=f'/tmp/inventory-{weapon}.png')
+  tap(242,h-56);tap(240,540);tap(390,756)
   page.mouse.move(250,650);page.mouse.wheel(0,2500);page.wait_for_timeout(250)
-  tap(240,h-44) # Teleport to boss, last row of cheat menu.
+  tap(240,h-133) # Teleport to boss; reset profile sits below this row.
+  tap(240,76) # Close cheats.
   page.wait_for_timeout(250)
   if weapon in ['sword','hammer']:
    page.keyboard.down('w');page.wait_for_timeout(800);page.keyboard.up('w')

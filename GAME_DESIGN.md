@@ -282,6 +282,10 @@ Throne(41–50). Architecture/materials evolve; deeper does not simply mean dark
 
 Floors1–10 now use Sanctuary production textures, transparent hero/enemy/prop
 atlases, depth sorting, chest state artwork and gradual border corruption. Future
-region references are archived, not playable production packs. Layout/collision
-and combat balance are unchanged. Full animation, item cosmetics, remaining
-icons, later biome packs and final audio are still future work.
+region references are archived, not playable production packs. Six room prop layouts now have matching collision/navigation; central door routes remain open.
+Heroes and regular enemies have movement/attack frames. Weapons are visible and
+animate per type; inventory uses a frontal portrait holding the equipped weapon.
+Each floor has a distinct boss silhouette/name/attack rotation (see ART_DIRECTION.md).
+Boss windup/lunge animation currently uses anchored sprite transforms. Player
+damage, enemy HP and rewards remain unchanged. Additional directional/boss/death
+frames, armor cosmetics, remaining icons, later biome packs and final audio remain.
