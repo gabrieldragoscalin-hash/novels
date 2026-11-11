@@ -59,7 +59,7 @@ Room adjacency constraints have not been added; all neighbouring rooms connect.
 
 Starter bow: 6 starting HP plus hub training/equipment; 185 movement speed; 1 damage;
 one shot per 0.45 seconds. Equipped weapons replace base attack stats, while armor,
-boots and charms add their own bonuses. Contact and hostile projectiles deal 1 damage, with
+headgear, pants, boots, necklaces, rings and bracelets add their own bonuses. Contact and hostile projectiles deal 1 damage, with
 one second of invulnerability after a hit and 0.7 seconds of safe arrival time.
 
 Normal enemies chase. Brutes are slower and tougher. Shooters reposition until
@@ -149,11 +149,31 @@ These are **prototype choices for previously undecided systems**:
 - Death, completion, or the Return to hub button leads back to preparation. Health,
   XP, levels, ranks, coins, and flares are reset when the next expedition begins.
 
-## Armory and workshop
+## Hub menu and inventory
 
-The hub now has a persistent stash and four equipment slots: weapon, armor, boots,
-and charm. Select **Armory** to inspect stored/craftable gear, equip it, or upgrade
-it. Nothing changes the active run; a fresh loadout snapshot is taken on departure.
+The hub is now a full-screen menu with an original background and a central dungeon
+doodle. **Play** selects the home page; clicking the dungeon icon starts a run.
+The bottom navigation is, in order: **Shop, Inventory, Play, Perks, Miscellaneous**.
+Shop lists crafting recipes; Inventory contains owned items and their details;
+Perks contains the existing key-based training; Miscellaneous contains help and
+progress information. Dungeon shops still provide their normal run services.
+
+Inventory has **eight active slots** above the stored-item grid. Left: Weapon,
+Armor, Headgear, Pants. Right: Boots, Necklace, Ring, Bracelet. A character preview
+stands in the middle. Tapping a stored/equipped item opens equip/upgrade details;
+an empty slot filters the inventory. Owned items are scrollable below the loadout.
+
+Two reserved squares below the character are **Pet** and **Spirit**, outside the
+eight active slots. Both remain non-interactive in this build. The Pet milestone
+is first reaching floor 10, tracked permanently; the current floor-3 cap means it
+cannot yet be reached. Spirit's later unlock floor has deliberately not been set.
+Events/battle pass on the left and daily/play-time rewards on the right are future
+features; no fake offers, timers or event buttons have been added.
+
+The former charm slot is migrated to **Necklace**, preserving the item ID, level,
+and equipped status from existing saves. All earlier keys, seals, scrap, training
+and equipment remain available. A fresh loadout snapshot is taken on departure;
+equipment still cannot be changed during a run.
 Weapons are not lost on death, and there is no equipment durability.
 
 | Item | Slot | Craft cost (scrap) | Level-1 effect |
@@ -163,12 +183,18 @@ Weapons are not lost on death, and there is no equipment durability.
 | Ember wand | Weapon | 10 | 1 damage, 0.34s interval, 10% critical chance |
 | Warden vest | Armor | 6 | +2 max HP |
 | Scout boots | Boots | 6 | +8% movement |
-| Scholar charm | Charm | 8 | +10% XP |
+| Pathfinder hood | Headgear | 6 | +1 max HP |
+| Trailguard pants | Pants | 6 | +5% movement |
+| Scholar necklace | Necklace | 8 | +10% XP |
+| Ember ring | Ring | 8 | +5% critical chance |
+| Archer bracelet | Bracelet | 8 | +5% firing speed |
 
 All gear has five permanent levels. Upgrading costs 3 × current level scrap
 (3/6/9/12). Bow/wand damage increases every second level; crossbow damage increases
 every level. All weapons gain 5% firing speed per permanent level. Vest HP increases
-by 1 per level, boots by 3 percentage points, charm XP by 5 percentage points.
+by 1 per level, as does hood HP. Boots add 3 percentage points of movement per
+level, pants 2; necklace XP adds 5; ring critical chance and bracelet firing speed
+add 2.5 percentage points per level.
 The item view previews the next level before upgrading.
 
 Every loot chest banks 1/2/3 scrap by floor. Boss victories bank 3/6/9 scrap, once
@@ -188,6 +214,8 @@ unique random affixes and inventory capacity are not implemented yet.
 - `scripts/services.gd`: finite rewards, shop prices, healing, trading.
 - `scripts/hub.gd`: stash, crafting, upgrade costs, slots, local saves and migration.
 - `scripts/equipment.gd`: gear catalog, permanent levels, and loadout stats.
+- `scripts/hub_menu.gd`: hub pages, eight-slot layout, reserved slots and navigation.
+- `scripts/ui_icons.gd`: original procedural menu and equipment artwork.
 
 Before scaling beyond floor 3, check whether players have reasons to skip rooms,
 whether each currency/upgrade choice is useful, whether boss patterns are readable,

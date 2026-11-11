@@ -2,7 +2,7 @@
 
 Last updated: 2026-11-10
 
-Status: three-floor ranged prototype with a persistent equipment armory and expanded run upgrades. See BALANCING.md for implemented defaults and remaining scope.
+Status: three-floor ranged prototype with a persistent eight-slot inventory and expanded run upgrades. See BALANCING.md for implemented defaults and remaining scope.
 No final title has been selected. The prototype uses Godot 4.6.3 with GDScript. Open decisions below must not be treated as
 settled requirements. This game replaces the earlier book project in this repository.
 
@@ -250,13 +250,12 @@ Examples: bonus rooms give 5 on floors 1–5, 10 on 6–10, and 15 on
 
 Prototype defaults: permanent shop purchases cost coins and are secured immediately; a key trains +1 starting HP (up to three times); a supply seal automatically provides 20 coins on the next expedition. Hub data is local to a device/browser, without account synchronization. Prices and retention can be revised during balancing.
 
-## Equipment armory (current milestone)
+## Hub menu and equipment inventory (current milestone)
 
 - The hub stores unique owned item types and their permanent levels, across runs.
-- Four slots: one ranged weapon, armor, boots and charm. Gear can be equipped,
-  unequipped (except the only weapon), crafted and upgraded from the hub.
+- Eight slots: Weapon, Armor, Headgear, Pants, Boots, Necklace, Ring, Bracelet. Four are shown on each side of the central character, above the inventory grid. Gear can be equipped, unequipped (except the weapon), crafted and upgraded from the hub.
 - Starter Ranger bow; craftable Iron crossbow and Ember wand; Warden vest,
-  Scout boots and Scholar charm. All gear has five permanent levels.
+  Scout boots, Scholar necklace, Pathfinder hood, Trailguard pants, Ember ring and Archer bracelet. All gear has five permanent levels.
 - Chests grant scrap equal to the floor and a 30% equipment-find chance. Duplicate
   finds grant 2 scrap. Bosses bank 3 × floor scrap once on defeat.
 - Scrap and finds are secured immediately. Costs, stats and level previews are in
@@ -267,6 +266,21 @@ Prototype defaults: permanent shop purchases cost coins and are secured immediat
   This is device-local storage, without cloud account synchronization.
 - Normal enemy HP now scales 3 → 9 → 18 through floors 1–3; brutes have double HP.
   Awakened empty rooms on floor 3 use the tier-2 enemy HP of 9.
+
+### Hub presentation and future slots
+
+- Full-screen menu with its own original background and central dungeon doodle.
+- Bottom tabs, in this exact order: Shop, Inventory, Play, Perks, Miscellaneous.
+- Play selects the page; clicking the dungeon icon enters the expedition.
+- Inventory replaces the former armory terminology and shows owned items below
+  the character's eight active equipment slots.
+- Two additional squares below the character are reserved and locked: Pet unlocks
+  on first reaching floor 10; Spirit unlocks later, with no threshold set yet.
+- Highest floor reached is saved permanently for future unlocks. The expedition
+  remains capped at floor 3, so Pet/Spirit equipment is not implemented yet.
+- Left-side events/battle pass and right-side daily/play-time rewards are deferred;
+  reserve visual space without adding simulated offers or reward timers.
+- Existing charm saves migrate to Necklace without losing equipment or levels.
 
 ## Replaced concepts — do not implement
 

@@ -1,6 +1,7 @@
 extends Node2D
 ## First combat prototype: auto-fire while moving and persistent encounters.
 signal transition_finished
+const HubMenu = preload("res://scripts/hub_menu.gd")
 const HubState = preload("res://scripts/hub.gd")
 const Services = preload("res://scripts/services.gd")
 const CombatState = preload("res://scripts/combat.gd")
@@ -22,9 +23,7 @@ var service_title: Label
 var service_description: Label
 var service_buttons: Array[Button] = []
 var interact_button: Button
-var armory_button: Button
-var hub_label: Label
-var train_button: Button
+var hub_menu
 var outcome_title: Label
 var outcome_text: Label
 var wheel_rotation := 0.0
@@ -51,7 +50,7 @@ var pointer_mouse := false
 var facing := 1.0
 var clock := 0.0
 var distance_walked := 0.0
-var start_panel: PanelContainer
+var start_panel: Control
 var status_label: Label
 var movement_blockers: Array[Control] = []
 var font := ThemeDB.fallback_font
@@ -98,9 +97,6 @@ func _build_ui() -> void:
 	reset.pressed.connect(_return_to_hub)
 	root.add_child(reset)
 	movement_blockers.append(reset)
-	start_panel = PanelContainer.new()
-	start_panel.position = Vector2(54, 170)
-	start_panel.size = Vector2(372, 420)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("131e30")
 	style.border_color = Color("a7864d")
@@ -110,42 +106,19 @@ func _build_ui() -> void:
 	style.content_margin_right = 25
 	style.content_margin_top = 24
 	style.content_margin_bottom = 24
-	start_panel.add_theme_stylebox_override("panel", style)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 16)
-	start_panel.add_child(box)
-	var title := Label.new()
-	title.text = "The expedition hub"
-	title.add_theme_font_size_override("font_size", 26)
-	box.add_child(title)
-	var text := Label.new()
-	text.text = "Explore all room types across 3 floors.\nDefeat each boss to descend.\nStore equipment and choose a loadout."
-	text.add_theme_font_size_override("font_size", 14)
-	box.add_child(text)
-	hub_label = Label.new()
-	hub_label.add_theme_font_size_override("font_size", 13)
-	box.add_child(hub_label)
-	armory_button = Button.new()
-	armory_button.text = "Armory • store, equip & upgrade"
-	armory_button.custom_minimum_size.y = 40
-	armory_button.add_theme_font_size_override("font_size", 14)
-	armory_button.pressed.connect(_open_armory)
-	box.add_child(armory_button)
-	train_button = Button.new()
-	train_button.text = "Train +1 starting HP • 1 key (max 3)"
-	train_button.custom_minimum_size.y = 38
-	train_button.add_theme_font_size_override("font_size", 13)
-	train_button.pressed.connect(func():
-		hub.train()
+	hub_menu = HubMenu.new()
+	start_panel = hub_menu
+	root.add_child(hub_menu)
+	hub_menu.setup(hub)
+	hub_menu.tab_changed.connect(func(_index):
+		if in_hub and interacting: _close_service()
+	)
+	hub_menu.dungeon_requested.connect(start_game)
+	hub_menu.item_requested.connect(_inventory_item)
+	hub_menu.training_requested.connect(func():
+		if in_hub: hub.train()
 		_refresh_hub()
 	)
-	box.add_child(train_button)
-	var start := Button.new()
-	start.text = "Enter the dungeon"
-	start.custom_minimum_size.y = 48
-	start.pressed.connect(start_game)
-	box.add_child(start)
-	root.add_child(start_panel)
 	death_panel = PanelContainer.new()
 	death_panel.position = Vector2(54, 250)
 	death_panel.size = Vector2(372, 240)
@@ -246,6 +219,7 @@ func _new_run() -> void:
 	combat.progression.base_health = 6 + hub.training
 	combat.progression.apply_loadout(hub.loadout_stats())
 	combat.health = combat.progression.max_health()
+	hub.record_floor(1)
 	if hub.seals > 0:
 		hub.seals -= 1
 		hub.save()
@@ -333,7 +307,7 @@ func _physics_process(delta: float) -> void:
 				active = false
 				_release_stick()
 				outcome_title.text = "Your run has ended"
-				outcome_text.text = "Floor %d • %d enemies defeated\nArmory, scrap, keys and seals are kept." % [dungeon.floor_number, combat.kills]
+				outcome_text.text = "Floor %d • %d enemies defeated\nInventory, scrap, keys and seals are kept." % [dungeon.floor_number, combat.kills]
 				death_panel.show()
 	_update_combat_labels()
 	_update_interact()
@@ -573,9 +547,8 @@ func _read_seed() -> void:
 		if arg.begins_with("--seed=") and arg.trim_prefix("--seed=").is_valid_int(): seed_override = int(arg.trim_prefix("--seed="))
 
 func _refresh_hub() -> void:
-	hub_label.text = "%d keys • %d seals • %d scrap\n%s Lv.%d • +%d trained HP\nA seal supplies 20 coins on your next run." % [hub.keys, hub.seals, hub.materials, hub.Equipment.ITEMS[hub.equipped["weapon"]]["name"], hub.inventory[hub.equipped["weapon"]], hub.training]
-	if not hub.persistence_ok: hub_label.text += "\nStorage unavailable: progress is session-only."
-	train_button.disabled = hub.keys <= 0 or hub.training >= 3
+	hub_menu.hub = hub
+	hub_menu.refresh()
 
 func _return_to_hub() -> void:
 	if transitioning or wheel_spinning: return
@@ -589,6 +562,7 @@ func _return_to_hub() -> void:
 	death_panel.hide()
 	service_panel.hide()
 	_refresh_hub()
+	hub_menu.select_tab(2)
 	start_panel.show()
 
 func _enter_current() -> void:
@@ -637,6 +611,7 @@ func _advance_floor() -> void:
 	if state["role"] != "boss" or combat.alive_count() > 0 or not state["boss_paid"]: return
 	_bank_boss_materials()
 	if dungeon.advance():
+		hub.record_floor(dungeon.floor_number)
 		player = Vector2(240, 530)
 		_release_stick()
 		_enter_current()
@@ -660,7 +635,8 @@ func _advance_floor() -> void:
 func _menu(title: String, description: String, options: Array, columns: int = 1) -> void:
 	interacting = true
 	_release_stick()
-	service_close_button.text = "Back to hub" if in_hub else "Back to room"
+	service_close_button.text = ("Back to inventory" if hub_menu.selected == 1 else "Back to shop") if in_hub else "Back to room"
+	service_panel.position.x = (get_viewport_rect().size.x - service_panel.size.x) / 2 if in_hub else 30
 	service_title.text = title
 	service_description.text = description
 	for index in range(service_buttons.size()):
@@ -799,18 +775,13 @@ func _draw_room_content() -> void:
 	elif role == "empty":
 		draw_string(font, center + Vector2(-34, 40), "QUIET" if dungeon.floor_number < 3 else "AWAKENED", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("96a3b6"))
 
-func _open_armory(message: String = "") -> void:
+func _open_inventory(_message: String = "") -> void:
 	if not in_hub: return
-	var options: Array = []
-	for id in hub.Equipment.ITEMS:
-		var item: Dictionary = hub.Equipment.ITEMS[id]
-		var owned: bool = hub.inventory.has(id)
-		var text: String = item["name"] + (" Lv.%d" % hub.inventory[id] if owned else " • Craft %d scrap" % item["cost"])
-		if owned and hub.equipped[item["slot"]] == id: text += " [E]"
-		options.append({"text": text, "action": _armory_item.bind(id)})
-	_menu("Armory & workshop", "%d scrap • equipment survives every run.\n[E] = equipped. Changes apply next expedition.\n%s" % [hub.materials, message], options)
+	_close_service()
+	hub_menu.select_tab(1)
+	_refresh_hub()
 
-func _armory_item(id: String, message: String = "") -> void:
+func _inventory_item(id: String, message: String = "") -> void:
 	if not in_hub: return
 	var catalog = hub.Equipment
 	var item: Dictionary = catalog.ITEMS[id]
@@ -819,33 +790,33 @@ func _armory_item(id: String, message: String = "") -> void:
 	var equipped_now: bool = owned and hub.equipped[item["slot"]] == id
 	var options: Array = []
 	if not owned:
-		options.append({"text": "Craft • %d scrap" % item["cost"], "disabled": hub.materials < item["cost"], "action": _armory_craft.bind(id)})
+		options.append({"text": "Craft • %d scrap" % item["cost"], "disabled": hub.materials < item["cost"], "action": _inventory_craft.bind(id)})
 	else:
-		options.append({"text": "Equipped" if equipped_now else "Equip for next run", "disabled": equipped_now, "action": _armory_equip.bind(id)})
-		options.append({"text": "Maximum level" if level >= catalog.MAX_LEVEL else "Upgrade to Lv.%d • %d scrap" % [level + 1, hub.upgrade_cost(id)], "disabled": level >= catalog.MAX_LEVEL or hub.materials < hub.upgrade_cost(id), "action": _armory_upgrade.bind(id)})
-		if item["slot"] != "weapon" and equipped_now: options.append({"text": "Unequip", "action": _armory_unequip.bind(id)})
-	options.append({"text": "Back to stored equipment", "action": _open_armory})
+		options.append({"text": "Equipped" if equipped_now else "Equip for next run", "disabled": equipped_now, "action": _inventory_equip.bind(id)})
+		options.append({"text": "Maximum level" if level >= catalog.MAX_LEVEL else "Upgrade to Lv.%d • %d scrap" % [level + 1, hub.upgrade_cost(id)], "disabled": level >= catalog.MAX_LEVEL or hub.materials < hub.upgrade_cost(id), "action": _inventory_upgrade.bind(id)})
+		if item["slot"] != "weapon" and equipped_now: options.append({"text": "Unequip", "action": _inventory_unequip.bind(id)})
+	options.append({"text": "Back to stored equipment", "action": _open_inventory})
 	_menu("%s • Lv.%d" % [item["name"], level] if owned else item["name"], "%s\n%s\n%d scrap • %s" % [catalog.summary(id, level), "Next: " + catalog.summary(id, level + 1) if owned and level < catalog.MAX_LEVEL else item["description"], hub.materials, message], options)
 
-func _armory_craft(id: String) -> void:
+func _inventory_craft(id: String) -> void:
 	if in_hub and hub.craft(id):
 		_refresh_hub()
-		_armory_item(id, "Crafted and stored.")
+		_inventory_item(id, "Crafted and stored.")
 
-func _armory_equip(id: String) -> void:
+func _inventory_equip(id: String) -> void:
 	if in_hub and hub.equip_item(id):
 		_refresh_hub()
-		_armory_item(id, "Equipped for next run.")
+		_inventory_item(id, "Equipped for next run.")
 
-func _armory_upgrade(id: String) -> void:
+func _inventory_upgrade(id: String) -> void:
 	if in_hub and hub.upgrade(id):
 		_refresh_hub()
-		_armory_item(id, "Permanently upgraded.")
+		_inventory_item(id, "Permanently upgraded.")
 
-func _armory_unequip(id: String) -> void:
+func _inventory_unequip(id: String) -> void:
 	if in_hub and hub.unequip(hub.Equipment.ITEMS[id]["slot"]):
 		_refresh_hub()
-		_armory_item(id, "Stored in the armory.")
+		_inventory_item(id, "Stored in your inventory.")
 
 func _notice(text: String) -> void:
 	notice_label.text = text.replace("\n", " • ")

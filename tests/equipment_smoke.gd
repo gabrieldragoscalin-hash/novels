@@ -62,7 +62,7 @@ func run() -> void:
 	assert(room.combat.progression.weapon == "crossbow" and room.combat.progression.damage() == 2)
 	room.hub.upgrade("crossbow")
 	assert(room.combat.progression.damage() == 2, "Run loadout is immutable until a new run")
-	room._armory_equip("bow")
+	room._inventory_equip("bow")
 	assert(room.hub.equipped["weapon"] == "crossbow", "Equipment UI cannot change the loadout during a run")
 	room._return_to_hub()
 	room.start_game()

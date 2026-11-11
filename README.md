@@ -9,7 +9,7 @@ seed reproduction, and what remains outside this three-floor build.
 
 ## Play
 
-Enter from the hub. On iPhone, touch and drag anywhere to move; the joystick appears
+Use the hub's **Play** tab and tap the central dungeon icon to enter. On iPhone, touch and drag anywhere to move; the joystick appears
 under your finger. On desktop use WASD/arrows. Attacks aim and fire while moving.
 Walk through doors; tap the action button or press **E** for services/chests/exits.
 
@@ -20,8 +20,10 @@ awaken with weaker enemies on floor 3. Defeating the third boss ends the expedit
 
 Core features: three enemy archetypes and a telegraphed boss; XP pickups and upgrade
 choices; coins/flares; loot, three trap effects, shop, trader, free upgrade, wheel,
-healer; and a persistent hub armory with three ranged weapons, armor, boots, a charm,
-crafting, permanent item upgrades, keys, supply seals, and training. Menus pause combat.
+healer; and a full-screen hub menu with an eight-slot **Inventory**, crafting,
+permanent item upgrades, keys, supply seals, and training. Inventory shows four
+slots on each side of the character, with locked Pet/Spirit spaces beneath.
+Bottom tabs: **Shop, Inventory, Play, Perks, Miscellaneous**. Menus pause combat.
 There are 13 temporary run upgrades, including critical hits, multishot, ricochet,
 frost, burn, regeneration and XP bonuses. Doors stay open; room rewards and enemy
 state cannot be farmed by revisiting.
@@ -44,6 +46,7 @@ godot --headless --path . --script tests/floors_smoke.gd
 godot --headless --path . --script tests/services_smoke.gd
 godot --headless --path . --script tests/equipment_smoke.gd
 godot --headless --path . --script tests/upgrades_smoke.gd
+godot --headless --path . --script tests/hub_menu_smoke.gd
 ```
 
 Floor tests cover 80 seeds through all three floors and actual projectile boss
@@ -69,8 +72,8 @@ python3 -m http.server 8765 --directory build/web
 Serve over HTTP; do not open the exported HTML as a local file.
 Optional browser checks require Playwright, Pillow, and an installed Chromium:
 `python3 tests/browser_smoke.py` (or pass an alternate served URL). They exercise
-mobile input, doors, services, purchases, upgrades, and the hub. Actual iPhone
-Safari remains part of device testing. Local progress is specific to the browser
+mobile input, doors, services, purchases, upgrades, and the hub. `python3 tests/browser_hub_layout.py` checks phone, short-phone and desktop hub
+layouts. Actual iPhone Safari remains part of device testing. Local progress is specific to the browser
 and origin; it is not synchronized across devices.
 
 Scripts are separated into dungeon generation, combat, progression, services,

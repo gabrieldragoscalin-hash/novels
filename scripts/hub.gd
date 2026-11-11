@@ -5,11 +5,12 @@ const PATH := "user://hub.json"
 var storage_path := PATH
 var materials := 0
 var inventory: Dictionary = {"bow": 1}
-var equipped: Dictionary = {"weapon": "bow", "armor": "", "boots": "", "charm": ""}
+var equipped: Dictionary = {"weapon": "bow", "armor": "", "headgear": "", "pants": "", "boots": "", "necklace": "", "ring": "", "bracelet": ""}
 var last_find := ""
 var keys := 0
 var seals := 0
 var training := 0
+var highest_floor := 0
 var persistence_ok := true
 var enabled := true
 
@@ -19,7 +20,7 @@ func _init(persist: bool = true, save_path: String = PATH) -> void:
 	if not enabled or not FileAccess.file_exists(storage_path): return
 	var data = JSON.parse_string(FileAccess.get_file_as_string(storage_path))
 	if not data is Dictionary: return
-	for name in ["keys", "seals", "training", "materials"]:
+	for name in ["keys", "seals", "training", "materials", "highest_floor"]:
 		var value = data.get(name, 0)
 		if value is float or value is int:
 			set(name, clampi(int(value), 0, 3 if name == "training" else 100000))
@@ -32,7 +33,7 @@ func _init(persist: bool = true, save_path: String = PATH) -> void:
 	var loadout = data.get("equipped", {})
 	if loadout is Dictionary:
 		for slot in Equipment.SLOTS:
-			var id = loadout.get(slot, "")
+			var id = loadout.get(slot, loadout.get("charm", "") if slot == "necklace" else "")
 			if id is String and inventory.has(id) and Equipment.ITEMS[id]["slot"] == slot: equipped[slot] = id
 
 
@@ -43,7 +44,7 @@ func save() -> bool:
 	if file == null:
 		persistence_ok = false
 		return false
-	file.store_string(JSON.stringify({"version": 2, "keys": keys, "seals": seals, "training": training, "materials": materials, "inventory": inventory, "equipped": equipped}))
+	file.store_string(JSON.stringify({"version": 3, "keys": keys, "seals": seals, "training": training, "highest_floor": highest_floor, "materials": materials, "inventory": inventory, "equipped": equipped}))
 	file.flush()
 	var write_error := file.get_error()
 	file.close()
@@ -107,7 +108,7 @@ func find_equipment(id: String) -> String:
 		last_find = "%s duplicate → 2 scrap" % Equipment.ITEMS[id]["name"]
 	else:
 		inventory[id] = 1
-		last_find = "Stored %s in the armory" % Equipment.ITEMS[id]["name"]
+		last_find = "Stored %s in your inventory" % Equipment.ITEMS[id]["name"]
 	save()
 	return last_find
 
@@ -116,11 +117,22 @@ func loadout_stats() -> Dictionary:
 	var result := Equipment.stats(id, inventory[id])
 	result["weapon"] = id
 	result["level"] = inventory[id]
-	for slot in ["armor", "boots", "charm"]:
+	for slot in Equipment.SLOTS:
+		if slot == "weapon": continue
 		var item: String = equipped[slot]
 		if item.is_empty(): continue
 		var extra := Equipment.stats(item, inventory[item])
 		result["health"] += extra["health"]
 		result["movement"] += extra["movement"]
 		result["xp"] += extra["xp"]
+		result["critical"] += extra["critical"]
+		result["interval"] /= 1.0 + extra["haste"]
 	return result
+
+func record_floor(value: int) -> void:
+	if value > highest_floor:
+		highest_floor = value
+		save()
+
+func pet_slot_unlocked() -> bool:
+	return highest_floor >= 10

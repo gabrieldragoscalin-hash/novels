@@ -25,6 +25,8 @@ with sync_playwright() as p:
     box = page.locator('canvas').bounding_box()
     scale = box['width'] / 480
     def pos(x, y): return (box['x'] + x * scale, box['y'] + y * scale)
+    def hub_tab(index):
+        tap(50 + index*96, box['height']/scale - 56)
     def image(): return Image.open(io.BytesIO(page.screenshot())).convert('RGB')
     def capture(name): page.screenshot(path=str(Path(tempfile.gettempdir()) / name))
     def tap(x, y): page.touchscreen.tap(*pos(x, y)); page.wait_for_timeout(180)
@@ -111,15 +113,18 @@ with sync_playwright() as p:
     assert current_room() == (2,3), 'Movement must resume after reward selection'
     tap(240,755)  # Return to hub, retaining the purchased key.
     capture('dungeon-hub-return.png')
-    tap(240,424)  # Armory: all stored and craftable gear.
-    capture('dungeon-armory.png')
-    tap(240,313)  # Ranger bow.
+    hub_tab(1)  # Inventory: eight slots around the character.
+    capture('dungeon-inventory.png')
+    tap(81,203)  # Equipped weapon slot.
     capture('dungeon-weapon.png')
     tap(240,355)  # Spend 3 collected scrap to upgrade it.
     capture('dungeon-weapon-upgraded.png')
     tap(240,575)  # Back to hub.
 
-    tap(240,480)  # Spend the key on training.
+    hub_tab(3)  # Perks.
+    tap(240,470)  # Spend the key on training.
+    hub_tab(2)  # Play selects the page, not an immediate departure.
+    capture('dungeon-play-menu.png')
     tap(240,540)  # Start again with the same seed and permanent training.
     assert current_room() == (0,1)
     # Read the actual browser save to verify atomic persistence of gear and training.
@@ -162,5 +167,5 @@ with sync_playwright() as p:
     page.wait_for_timeout(2300)
     capture('dungeon-boss-volley.png')
     assert not errors, errors
-    print(json.dumps({'result':'PASS', 'seed':9, 'checks':['touch movement','release','door travel','trader menu','loot pickup','two-column shop','permanent key purchase','free upgrade','hub return and training','armory and weapon upgrade','browser save and reload','boss rendering and volley'], 'browser_errors':errors}))
+    print(json.dumps({'result':'PASS', 'seed':9, 'checks':['touch movement','release','door travel','trader menu','loot pickup','two-column shop','permanent key purchase','free upgrade','hub return and training','eight-slot inventory and weapon upgrade','browser save and reload','boss rendering and volley'], 'browser_errors':errors}))
     browser.close()
