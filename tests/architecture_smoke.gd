@@ -35,28 +35,29 @@ func run() -> void:
 		c.enter({"role":"combat","enemies":enemies},Vector2(240,556))
 		for enemy in enemies: assert(not c.blocked(enemy["pos"],13),"Enemy inside terrain")
 	# Filling the crossing must disconnect the two banks: the bridge is necessary.
-	for layout in [1,2,4]:
+	for layout in [3,4,5,9]:
 		var gaps := Plans.terrain(layout)
 		gaps.append_array(Plans.bridges(layout))
 		var sealed = Combat.new(BOUNDS,Plans.obstacles(layout))
 		sealed.set_obstacles(Plans.obstacles(layout),gaps)
-		var a := Vector2(240,214) if layout!=4 else Vector2(72,385)
-		var b := Vector2(240,556) if layout!=4 else Vector2(408,385)
+		var a := Vector2(240,214) if layout!=5 else Vector2(72,385)
+		var b := Vector2(240,556) if layout!=5 else Vector2(408,385)
 		assert(sealed.nav.get_point_path(sealed._cell(a),sealed._cell(b)).is_empty(),"Crossing must require bridge")
-	var c = Combat.new(BOUNDS,Plans.obstacles(1))
-	c.set_obstacles(Plans.obstacles(1),Plans.terrain(1))
+	var c = Combat.new(BOUNDS,Plans.obstacles(4))
+	c.set_obstacles(Plans.obstacles(4),Plans.terrain(4))
 	assert(c.blocked(Vector2(120,326),12))
 	assert(not c.wall_between(Vector2(120,280),Vector2(120,390)),"Shots must cross the channel")
-	assert(c.wall_between(Vector2(169,245),Vector2(169,310)),"Solid props must still stop shots")
+	var cover = Combat.new(BOUNDS,Plans.obstacles(7))
+	assert(cover.wall_between(Vector2(150,250),Vector2(150,340)),"Baked masonry must still stop shots")
 	var enemy := Dungeon.make_enemy(Vector2(120,250),"normal",1)
 	var crossed_bridge := false
 	for tick in range(700):
 		c.enemy_ai._walk(enemy,1.0/60,Vector2(120,390))
 		assert(not c.blocked(enemy["pos"],13),"Enemy walked into canal")
-		if enemy["pos"].y>300 and enemy["pos"].y<352: crossed_bridge = true; assert(enemy["pos"].x>213 and enemy["pos"].x<267)
+		if enemy["pos"].y>308 and enemy["pos"].y<360: crossed_bridge = true; assert(enemy["pos"].x>197 and enemy["pos"].x<283)
 	assert(crossed_bridge and enemy["pos"].distance_to(Vector2(120,390))<20,"Enemy must find and cross bridge")
 	# A charge cannot tunnel across the channel instead of using the bridge.
 	enemy["pos"] = Vector2(120,275)
-	c.enemy_ai._move(enemy,Vector2(0,180)); assert(enemy["pos"].y<287)
-	print("PASS: six architectural plans; all walkable floor connected; doors/services/spawns safe; bridge navigation, movement-only gaps and solid cover")
+	c.enemy_ai._move(enemy,Vector2(0,180)); assert(enemy["pos"].y<296)
+	print("PASS: ten painted architectural plans; all walkable floor connected; doors/services/spawns safe; bridge navigation, movement-only gaps and solid cover")
 	quit()

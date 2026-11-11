@@ -1,9 +1,9 @@
-"""Render all six authored plans and verify the canal forces a real mobile crossing."""
+"""Render all ten complete room paintings and verify the canal forces a real mobile crossing."""
 import io,json,shutil
 from pathlib import Path
 from PIL import Image
 from playwright.sync_api import sync_playwright
-PLANS=[(0,6),(1,1),(2,9),(3,8),(4,2),(5,14)]
+PLANS=[(0,5),(1,3),(2,18),(3,1),(4,26),(5,14),(6,2),(7,7),(8,10),(9,8)]
 with sync_playwright() as p:
  browser=p.chromium.launch(executable_path=shutil.which('chromium'),headless=True,args=['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'])
  errors=[]
@@ -25,7 +25,7 @@ with sync_playwright() as p:
    return tuple(sum(pt[i] for pt in points)/len(points)/scale for i in [0,1])
   tap(240,540)
   page.screenshot(path=f'/tmp/architecture-{layout}.png')
-  if layout==1:
+  if layout==4:
    hold('w',300);hold('a',900);hold('w',1500)
    x,y=position();assert 350<y<375,(x,y,'Player crossed water without bridge')
    for attempt in range(12):
@@ -39,4 +39,4 @@ with sync_playwright() as p:
   print(f'layout {layout} PASS',flush=True)
   context.close()
  browser.close()
- print(json.dumps({'result':'PASS','checks':['six rendered architectural plans','canal blocks walking','bridge allows crossing'],'errors':errors}))
+ print(json.dumps({'result':'PASS','checks':['ten rendered complete room paintings','canal blocks walking','bridge allows crossing'],'errors':errors}))

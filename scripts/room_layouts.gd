@@ -1,41 +1,31 @@
 extends RefCounted
-## Authored architectural plans. Gaps are movement-only; props also stop shots.
-const THEMES := ["Processional Hall", "Jade Sluice", "Fractured Crypt", "Collapsed Cloister", "Lava Aqueduct", "Sunken Courtyard"]
+## Collision traced against the ten finished backgrounds (world-space feet).
+## Gaps stop bodies, not projectiles; low masonry stops both.
+const THEMES := ["Quiet Sanctuary", "Weathered Flagstones", "Broken Corners", "Split Crypt", "Jade Waterway", "Molten Aqueduct", "Drowned Court", "Ruined Cloister", "Twin Watercourses", "Ember Crossing"]
 static func index(seed_value: int, cell: Vector2i) -> int:
 	return posmod(seed_value+cell.x*7+cell.y*11,THEMES.size())
-static func props(layout: int) -> Array:
-	var pairs: Array
-	match posmod(layout,6):
-		0: pairs = [["cover_long",Rect2(84,275,80,28)],["cover_long",Rect2(316,275,80,28)],["cover_block",Rect2(112,467,42,28)],["cover_block",Rect2(326,467,42,28)]]
-		1: pairs = [["brazier",Rect2(155,267,28,24)],["brazier",Rect2(297,267,28,24)],["cover_block",Rect2(102,421,42,28)],["cover_block",Rect2(336,421,42,28)],["urns",Rect2(95,500,38,28)],["urns",Rect2(347,500,38,28)]]
-		2: pairs = [["tomb",Rect2(92,267,72,32)],["tomb",Rect2(316,267,72,32)],["tomb",Rect2(92,520,72,28)],["tomb",Rect2(316,520,72,28)]]
-		3: pairs = [["statue",Rect2(335,265,42,30)],["statue",Rect2(103,475,42,30)]]
-		4: pairs = [["brazier",Rect2(259,264,24,24)],["brazier",Rect2(378,264,24,24)],["brazier",Rect2(259,479,24,24)],["brazier",Rect2(378,479,24,24)],["cover_long",Rect2(84,275,80,28)],["cover_long",Rect2(84,467,80,28)]]
-		_: pairs = [["urns",Rect2(105,245,38,28)],["urns",Rect2(337,245,38,28)],["statue",Rect2(95,500,42,30)],["statue",Rect2(343,500,42,30)]]
-	var result: Array = []
-	for pair in pairs: result.append({"key":pair[0],"rect":pair[1]})
-	return result
 static func obstacles(layout: int) -> Array[Rect2]:
-	var result: Array[Rect2] = []
-	for entry in props(layout): result.append(entry["rect"])
+	# The thin side walls belong to the painting. Their apertures stay clear.
+	var result: Array[Rect2] = [Rect2(8,166,16,187),Rect2(8,417,16,187),Rect2(456,166,16,187),Rect2(456,417,16,187)]
+	if posmod(layout,10)==7: result.append_array([Rect2(110,282,80,34),Rect2(302,425,78,34)])
 	return result
-static func prop(layout: int, ordinal: int) -> String: return props(layout)[ordinal]["key"]
 static func terrain(layout: int) -> Array[Rect2]:
 	var result: Array[Rect2] = []
-	match posmod(layout,6):
-		1: result.assign([Rect2(8,300,192,52),Rect2(280,300,192,52)])
-		2: result.assign([Rect2(8,438,188,52),Rect2(284,438,188,52)])
-		3: result.assign([Rect2(90,230,98,100),Rect2(292,440,98,100)])
-		4: result.assign([Rect2(300,166,54,179),Rect2(300,425,54,179)])
-		5: result.assign([Rect2(80,295,120,48),Rect2(280,295,120,48),Rect2(80,427,120,48),Rect2(280,427,120,48)])
+	match posmod(layout,10):
+		2: result.assign([Rect2(90,246,103,86),Rect2(286,430,108,86)])
+		3: result.assign([Rect2(8,420,176,54),Rect2(296,420,176,54)])
+		4: result.assign([Rect2(8,308,176,52),Rect2(296,308,176,52)])
+		5: result.assign([Rect2(306,166,48,176),Rect2(306,420,48,184)])
+		6: result.assign([Rect2(86,254,118,78),Rect2(274,254,120,78),Rect2(86,414,118,86),Rect2(274,414,120,86)])
+		8: result.assign([Rect2(134,218,44,110),Rect2(134,432,44,108),Rect2(302,218,44,110),Rect2(302,432,44,108)])
+		9: result.assign([Rect2(8,420,176,44),Rect2(296,420,176,44)])
 	return result
 static func bridges(layout: int) -> Array[Rect2]:
 	var result: Array[Rect2] = []
-	match posmod(layout,6):
-		1: result.append(Rect2(200,292,80,68))
-		2: result.append(Rect2(196,430,88,68))
-		4: result.append(Rect2(292,345,70,80))
-		5: result.assign([Rect2(200,287,80,64),Rect2(200,419,80,64)])
+	match posmod(layout,10):
+		3: result.append(Rect2(184,414,112,68))
+		4: result.append(Rect2(184,300,112,66))
+		5: result.append(Rect2(298,342,64,78))
+		8: result.assign([Rect2(126,328,60,104),Rect2(294,328,60,104)])
+		9: result.append(Rect2(184,412,112,62))
 	return result
-static func material(layout: int) -> String:
-	return ["stone","water","chasm","chasm","lava","water"][posmod(layout,6)]

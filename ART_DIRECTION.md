@@ -25,12 +25,9 @@ beyond50 have no approved artwork yet. Do not stretch Sanctuary into a final hel
 Source PNGs are original image-generation outputs created for this project from
 the approved concept. They are copied intact; no third-party asset pack is needed.
 
-- `art/sanctuary/arena_floor.png`: current quiet large-paver jade-grey floor.
-- `art/sanctuary/masonry.png`: raised wall modules, low cover, recessed doorways, steps and sluice-mouth sprites.
-- `art/sanctuary/surfaces.png`: water, lava, chasm, bridge, capstone, masonry, grate and mosaic materials.
-- `art/sanctuary/room.png`: retained first-pass floor source; current gameplay uses arena_floor.png.
-- `art/sanctuary/corruption.png`: transparent border growth with clear center and
-  cardinal doorway gaps. Appears gradually from floor4, reaching full grade at10.
+- `art/rooms/00_*.png` through `09_*.png`: ten complete production room backgrounds.
+- `art/sanctuary/arena_floor.png`, `masonry.png`, `surfaces.png`, `room.png`
+  and `corruption.png`: legacy source art; not used to construct current rooms.
 - `art/sanctuary/actors.png`: transparent4×2 atlas. Reading order: hero front,
   hero back, chaser, shooter, brute, boss, treasure guardian, merchant.
 - `art/sanctuary/props.png`: transparent4×2 atlas. Pillar, closed/open chest,
@@ -96,34 +93,38 @@ a windup and an attack pose. Bosses have ten distinct painted silhouettes,
 anchored anticipation/lunge transforms, readable warnings, hit flashes and recovery.
 They do not yet have bespoke multi-frame directional sprite sheets.
 
-Six authored architectural plans replace scattered quadrant props. Their routes,
-terrain blockers, crossings and props are defined together in `room_layouts.gd`:
+Ten complete room paintings replace the modular floor/prop construction. Each
+background contains its own paving, fixed scenery, walls, doorway recesses,
+terrain edges, crossings, shadows and reflected light in one coherent image.
 
-| Room | Composition and movement |
+| Room | Composition |
 | --- | --- |
-| Processional Hall | Paired statues/columns frame a central ceremonial aisle. |
-| Jade Sluice | A wall outlet feeds a recessed jade-water canal; one central stone bridge connects the banks before a wall drain. |
-| Fractured Crypt | Paired sarcophagi frame a floor-wide rupture crossed by a surviving stone span. |
-| Collapsed Cloister | Opposing collapsed floor sections leave an intact route around their broken edges. |
-| Lava Aqueduct | A wall vent pours molten flow down a masonry canal to a drain; one transverse bridge connects the two sides. |
-| Sunken Courtyard | Four recessed water basins frame a central platform, axial crossings and outer walkways. |
+| Quiet Sanctuary | Intact jade slabs and ceremonial gold inlay. |
+| Weathered Flagstones | Dry fractured slabs, worn sun engraving and mossy joints. |
+| Broken Corners | Two collapsed floor sections with exposed stone depth. |
+| Split Crypt | A transverse chasm with one central stone crossing. |
+| Jade Waterway | A wall-fed water canal with a central bridge and drain. |
+| Molten Aqueduct | A north–south lava channel crossed by a broad east–west bridge. |
+| Drowned Court | Four sunken water basins around connected axial walkways. |
+| Ruined Cloister | Two low carved stone foundations embedded in the paving. |
+| Twin Watercourses | Two parallel channels with broad central crossings. |
+| Ember Crossing | A wall-fed lava canal with one central bridge. |
 
-Templates remain stable per room across floors. Rendering (`room_architecture.gd`)
-uses the same terrain and bridge rectangles as navigation: stone lips, recessed
-channel walls, fractured slab edges, crossing blocks, sources and drains explain
-the room's structure. Existing painted props are arranged as pairs, bankside
-fixtures or monuments around those structures. Bases overlap contact shadows;
-tall props fade behind the player and the teal footprint stays visible above effects.
+Templates remain stable per room across floors, with all ten used in each 5×5
+map. Backgrounds are cached single textured quads (`room_backdrop.gd`), not
+compositions of crack decals, tiled masonry, detached pillars or liquid overlays.
+Only illumination of the existing painted doorway recesses changes with exits.
+Inactive recesses remain dark; they do not render another wall/arch in the arena.
 
-Floor gaps block the player, ground enemies and charges. They do not stop shots;
-solid props still provide cover. Bridges are the only bank-to-bank routes in the
-Sluice, Crypt and Aqueduct. All walkable navigation cells connect to all doors and
-the central interaction point. Spawn positions inside terrain project to the
-nearest free navigation cell. Gaps currently prevent entry rather than applying
-falling/lava damage. The architecture pass does not add flying enemies or jumping.
+`scripts/room_layouts.gd` contains collision traced against the final paintings.
+Gaps block bodies and charges but allow shots; side walls and the low Cloister
+masonry stop both. All entrances, the central interaction area and default spawn
+positions remain reachable. Blocked enemy spawns project to free navigation cells.
+Lava and holes currently prevent entry rather than inflicting terrain damage.
 
-Floors1–3 use the clean Sanctuary palette; floors4–10 gain crimson border roots.
-Future region packs reuse the catalog interface.
+These ten backgrounds cover the Fallen Sanctuary region. The earlier crimson
+root overlays are not applied to the new paintings. Later regions need their own
+complete background sets; the catalog can be extended without replacing combat.
 
 ### Floor bosses
 
@@ -222,18 +223,12 @@ exercises Meteor Rain, parallel shots, salvos, haste, enlarged meteors and rolli
 rocks together. `browser_attack_vfx.py` grants builds through the real cheat menu
 and captures explosive arrows, Perpetuum and maximum-upgrade meteors.
 
-## Archero-informed room construction
+## Complete room background implementation
 
-See [ROOM_REFERENCES.md](ROOM_REFERENCES.md) for the inspected gameplay capture,
-source access limitations and design decisions. The Sanctuary now uses larger,
-quiet floor slabs, raised back-wall faces, inward-facing side portals, low cover
-islands and consistent original masonry materials. Channels have painted moving
-liquid surfaces, recessed bank faces, stone crossing decks and textured drains.
-Fractures use painted cliff-depth texture inside their jagged footprint.
-
-Static architecture lives in a negative-Z background CanvasItem and is rebuilt
-only on room/floor changes. Animated liquid stays on the gameplay plane. Prop
-sprites and actual cover footprints remain depth-sorted together. The previous
-flat green arrow-door panels and uniform gold floor octagon are removed. The
-header is compacted to keep the taller back wall clear of encounter text.
-`tests/arena_style_smoke.gd` covers the new atlases and backdrop cache.
+See [ROOM_REFERENCES.md](ROOM_REFERENCES.md) for reference context. Production art
+is in `art/rooms/`; the previous arena-floor and masonry atlases are legacy source
+assets only. Static room geometry renders once per entry in a negative-Z
+CanvasItem. Actors, loot, services and combat effects render independently.
+`tests/arena_style_smoke.gd` validates all ten backgrounds, map coverage, exit
+lighting and the cached draw lifecycle. Architecture tests check connected floor,
+bridge necessity, cover, spawns and navigation; the browser gallery checks all ten.

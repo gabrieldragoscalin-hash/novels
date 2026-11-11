@@ -336,13 +336,19 @@ when they activate. Performance and damage-preservation checks are documented in
 ART_DIRECTION.md. The next item rename/rework, all item sprites and menus/home GUI
 milestone remains queued after attack-animation tweaks.
 
-## Sanctuary arena visual refinement
+## Complete Sanctuary room backgrounds
 
-Room construction now follows readable mobile arena principles studied from an
-original Archero gameplay capture, with original Sanctuary artwork/materials.
-Raised ivory/jade back walls, recessed inward-facing doorways and consistent
-low-cover blocks replace the flat frame and arrow panels. Quiet larger floor slabs
-support clear enemy/projectile silhouettes. Water/lava channels, crossing decks
-and fractured areas use matching painted materials. Hall, sluice and aqueduct
-cover groups are authored into their respective layouts. Static architecture is
-cached per room; liquid surfaces animate separately. See ROOM_REFERENCES.md.
+The 5×5 dungeon uses ten complete painted room environments, stable per room
+across floors: Quiet Sanctuary, Weathered Flagstones, Broken Corners, Split Crypt,
+Jade Waterway, Molten Aqueduct, Drowned Court, Ruined Cloister, Twin Watercourses
+and Ember Crossing. Floors, terrain cuts, bridges, walls and fixed scenery are
+painted together. Cracks are part of the slabs; holes show floor depth; channels
+have built-in wall outlets, banks and crossings. Separate static pillar sprites,
+crack overlays and modular wall assembly are removed from the renderer.
+
+Collision is traced to each finished image. Bodies cannot cross holes, water or
+lava, while projectiles can; low masonry blocks both. Doorways are recessed into
+the perimeter walls. Existing neighboring rooms illuminate the painted recesses;
+no freestanding side-door object is drawn. Backgrounds are cached single quads.
+The ten paintings currently represent the Sanctuary, not future region artwork.
+See ART_DIRECTION.md and ROOM_REFERENCES.md for the room list and validation.

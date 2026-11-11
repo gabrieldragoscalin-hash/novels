@@ -179,10 +179,11 @@ Meteor Rain/Telekinesis benchmark is about4× faster on the development executor
 Run tests/attack_vfx_smoke.gd, tests/attack_stress.gd and tests/browser_attack_vfx.py
 for animation, damage-preservation and heavy-build checks.
 
-### Sanctuary arena refinement
+### Ten complete Sanctuary rooms
 
-Raised ivory/jade masonry, recessed entrances, consistent low cover and quiet
-large floor slabs bring the rooms closer to the readable arena construction in
-Archero while keeping this game's original theme. Channels, bridge decks and
-fractures now use painted materials. Static architecture is cached per room;
-liquid animation runs separately. See [ROOM_REFERENCES.md](ROOM_REFERENCES.md).
+Ten full room paintings replace assembled walls, crack overlays and separate
+static props. Variants include intact/worn paving, collapsed floors, water and
+lava canals, bridges, sunken courts and grounded ruins. Door openings are painted
+through the continuous perimeter walls. Collision follows each background, with
+connected paths and body-only terrain gaps. All ten appear in each 5×5 dungeon.
+See [ART_DIRECTION.md](ART_DIRECTION.md) and [ROOM_REFERENCES.md](ROOM_REFERENCES.md).

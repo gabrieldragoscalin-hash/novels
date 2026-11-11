@@ -13,7 +13,6 @@ const FLOOR := Rect2(8, 166, 464, 438)
 const Bosses = preload("res://scripts/boss_roster.gd")
 const RoomBackdrop = preload("res://scripts/room_backdrop.gd")
 var room_backdrop
-const Architecture = preload("res://scripts/room_architecture.gd")
 const Layouts = preload("res://scripts/room_layouts.gd")
 const AttackRenderer = preload("res://scripts/attack_renderer.gd")
 const HeroAnimation = preload("res://scripts/hero_animation.gd")
@@ -101,8 +100,7 @@ func _build_ui() -> void:
 	seed_label = _label(root, "", Vector2(29, 724), 9, Color("96a3b6"))
 	build_label = _label(root, "", Vector2(29, 703), 10, Color("96a3b6"))
 	status_label = _label(root, "ROOM A1     •     FLOOR 01", Vector2(24, 104), 12, Color("dfbd78"))
-	_label(root, "Touch and drag anywhere to move", Vector2(99, 623), 16, Color("d2d7df"))
-	_label(root, "WASD / arrows • E to interact", Vector2(132, 648), 12, Color("8594aa"))
+	_label(root, "Drag anywhere • WASD / arrows • E to interact", Vector2(29, 780), 10, Color("8594aa"))
 	interact_button = Button.new()
 	interact_button.position = Vector2(100, 665)
 	interact_button.size = Vector2(280, 36)
@@ -448,7 +446,9 @@ func _blocked(pos: Vector2) -> bool:
 	return false
 
 func _draw() -> void:
-	_draw_room_inlay()
+	# HUD labels stay readable without covering the room with tutorial text.
+	draw_rect(Rect2(20,102,330,23),Color(0.025,0.035,0.045,0.82))
+	if not notice_label.text.is_empty(): draw_rect(Rect2(23,605,430,19),Color(0.025,0.035,0.045,0.88))
 	_draw_minimap()
 	draw_rect(Rect2(150, 66, 130, 8), Color("263348"))
 	draw_rect(Rect2(150, 66, 130.0 * combat.health / combat.progression.max_health(), 8), Color("69d4b8"))
@@ -467,14 +467,12 @@ func _draw() -> void:
 		draw_colored_polygon(PackedVector2Array([pos + Vector2(0, -7), pos + Vector2(5, 0), pos + Vector2(0, 7), pos + Vector2(-5, 0)]), Color("96c9ff"))
 	var actors: Array = []
 	if raised_content: actors.append({"y":408,"content":true})
-	for i in range(PILLARS.size()): actors.append({"y": PILLARS[i].end.y, "pillar": PILLARS[i], "ordinal":i})
 	actors.append({"y": player.y, "player": true})
 	for enemy in combat.enemies:
 		if enemy["hp"] > 0 and not enemy.get("dormant",false): actors.append({"y": enemy["pos"].y, "enemy": enemy})
 	actors.sort_custom(func(a, b): return a["y"] < b["y"])
 	for actor in actors:
-		if actor.has("pillar"): _draw_pillar(actor["pillar"],actor["ordinal"])
-		elif actor.has("enemy"): _draw_enemy(actor["enemy"])
+		if actor.has("enemy"): _draw_enemy(actor["enemy"])
 		elif actor.has("content"): _draw_room_content()
 		elif combat.hurt_time <= 0 or int(clock * 14) % 2 == 0: _draw_player()
 	for hazard in combat.hazards:
@@ -510,9 +508,6 @@ func _draw() -> void:
 		draw_arc(stick_origin, 48, 0, TAU, 48, Color("7193a6"), 2)
 		draw_circle(stick_origin + (stick_position - stick_origin).limit_length(45), 20, Color("48b9a8"))
 
-func _draw_room_inlay() -> void:
-	Architecture.draw_liquids(self,layout_index,clock)
-
 func _draw_weapon_effects() -> void:
 	AttackRenderer.draw_effects(self,combat.arsenal,combat.impacts,clock,player,hero_animation.muzzle)
 	if combat.arsenal.charge>0:
@@ -532,16 +527,6 @@ func _sprite(key: String,feet: Vector2,height: float,tint: Color = Color.WHITE,f
 	draw_set_transform(feet,lean,Vector2(-1 if flip else 1,1)*stretch)
 	draw_texture_rect(texture,Rect2(-width*Art.pivot(key),-height,width,height),false,tint)
 	draw_set_transform(Vector2.ZERO)
-
-func _draw_pillar(pillar: Rect2, ordinal: int = 0) -> void:
-	var feet := Vector2(pillar.get_center().x,pillar.end.y)
-	var key := Layouts.prop(layout_index,ordinal)
-	var height: float = {"pillar":72.0,"statue":82.0,"tomb":48.0,"urns":48.0,"barricade":47.0,"roots":68.0,"brazier":63.0,"cover_long":43.0,"cover_block":44.0}.get(key,68.0)
-	# Base overlaps a tight contact shadow; no detached oval below the stonework.
-	_draw_shadow(feet+Vector2(0,-3),Vector2(pillar.size.x*0.52,5),Color(0,0,0,0.48))
-	_sprite(key,feet+Vector2(0,2),height,Art.floor_tint(dungeon.floor_number),false,0.0,Vector2.ONE,pillar.size.x+6 if key.begins_with("cover_") else 0.0)
-	if key=="brazier":
-		draw_circle(feet+Vector2(0,-42),10+sin(clock*12)*2,Color(1,0.65,0.2,0.13))
 
 func _draw_player() -> void:
 	if combat.barrier_ready and combat.barrier_time>0 and combat.progression.ranks["barrier"]>0: draw_arc(player+Vector2(0,-18),25,0,TAU,32,Color("81d5ff"),3)

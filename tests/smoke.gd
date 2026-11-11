@@ -8,15 +8,18 @@ func run() -> void:
 	root.add_child(room)
 	assert(not room.active, "Start screen must pause movement")
 	room.hub = load("res://scripts/hub.gd").new(false)
-	room.seed_override = 6 # Open processional floor for the baseline movement fixture.
+	room.seed_override = 6 # Deterministic run for movement and door fixtures.
 	room.start_game()
 	assert(room.active and not room.start_panel.visible)
 	room.move_player(Vector2(0, -30))
 	assert(room.player == Vector2(240, 500), "Player should move on empty floor")
-	var prop: Rect2 = room.PILLARS[0]
+	var prop: Rect2 = Rect2(110,282,80,34)
+	var fixture: Array[Rect2] = [prop]
+	room.combat.set_obstacles(fixture)
 	room.player = Vector2(prop.position.x-20,prop.get_center().y)
 	room.move_player(Vector2(100, 0))
 	assert(room.player.x <= prop.position.x-room.RADIUS, "Solid props must block the player")
+	room._enter_current()
 	room.player = Vector2(65, 530)
 	room.move_player(Vector2(0, 1000))
 	assert(room.player.y <= room.FLOOR.end.y-room.RADIUS, "Player must stay within room walls")
