@@ -1,6 +1,7 @@
 extends RefCounted
 ## Attack scheduling/projectile simulation. Enemy rewards still belong to Combat.
 const Balance = preload("res://scripts/combat_balance.gd")
+var release_serial := 0
 var pose_time := 0.0
 var pose_direction := Vector2.DOWN
 var pose_reverse := false
@@ -20,7 +21,7 @@ var spawned: Array = []
 func _init(combat) -> void: combat_ref = weakref(combat)
 
 func reset(player: Vector2) -> void:
-	pose_time = 0.0
+	pose_time = 0.0; release_serial = 0
 	queued.clear(); effects.clear(); meteors.clear(); splash_hits.clear(); rolling_hits.clear(); cycle = 0; charge = 0; last_player = player
 
 func nearest(origin: Vector2, excluded: Array = [], clear: bool = true) -> int:
@@ -78,6 +79,7 @@ func _fire(player: Vector2, target: int, charged: bool, slash: int, attack_cycle
 	var p = c.progression
 	var direction: Vector2 = player.direction_to(c.enemies[target]["pos"])
 	if direction == Vector2.ZERO: direction = Vector2.UP
+	release_serial += 1
 	pose_time = 0.24
 	pose_direction = direction
 	pose_reverse = slash%2==1
@@ -99,6 +101,9 @@ func _fire(player: Vector2, target: int, charged: bool, slash: int, attack_cycle
 			_laser(origin,direction,target); continue
 		var critical: bool = p.rng.randf() < p.critical_chance()
 		var bullet := {"pos":origin,"velocity":direction*p.shot_speed(),"damage":float(p.damage()*p.delivery_factor()*(p.critical_multiplier() if critical else 1.0)*(2 if charged else 1)),"critical":critical,"life":2.0,"hits":[],"remaining":999 if charged else 1+p.base_pierce+p.ranks["piercing"],"bounces":0 if charged else p.ranks["ricochet"]+(3 if p.weapon=="chakram" else 0),"charged":charged,"follow":p.ranks["follow"]>0 and not charged,"through":p.through_obstacles(),"kind":p.weapon,"radius":8.0 if p.weapon=="crossbow" else 4.0,"split":p.ranks["arrow_split"]>0,"explosive":p.ranks["explosive"]>0,"cycle":attack_cycle,"splash_damage":p.damage()*(p.critical_multiplier() if critical else 1.0)*(2 if charged else 1)*Balance.SPLASH_RATIO,"splash":Balance.SPLASH_RADIUS*(2 if p.ranks["stop_aim"]>0 else 1)}
+		bullet["art_launch"] = origin
+		bullet["art_distance"] = maxf(45,player.distance_to(c.enemies[target]["pos"]))
+		bullet["art_from_player"] = true
 		if charged: bullet["radius"] *= 1.8
 		c.bullets.append(bullet)
 
@@ -187,6 +192,7 @@ func _finish(bullet: Dictionary) -> void:
 		for angle in [-PI/2,0.0,PI/2]:
 			var child: Dictionary = bullet.duplicate(true)
 			child["velocity"] = forward.rotated(angle)*c.progression.shot_speed()
+			child["art_from_player"] = false
 			child["damage"] *= Balance.SPLIT_RATIO
 			child["life"] = 2.0; child["remaining"] = 999 if child.get("charged",false) else 1; child["bounces"] = 0
 			# Children retain exclusions so they do not re-hit their source enemy.

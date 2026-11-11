@@ -303,3 +303,20 @@ Ground enemies and charges respect gaps and crossings. Projectiles pass over gap
 while solid scenery remains cover. Gaps are movement barriers with no contact damage
 in this pass. Rendering and navigation share the same authored terrain definitions.
 See ART_DIRECTION.md for each plan and validation details.
+
+## Player animation rebuild and next milestone
+
+The inventory uses six complete painted weapon-holding portraits, one per weapon
+type. Hands, bent arms and held equipment are part of each complete pose.
+In-game locomotion uses a continuous jointed cutout rig with a distance-driven
+stride, fixed body-part dimensions, blended start/stop and stable facing changes.
+Arms use two-link inverse kinematics with gripping hands drawn over weapon handles.
+Weapon preparation/release/recovery is layered over walking instead of replacing
+the whole body. Extra shots cannot reset the leg cycle. Bow draw/string release,
+crossbow recoil, sword sweep, hammer wind-up/slam, wand casting/laser hold and
+chakram throwing have different arm motions. Actual releases drive the animation;
+visual projectile launch positions start at the held weapon.
+
+**Reminder after the in-game animation pass:** rename and rework the item lineup,
+create sprites for all items, then work on the menus and home GUI. This is the
+next requested milestone; item icons/menu redesign have not been started here.

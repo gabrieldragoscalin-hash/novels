@@ -68,6 +68,7 @@ jobs:
           godot --headless --path . --script tests/art_smoke.gd
           godot --headless --path . --script tests/visuals_smoke.gd
           godot --headless --path . --script tests/architecture_smoke.gd
+          godot --headless --path . --script tests/animation_smoke.gd
       - name: Export browser game
         run: |
           mkdir -p build/web

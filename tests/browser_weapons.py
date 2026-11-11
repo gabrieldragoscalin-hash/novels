@@ -1,5 +1,5 @@
 """Render each weapon in an actual exported encounter, with isolated saved fixtures."""
-import json,shutil,tempfile,time
+import json,shutil,tempfile,time,os
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 source=Path('tests/browser_smoke.py').read_text()
@@ -24,7 +24,8 @@ write_js='''async weapon=>{
 }'''
 with sync_playwright() as p:
  browser=p.chromium.launch(executable_path=shutil.which('chromium'),headless=True,args=['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'])
- page=browser.new_page(viewport={'width':390,'height':844},has_touch=True,is_mobile=True)
+ context=browser.new_context(viewport={'width':390,'height':844},has_touch=True,is_mobile=True,**({'record_video_dir':'/tmp/weapon-animation-videos','record_video_size':{'width':390,'height':844}} if os.environ.get('RECORD_ANIMATIONS') else {}))
+ page=context.new_page()
  errors=[]
  page.on('pageerror',lambda e:errors.append(str(e)))
  page.on('console',lambda m:errors.append(m.text) if m.type=='error' else None)
@@ -53,5 +54,6 @@ with sync_playwright() as p:
    page.screenshot(path=f'/tmp/weapon-{weapon}-{frame}.png')
   assert not errors,(weapon,errors)
   print(weapon,'PASS',flush=True)
+ context.close()
  browser.close()
  print(json.dumps({'result':'PASS','checks':['six saved weapon loadouts','mobile controls','actual boss encounter rendering'],'errors':errors}))

@@ -13,7 +13,8 @@ const FLOOR := Rect2(8, 166, 464, 438)
 const Bosses = preload("res://scripts/boss_roster.gd")
 const Architecture = preload("res://scripts/room_architecture.gd")
 const Layouts = preload("res://scripts/room_layouts.gd")
-const WeaponArt = preload("res://scripts/weapon_art.gd")
+const HeroAnimation = preload("res://scripts/hero_animation.gd")
+var hero_animation = HeroAnimation.new()
 var layout_index := 0
 var PILLARS: Array[Rect2] = [Rect2(108, 290, 38, 40), Rect2(334, 290, 38, 40), Rect2(108, 456, 38, 40), Rect2(334, 456, 38, 40)]
 var dungeon = DungeonState.new()
@@ -279,6 +280,7 @@ func reset_player() -> void:
 	if transitioning: return
 	player = Vector2(240, 530)
 	distance_walked = 0.0
+	hero_animation.reset()
 	_release_stick()
 
 func _release_stick() -> void:
@@ -331,6 +333,7 @@ func _physics_process(delta: float) -> void:
 	if cheat_menu != null and cheat_menu.visible: return
 	clock += delta
 	if active and not interacting and not transitioning and focused and combat.progression.pending == 0:
+		var animation_origin := player
 		run_time += delta
 		var direction := Vector2.ZERO
 		if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT): direction.x -= 1
@@ -347,6 +350,10 @@ func _physics_process(delta: float) -> void:
 			var before_kills: int = combat.kills
 			var was_revived: bool = combat.progression.revive_used
 			combat.tick(delta, player)
+			var target: int = combat.arsenal.nearest(player)
+			var aim := Vector2(facing,facing_y*0.5).normalized()
+			if target>=0: aim = player.direction_to(combat.enemies[target]["pos"])
+			hero_animation.tick(delta,player-animation_origin,aim,combat.arsenal,combat.progression,combat.fire_time,target>=0)
 			if combat.progression.revive_used and not was_revived: _notice("Second Chance • revived at 25% HP")
 			if combat.kills > before_kills: hub.record_progress("kills",combat.kills-before_kills)
 			for drop in combat.collected_items:
@@ -497,7 +504,12 @@ func _draw() -> void:
 	for bullet in combat.hostile_bullets:
 		draw_circle(bullet["pos"] + Vector2(0, -16), 6, Color("ff786f"))
 	for bullet in combat.bullets:
-		var tip: Vector2 = bullet["pos"] + Vector2(0,-16)
+		var offset := Vector2(0,-16)
+		if bullet.get("art_from_player",false):
+			if not bullet.has("art_offset"): bullet["art_offset"] = hero_animation.muzzle-player
+			var travel: float = bullet["art_launch"].distance_to(bullet["pos"])/bullet["art_distance"]
+			offset = bullet["art_offset"].lerp(offset,clampf(travel,0,1))
+		var tip: Vector2 = bullet["pos"]+offset
 		var direction: Vector2 = bullet["velocity"].normalized()
 		var kind: String = bullet.get("kind",combat.progression.weapon)
 		var radius: float = bullet.get("radius",4.0)
@@ -539,6 +551,7 @@ func _draw_weapon_effects() -> void:
 		var pos: Vector2 = effect["pos"]+Vector2(0,-16)
 		var fade: float = effect["life"]/effect["duration"]
 		if kind == "laser":
+			if effect["pos"].distance_to(player)<24: pos = hero_animation.muzzle
 			draw_line(pos,effect["end"]+Vector2(0,-16),Color(0.4,0.7,1,fade*0.7),7)
 			draw_line(pos,effect["end"]+Vector2(0,-16),Color(0.8,0.95,1,fade),2)
 		elif kind == "explosion":
@@ -584,20 +597,7 @@ func _draw_pillar(pillar: Rect2, ordinal: int = 0) -> void:
 func _draw_player() -> void:
 	if combat.barrier_ready and combat.barrier_time>0 and combat.progression.ranks["barrier"]>0: draw_arc(player+Vector2(0,-18),25,0,TAU,32,Color("81d5ff"),3)
 	_draw_shadow(player+Vector2(0,1),Vector2(15,6),Color(0,0,0,0.38))
-	var aim := Vector2(facing,facing_y*0.5).normalized()
-	var target: int = combat.arsenal.nearest(player)
-	if target>=0: aim = player.direction_to(combat.enemies[target]["pos"])
-	var backwards := aim.y<0
-	var attack: float = combat.arsenal.pose_time
-	var key := "idle_back" if backwards else "idle_front"
-	if clock-last_move_time<0.12: key = ("walk_back_" if backwards else "walk_front_")+str(int(distance_walked/9.0)%4)
-	if attack>0 and not backwards: key = "attack_"+str(clampi(int((0.24-attack)/0.06),0,3))
-	var extension := sin(clampf(1.0-attack/0.24,0,1)*PI)*12 if attack>0 else 0.0
-	var grip_side := -1.0 if aim.x < -0.05 else 1.0
-	var hand := player+Vector2(grip_side*(13+extension),-24+aim.y*extension*0.3)
-	if backwards: WeaponArt.draw_held(self,combat.progression.weapon,hand,aim,attack,1.0,combat.arsenal.pose_reverse)
-	_sprite(key,player,50,Color.WHITE,aim.x<0)
-	if not backwards: WeaponArt.draw_held(self,combat.progression.weapon,hand,aim,attack,1.0,combat.arsenal.pose_reverse)
+	hero_animation.draw(self,player)
 
 func _draw_boundary(direction: Vector2i) -> void:
 	var rect: Rect2
@@ -725,6 +725,7 @@ func _enter_current() -> void:
 	PILLARS = Layouts.obstacles(layout_index)
 	combat.set_obstacles(PILLARS,Layouts.terrain(layout_index))
 	combat.enter(dungeon.rooms[dungeon.current], player)
+	hero_animation.sync_room(combat.arsenal.release_serial)
 	services.enter()
 
 func _update_interact() -> void:

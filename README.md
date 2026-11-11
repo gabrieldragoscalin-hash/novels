@@ -139,8 +139,8 @@ from browser downloads.
 
 ### Animated Sanctuary pass
 
-The hero has distance-driven front/back walk cycles and release-driven attack
-frames; mobs have walk/windup/attack poses. All six equipped weapons are visible
+The hero uses continuous front/back locomotion and independently animated weapon
+arms; mobs have walk/windup/attack poses. All six equipped weapons are visible
 and animate per type, with a dedicated frontal inventory character holding them.
 Six architectural templates arrange props around ceremonial routes, canals and
 collapsed floors. Floors1–10 have unique boss silhouettes and attack
@@ -156,3 +156,14 @@ Recessed canals have wall sources/drains and stone crossings. Terrain gaps block
 walking/charges, while projectiles can pass over them. Solid props still block
 shots. Enemy navigation follows the bridges, and all doors/services remain connected.
 The existing cheat room picker can be used to inspect different room plans.
+
+### Player animation rig
+
+The player uses continuous cutout animation with independent locomotion and
+weapon-arm IK, rather than swapping whole-body poses during every attack.
+Inventory artwork contains six complete weapon-holding poses. Attack motions and
+visual projectile origins follow the equipped weapon. See tests/animation_smoke.gd
+and tests/browser_animation_motion.py for continuity/rendering checks.
+
+Next milestone requested by the designer: rename and rework items, create all item
+sprites, then update menus and the home GUI.

@@ -67,13 +67,27 @@ Pillar bases match existing collision footprints. Chests keep similar widths as
 their lids open. The wheel uses a rotating procedural face over its painted base.
 Outer map edges are closed visually; existing neighbor passages remain open.
 
-The hero uses four-frame front/back walking cycles driven by distance traveled,
-plus four front-facing attack frames synchronized to actual weapon releases.
-Six held weapon sprites animate differently: bow draw/release, crossbow recoil,
-wand thrust, sword sweep (alternating on extra slashes), hammer windup/slam,
-and chakram spin. Back-facing attacks use the back sprite with animated weapons.
-The inventory uses a dedicated full-frontal pose holding the equipped weapon.
-Armor cosmetics are not implemented.
+The hero now uses `hero_rig.png`, a4×4 sheet of isolated head, torso, upper arm,
+forearm, gripping hand, thigh, boot/shin and cape pieces in front/back views.
+`hero_animation.gd` interpolates a continuous locomotion phase and independent
+arm/weapon targets. Body-part sizes and attachment origins stay fixed throughout
+walking, aiming and attacking. Two-link IK joins the shoulders, elbows and hands;
+hands overlap the actual weapon grip instead of a weapon being pasted over an
+idle full-body image. Facing uses hysteresis and an opaque orientation blend.
+Pausing, extra shots, attacks and turns do not reset the walking phase.
+
+Bow draw/string release, crossbow recoil, wand casting/continuous laser, sword
+windup/sweep, hammer windup/slam and chakram throwing use different target motions.
+Attack preparation follows the existing firing cadence; actual release events
+trigger recovery. Projectiles originate visually at the weapon muzzle/grip and
+converge toward the existing enemy hit plane. Gameplay trajectories and damage
+remain controlled by combat code.
+
+The inventory uses `inventory.png`, a3×2 sheet of complete front-facing portraits
+holding bow/crossbow/wand/sword/hammer/chakram. Arms, hands and weapon are painted
+together in a natural holding pose. Equipment cosmetics beyond weapon type remain
+future work. The previous whole-body walking sheet is retained as legacy source
+art but is no longer used by the player renderer.
 
 Normal acolytes, casters, brutes and guardians each have two walking poses,
 a windup and an attack pose. Bosses have ten distinct painted silhouettes,
@@ -131,7 +145,9 @@ unchanged; the new rotations need continued playtesting for dodge difficulty.
 
 ### Added atlases
 
-- `hero.png`:4×4 walking, attack, portrait and idle poses.
+- `hero.png`:4×4 legacy whole-body poses, retained as source artwork.
+- `hero_rig.png`:4×4 isolated front/back body parts for continuous animation.
+- `inventory.png`:3×2 complete weapon-holding portraits.
 - `enemies.png`:4×4 two walk poses, windup and attack per enemy archetype.
 - `bosses.png`:5×2 unique floor bosses.
 - `objects.png`:4×3 six environment props and six held weapons.
@@ -152,7 +168,7 @@ combat/progression tests still run. Browser checks cover movement through the ne
 art, actual late-floor encounters, inventory, phone/short-phone/desktop layout
 and rendering errors. Visual review on a real iPhone remains valuable.
 
-`tests/visuals_smoke.gd` validates all70 atlas regions, connected door/service paths
+`tests/visuals_smoke.gd` validates the production atlas regions, connected door/service paths
 in every layout, boss identities/rotations and release-synchronized attack poses.
 
 `tests/architecture_smoke.gd` floods every walkable navigation cell, checks door,
@@ -160,3 +176,12 @@ service and spawn access, proves the sole crossings are necessary, and exercises
 enemy bridge traversal/charge blocking and projectile visibility over gaps.
 `tests/browser_architecture.py` renders all six plans and checks that the player
 cannot walk through water but can cross its bridge in the exported mobile game.
+
+`tests/animation_smoke.gd` checks walking continuity across rapid attack releases,
+wrist speed bounds, connected IK joints, distance/FPS consistency and facing
+hysteresis. Browser weapon/motion tests capture all six inventory poses, attacks,
+walking and movement during combat; set RECORD_ANIMATIONS=1 to record videos when
+Playwright's ffmpeg runtime is available.
+
+Next requested milestone after in-game animations: rename/rework items, create
+all item sprites, then update menus and the home GUI.

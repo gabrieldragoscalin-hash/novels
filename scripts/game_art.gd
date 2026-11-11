@@ -7,6 +7,8 @@ const ACTORS: Texture2D = preload("res://art/sanctuary/actors.png")
 const PROPS: Texture2D = preload("res://art/sanctuary/props.png")
 const ACTOR_KEYS := ["hero_front","hero_back","normal","shooter","brute","boss","miniboss","merchant"]
 const ENEMIES: Texture2D = preload("res://art/sanctuary/enemies.png")
+const INVENTORY: Texture2D = preload("res://art/sanctuary/inventory.png")
+const RIG: Texture2D = preload("res://art/sanctuary/hero_rig.png")
 const HERO: Texture2D = preload("res://art/sanctuary/hero.png")
 const BOSSES: Texture2D = preload("res://art/sanctuary/bosses.png")
 const OBJECTS: Texture2D = preload("res://art/sanctuary/objects.png")
@@ -27,7 +29,9 @@ static func frame(key: String) -> AtlasTexture:
 	var keys: Array = ACTOR_KEYS if actor else PROP_KEYS
 	assert(Layout.FRAMES.has(key),"Unknown art frame: "+key)
 	var source: Texture2D = ACTORS if actor else PROPS
-	if key.begins_with("boss_"): source = BOSSES
+	if key.begins_with("inventory_"): source = INVENTORY
+	elif key.begins_with("rig_"): source = RIG
+	elif key.begins_with("boss_"): source = BOSSES
 	elif key.begins_with("normal_") or key.begins_with("shooter_") or key.begins_with("brute_") or key.begins_with("miniboss_"): source = ENEMIES
 	elif key in ["portrait","idle_back","idle_front","hurt"] or key.begins_with("walk_") or key.begins_with("attack_"): source = HERO
 	elif not keys.has(key): source = OBJECTS

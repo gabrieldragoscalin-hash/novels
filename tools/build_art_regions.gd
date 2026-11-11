@@ -2,6 +2,8 @@ extends SceneTree
 ## Analyze alpha to generate atlas UV metadata; never modifies source artwork.
 func _initialize() -> void:
 	var groups := {
+		"inventory":["inventory_bow","inventory_crossbow","inventory_wand","inventory_sword","inventory_hammer","inventory_chakram"],
+		"hero_rig":["rig_front_head","rig_front_torso","rig_front_upperarm","rig_front_forearm","rig_front_hand","rig_front_thigh","rig_front_shin","rig_front_cape","rig_back_head","rig_back_torso","rig_back_upperarm","rig_back_forearm","rig_back_hand","rig_back_thigh","rig_back_shin","rig_back_cape"],
 		"actors":["hero_front","hero_back","normal","shooter","brute","boss","miniboss","merchant"],
 		"enemies":["normal_0","normal_1","normal_2","normal_3","shooter_0","shooter_1","shooter_2","shooter_3","brute_0","brute_1","brute_2","brute_3","miniboss_0","miniboss_1","miniboss_2","miniboss_3"],
 		"hero":["walk_front_0","walk_front_1","walk_front_2","walk_front_3","walk_back_0","walk_back_1","walk_back_2","walk_back_3","attack_0","attack_1","attack_2","attack_3","portrait","idle_back","idle_front","hurt"],
@@ -16,8 +18,8 @@ func _initialize() -> void:
 		assert(source!=null)
 		source.convert(Image.FORMAT_RGBA8)
 		var data := source.get_data()
-		var columns: int = 5 if group=="bosses" else 4
-		var rows: int = 4 if group in ["hero","enemies"] else (3 if group=="objects" else 2)
+		var columns: int = 3 if group=="inventory" else (5 if group=="bosses" else 4)
+		var rows: int = 4 if group in ["hero","enemies","hero_rig"] else (3 if group=="objects" else 2)
 		for index in range(groups[group].size()):
 			var x0 := int(floor((index%columns)*source.get_width()/float(columns)))
 			var y0 := int(floor(int(index/columns)*source.get_height()/float(rows)))
@@ -36,7 +38,7 @@ func _initialize() -> void:
 			var key: String = groups[group][index]
 			frames[key] = [left,top,right-left+1,bottom-top+1]
 			var weighted_x := 0.0; var alpha_sum := 0.0
-			if group in ["actors","hero","bosses","enemies"]:
+			if group in ["actors","hero","bosses","enemies","inventory"]:
 				for y in range(maxi(top,bottom-int((bottom-top+1)*0.06)),bottom+1):
 					for x in range(left,right+1):
 						var alpha: int = data[(y*source.get_width()+x)*4+3]
