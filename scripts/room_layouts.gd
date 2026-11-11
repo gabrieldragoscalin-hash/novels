@@ -6,11 +6,11 @@ static func index(seed_value: int, cell: Vector2i) -> int:
 static func props(layout: int) -> Array:
 	var pairs: Array
 	match posmod(layout,6):
-		0: pairs = [["statue",Rect2(95,258,42,30)],["statue",Rect2(343,258,42,30)],["pillar",Rect2(95,478,42,30)],["pillar",Rect2(343,478,42,30)]]
-		1: pairs = [["brazier",Rect2(155,267,28,24)],["brazier",Rect2(297,267,28,24)],["urns",Rect2(95,475,38,28)],["urns",Rect2(347,475,38,28)]]
+		0: pairs = [["cover_long",Rect2(84,275,80,28)],["cover_long",Rect2(316,275,80,28)],["cover_block",Rect2(112,467,42,28)],["cover_block",Rect2(326,467,42,28)]]
+		1: pairs = [["brazier",Rect2(155,267,28,24)],["brazier",Rect2(297,267,28,24)],["cover_block",Rect2(102,421,42,28)],["cover_block",Rect2(336,421,42,28)],["urns",Rect2(95,500,38,28)],["urns",Rect2(347,500,38,28)]]
 		2: pairs = [["tomb",Rect2(92,267,72,32)],["tomb",Rect2(316,267,72,32)],["tomb",Rect2(92,520,72,28)],["tomb",Rect2(316,520,72,28)]]
 		3: pairs = [["statue",Rect2(335,265,42,30)],["statue",Rect2(103,475,42,30)]]
-		4: pairs = [["brazier",Rect2(259,264,24,24)],["brazier",Rect2(378,264,24,24)],["brazier",Rect2(259,479,24,24)],["brazier",Rect2(378,479,24,24)]]
+		4: pairs = [["brazier",Rect2(259,264,24,24)],["brazier",Rect2(378,264,24,24)],["brazier",Rect2(259,479,24,24)],["brazier",Rect2(378,479,24,24)],["cover_long",Rect2(84,275,80,28)],["cover_long",Rect2(84,467,80,28)]]
 		_: pairs = [["urns",Rect2(105,245,38,28)],["urns",Rect2(337,245,38,28)],["statue",Rect2(95,500,42,30)],["statue",Rect2(343,500,42,30)]]
 	var result: Array = []
 	for pair in pairs: result.append({"key":pair[0],"rect":pair[1]})

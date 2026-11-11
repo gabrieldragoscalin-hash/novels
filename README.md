@@ -178,3 +178,11 @@ rolling-meteor collision is swept and cached per cycle. The native worst-case
 Meteor Rain/Telekinesis benchmark is about4× faster on the development executor.
 Run tests/attack_vfx_smoke.gd, tests/attack_stress.gd and tests/browser_attack_vfx.py
 for animation, damage-preservation and heavy-build checks.
+
+### Sanctuary arena refinement
+
+Raised ivory/jade masonry, recessed entrances, consistent low cover and quiet
+large floor slabs bring the rooms closer to the readable arena construction in
+Archero while keeping this game's original theme. Channels, bridge decks and
+fractures now use painted materials. Static architecture is cached per room;
+liquid animation runs separately. See [ROOM_REFERENCES.md](ROOM_REFERENCES.md).

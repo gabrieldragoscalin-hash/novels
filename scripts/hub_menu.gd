@@ -145,7 +145,7 @@ func _build_play() -> void:
 	dungeon_button.name = "DungeonEntrance"
 	dungeon_button.add_theme_stylebox_override("normal", _style(Color(0,0,0,0), Color(0,0,0,0), 0))
 	var preview := TextureRect.new()
-	preview.texture = Art.ROOM
+	preview.texture = Art.ARENA_FLOOR
 	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	preview.position = Vector2(0,0); preview.size = Vector2(250,250)

@@ -1,6 +1,9 @@
 extends RefCounted
 ## Rendering asset catalog. Room layouts own collision; atlas pixels never define it.
 const Layout = preload("res://scripts/art_regions.gd")
+const ARENA_FLOOR: Texture2D = preload("res://art/sanctuary/arena_floor.png")
+const MASONRY: Texture2D = preload("res://art/sanctuary/masonry.png")
+const MASONRY_KEYS := ["masonry_h","masonry_v","cover_long","cover_block","gate_front","gate_side","steps","sluice_mouth"]
 const ROOM: Texture2D = preload("res://art/sanctuary/room.png")
 const CORRUPTION: Texture2D = preload("res://art/sanctuary/corruption.png")
 const ACTORS: Texture2D = preload("res://art/sanctuary/actors.png")
@@ -29,7 +32,8 @@ static func frame(key: String) -> AtlasTexture:
 	var keys: Array = ACTOR_KEYS if actor else PROP_KEYS
 	assert(Layout.FRAMES.has(key),"Unknown art frame: "+key)
 	var source: Texture2D = ACTORS if actor else PROPS
-	if key.begins_with("inventory_"): source = INVENTORY
+	if MASONRY_KEYS.has(key): source = MASONRY
+	elif key.begins_with("inventory_"): source = INVENTORY
 	elif key.begins_with("rig_"): source = RIG
 	elif key.begins_with("boss_"): source = BOSSES
 	elif key.begins_with("normal_") or key.begins_with("shooter_") or key.begins_with("brute_") or key.begins_with("miniboss_"): source = ENEMIES

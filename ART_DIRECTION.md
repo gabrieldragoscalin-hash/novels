@@ -25,8 +25,10 @@ beyond50 have no approved artwork yet. Do not stretch Sanctuary into a final hel
 Source PNGs are original image-generation outputs created for this project from
 the approved concept. They are copied intact; no third-party asset pack is needed.
 
-- `art/sanctuary/room.png`: quiet jade floor, worn-gold inlay, ivory perimeter trim.
-  No baked characters, collision props, text or fixed gameplay objects.
+- `art/sanctuary/arena_floor.png`: current quiet large-paver jade-grey floor.
+- `art/sanctuary/masonry.png`: raised wall modules, low cover, recessed doorways, steps and sluice-mouth sprites.
+- `art/sanctuary/surfaces.png`: water, lava, chasm, bridge, capstone, masonry, grate and mosaic materials.
+- `art/sanctuary/room.png`: retained first-pass floor source; current gameplay uses arena_floor.png.
 - `art/sanctuary/corruption.png`: transparent border growth with clear center and
   cardinal doorway gaps. Appears gradually from floor4, reaching full grade at10.
 - `art/sanctuary/actors.png`: transparent4×2 atlas. Reading order: hero front,
@@ -219,3 +221,19 @@ merged visuals and rolling collisions/reinforcement activation. `attack_stress.g
 exercises Meteor Rain, parallel shots, salvos, haste, enlarged meteors and rolling
 rocks together. `browser_attack_vfx.py` grants builds through the real cheat menu
 and captures explosive arrows, Perpetuum and maximum-upgrade meteors.
+
+## Archero-informed room construction
+
+See [ROOM_REFERENCES.md](ROOM_REFERENCES.md) for the inspected gameplay capture,
+source access limitations and design decisions. The Sanctuary now uses larger,
+quiet floor slabs, raised back-wall faces, inward-facing side portals, low cover
+islands and consistent original masonry materials. Channels have painted moving
+liquid surfaces, recessed bank faces, stone crossing decks and textured drains.
+Fractures use painted cliff-depth texture inside their jagged footprint.
+
+Static architecture lives in a negative-Z background CanvasItem and is rebuilt
+only on room/floor changes. Animated liquid stays on the gameplay plane. Prop
+sprites and actual cover footprints remain depth-sorted together. The previous
+flat green arrow-door panels and uniform gold floor octagon are removed. The
+header is compacted to keep the taller back wall clear of encounter text.
+`tests/arena_style_smoke.gd` covers the new atlases and backdrop cache.

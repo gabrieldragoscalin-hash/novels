@@ -51,10 +51,10 @@ func run() -> void:
 	var enemy := Dungeon.make_enemy(Vector2(120,250),"normal",1)
 	var crossed_bridge := false
 	for tick in range(700):
-		c.enemy_ai._walk(enemy,1.0/60,Vector2(120,410))
+		c.enemy_ai._walk(enemy,1.0/60,Vector2(120,390))
 		assert(not c.blocked(enemy["pos"],13),"Enemy walked into canal")
 		if enemy["pos"].y>300 and enemy["pos"].y<352: crossed_bridge = true; assert(enemy["pos"].x>213 and enemy["pos"].x<267)
-	assert(crossed_bridge and enemy["pos"].distance_to(Vector2(120,410))<20,"Enemy must find and cross bridge")
+	assert(crossed_bridge and enemy["pos"].distance_to(Vector2(120,390))<20,"Enemy must find and cross bridge")
 	# A charge cannot tunnel across the channel instead of using the bridge.
 	enemy["pos"] = Vector2(120,275)
 	c.enemy_ai._move(enemy,Vector2(0,180)); assert(enemy["pos"].y<287)

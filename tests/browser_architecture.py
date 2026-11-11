@@ -26,7 +26,7 @@ with sync_playwright() as p:
   tap(240,540)
   page.screenshot(path=f'/tmp/architecture-{layout}.png')
   if layout==1:
-   hold('a',900);hold('w',1500)
+   hold('w',300);hold('a',900);hold('w',1500)
    x,y=position();assert 350<y<375,(x,y,'Player crossed water without bridge')
    for attempt in range(12):
     x,y=position()

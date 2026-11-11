@@ -11,6 +11,8 @@ const SPEED := 185.0
 const RADIUS := 12.0
 const FLOOR := Rect2(8, 166, 464, 438)
 const Bosses = preload("res://scripts/boss_roster.gd")
+const RoomBackdrop = preload("res://scripts/room_backdrop.gd")
+var room_backdrop
 const Architecture = preload("res://scripts/room_architecture.gd")
 const Layouts = preload("res://scripts/room_layouts.gd")
 const AttackRenderer = preload("res://scripts/attack_renderer.gd")
@@ -72,6 +74,7 @@ var font := ThemeDB.fallback_font
 func _ready() -> void:
 	Art.prepare()
 	AttackRenderer.Vfx.prepare()
+	room_backdrop = RoomBackdrop.new(); room_backdrop.z_index = -20; add_child(room_backdrop)
 	_read_seed()
 	_build_ui()
 	_build_cheats(hub_menu.get_parent())
@@ -89,15 +92,15 @@ func _build_ui() -> void:
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui.add_child(root)
-	_label(root, "THE DUNGEON", Vector2(28, 25), 25, Color("eee5cc"))
-	_label(root, "TEN FLOORS   /   BALANCE PROTOTYPE", Vector2(29, 61), 11, Color("96a3b6"))
-	health_label = _label(root, "HP  6 / 6", Vector2(29, 83), 15, Color("69d4b8"))
-	encounter_label = _label(root, "", Vector2(245, 130), 11, Color("96a3b6"))
-	xp_label = _label(root, "", Vector2(29, 103), 11, Color("96c9ff"))
+	_label(root, "THE DUNGEON", Vector2(24, 16), 22, Color("eee5cc"))
+	_label(root, "FALLEN SANCTUARY", Vector2(25, 43), 10, Color("96a3b6"))
+	health_label = _label(root, "HP  6 / 6", Vector2(24, 61), 15, Color("69d4b8"))
+	encounter_label = _label(root, "", Vector2(175, 43), 10, Color("96a3b6"))
+	xp_label = _label(root, "", Vector2(24, 83), 11, Color("96c9ff"))
 	notice_label = _label(root, "", Vector2(29, 607), 10, Color("dfbd78"))
 	seed_label = _label(root, "", Vector2(29, 724), 9, Color("96a3b6"))
 	build_label = _label(root, "", Vector2(29, 703), 10, Color("96a3b6"))
-	status_label = _label(root, "ROOM A1     •     FLOOR 01", Vector2(29, 120), 13, Color("dfbd78"))
+	status_label = _label(root, "ROOM A1     •     FLOOR 01", Vector2(24, 104), 12, Color("dfbd78"))
 	_label(root, "Touch and drag anywhere to move", Vector2(99, 623), 16, Color("d2d7df"))
 	_label(root, "WASD / arrows • E to interact", Vector2(132, 648), 12, Color("8594aa"))
 	interact_button = Button.new()
@@ -445,21 +448,12 @@ func _blocked(pos: Vector2) -> bool:
 	return false
 
 func _draw() -> void:
-	var canvas := Rect2(0,142,480,476)
-	var variation: Color = [Color.WHITE,Color(0.96,1,0.98),Color(1,0.98,0.95)][posmod(dungeon.current.x+dungeon.current.y*5,3)]
-	draw_texture_rect(Art.ROOM,canvas,false,Art.floor_tint(dungeon.floor_number)*variation)
 	_draw_room_inlay()
-	var corruption := Art.stage(dungeon.floor_number)
-	if corruption>0: draw_texture_rect(Art.CORRUPTION,canvas,false,Color(1,1,1,corruption*0.85))
-	# Cardinal passage indicators match the unchanged collision/transition positions.
-	for direction in [Vector2i.UP,Vector2i.DOWN,Vector2i.LEFT,Vector2i.RIGHT]:
-		if dungeon.contains(dungeon.current+direction): _draw_door(direction)
-		else: _draw_boundary(direction)
 	_draw_minimap()
-	draw_rect(Rect2(150, 88, 130, 8), Color("263348"))
-	draw_rect(Rect2(150, 88, 130.0 * combat.health / combat.progression.max_health(), 8), Color("69d4b8"))
-	draw_rect(Rect2(285, 108, 60, 5), Color("263348"))
-	draw_rect(Rect2(285, 108, 60.0 * combat.progression.xp / combat.progression.required_xp(), 5), Color("96c9ff"))
+	draw_rect(Rect2(150, 66, 130, 8), Color("263348"))
+	draw_rect(Rect2(150, 66, 130.0 * combat.health / combat.progression.max_health(), 8), Color("69d4b8"))
+	draw_rect(Rect2(285, 88, 60, 5), Color("263348"))
+	draw_rect(Rect2(285, 88, 60.0 * combat.progression.xp / combat.progression.required_xp(), 5), Color("96c9ff"))
 	var role: String = dungeon.rooms[dungeon.current]["role"]
 	var raised_content: bool = role in ["loot","bonus"] or (role=="boss" and combat.alive_count()==0)
 	if not raised_content: _draw_room_content()
@@ -517,7 +511,7 @@ func _draw() -> void:
 		draw_circle(stick_origin + (stick_position - stick_origin).limit_length(45), 20, Color("48b9a8"))
 
 func _draw_room_inlay() -> void:
-	Architecture.draw_plan(self,layout_index,clock)
+	Architecture.draw_liquids(self,layout_index,clock)
 
 func _draw_weapon_effects() -> void:
 	AttackRenderer.draw_effects(self,combat.arsenal,combat.impacts,clock,player,hero_animation.muzzle)
@@ -531,10 +525,10 @@ func _draw_shadow(center: Vector2, radii: Vector2, color: Color) -> void:
 		points.append(center + Vector2(cos(angle), sin(angle)) * radii)
 	draw_colored_polygon(points, color)
 
-func _sprite(key: String,feet: Vector2,height: float,tint: Color = Color.WHITE,flip: bool = false, lean: float = 0.0, stretch: Vector2 = Vector2.ONE) -> void:
+func _sprite(key: String,feet: Vector2,height: float,tint: Color = Color.WHITE,flip: bool = false, lean: float = 0.0, stretch: Vector2 = Vector2.ONE, width_override: float = 0.0) -> void:
 	var texture := Art.frame(key)
-	var width := height*texture.get_width()/texture.get_height()
-	if (key in Art.PROP_KEYS or key in ["statue","tomb","urns","barricade","roots","brazier"]) and player.y<feet.y and player.y>feet.y-height and absf(player.x-feet.x)<width/2+12: tint.a *= 0.55
+	var width := width_override if width_override>0 else height*texture.get_width()/texture.get_height()
+	if (key in Art.PROP_KEYS or key in Art.MASONRY_KEYS or key in ["statue","tomb","urns","barricade","roots","brazier"]) and player.y<feet.y and player.y>feet.y-height and absf(player.x-feet.x)<width/2+12: tint.a *= 0.55
 	draw_set_transform(feet,lean,Vector2(-1 if flip else 1,1)*stretch)
 	draw_texture_rect(texture,Rect2(-width*Art.pivot(key),-height,width,height),false,tint)
 	draw_set_transform(Vector2.ZERO)
@@ -542,10 +536,10 @@ func _sprite(key: String,feet: Vector2,height: float,tint: Color = Color.WHITE,f
 func _draw_pillar(pillar: Rect2, ordinal: int = 0) -> void:
 	var feet := Vector2(pillar.get_center().x,pillar.end.y)
 	var key := Layouts.prop(layout_index,ordinal)
-	var height: float = {"pillar":72.0,"statue":82.0,"tomb":48.0,"urns":48.0,"barricade":47.0,"roots":68.0,"brazier":63.0}.get(key,68.0)
+	var height: float = {"pillar":72.0,"statue":82.0,"tomb":48.0,"urns":48.0,"barricade":47.0,"roots":68.0,"brazier":63.0,"cover_long":43.0,"cover_block":44.0}.get(key,68.0)
 	# Base overlaps a tight contact shadow; no detached oval below the stonework.
 	_draw_shadow(feet+Vector2(0,-3),Vector2(pillar.size.x*0.52,5),Color(0,0,0,0.48))
-	_sprite(key,feet+Vector2(0,2),height,Art.floor_tint(dungeon.floor_number))
+	_sprite(key,feet+Vector2(0,2),height,Art.floor_tint(dungeon.floor_number),false,0.0,Vector2.ONE,pillar.size.x+6 if key.begins_with("cover_") else 0.0)
 	if key=="brazier":
 		draw_circle(feet+Vector2(0,-42),10+sin(clock*12)*2,Color(1,0.65,0.2,0.13))
 
@@ -553,31 +547,6 @@ func _draw_player() -> void:
 	if combat.barrier_ready and combat.barrier_time>0 and combat.progression.ranks["barrier"]>0: draw_arc(player+Vector2(0,-18),25,0,TAU,32,Color("81d5ff"),3)
 	_draw_shadow(player+Vector2(0,1),Vector2(15,6),Color(0,0,0,0.38))
 	hero_animation.draw(self,player)
-
-func _draw_boundary(direction: Vector2i) -> void:
-	var rect: Rect2
-	if direction==Vector2i.UP: rect = Rect2(208,150,64,17)
-	elif direction==Vector2i.DOWN: rect = Rect2(208,602,64,12)
-	elif direction==Vector2i.LEFT: rect = Rect2(0,353,9,64)
-	else: rect = Rect2(471,353,9,64)
-	draw_rect(rect,Color("bca487"))
-	draw_rect(rect,Color("70553b"),false,2)
-
-
-func _draw_door(direction: Vector2i) -> void:
-	var door: Rect2
-	if direction == Vector2i.UP: door = Rect2(208,150,64,36)
-	elif direction == Vector2i.DOWN: door = Rect2(208,586,64,26)
-	elif direction == Vector2i.LEFT: door = Rect2(0,353,28,64)
-	else: door = Rect2(452,353,28,64)
-	draw_rect(door.grow(3), Color("bf9b55"))
-	draw_rect(door,Color(0.03,0.15,0.15,0.75))
-	var center := door.get_center()
-	var arrow := Vector2(direction)
-	var side := Vector2(-arrow.y, arrow.x)
-	draw_line(center - arrow * 7, center + arrow * 7, Color("c3e8ce"), 2)
-	draw_line(center + arrow * 7, center + side * 5, Color("c3e8ce"), 2)
-	draw_line(center + arrow * 7, center - side * 5, Color("c3e8ce"), 2)
 
 func _draw_minimap() -> void:
 	for y in range(5):
@@ -678,6 +647,10 @@ func _return_to_hub() -> void:
 func _enter_current() -> void:
 	layout_index = Layouts.index(dungeon.seed_value,dungeon.current)
 	PILLARS = Layouts.obstacles(layout_index)
+	var exits: Array[Vector2i] = []
+	for direction in [Vector2i.UP,Vector2i.DOWN,Vector2i.LEFT,Vector2i.RIGHT]:
+		if dungeon.contains(dungeon.current+direction): exits.append(direction)
+	room_backdrop.configure(layout_index,dungeon.floor_number,exits)
 	combat.set_obstacles(PILLARS,Layouts.terrain(layout_index))
 	combat.enter(dungeon.rooms[dungeon.current], player)
 	hero_animation.sync_room(combat.arsenal.release_serial)

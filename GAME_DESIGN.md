@@ -335,3 +335,14 @@ uses swept segments and cached eligible enemies per cycle, including reinforceme
 when they activate. Performance and damage-preservation checks are documented in
 ART_DIRECTION.md. The next item rename/rework, all item sprites and menus/home GUI
 milestone remains queued after attack-animation tweaks.
+
+## Sanctuary arena visual refinement
+
+Room construction now follows readable mobile arena principles studied from an
+original Archero gameplay capture, with original Sanctuary artwork/materials.
+Raised ivory/jade back walls, recessed inward-facing doorways and consistent
+low-cover blocks replace the flat frame and arrow panels. Quiet larger floor slabs
+support clear enemy/projectile silhouettes. Water/lava channels, crossing decks
+and fractured areas use matching painted materials. Hall, sluice and aqueduct
+cover groups are authored into their respective layouts. Static architecture is
+cached per room; liquid surfaces animate separately. See ROOM_REFERENCES.md.
