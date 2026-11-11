@@ -7,6 +7,7 @@ signal perk_info_requested(id: String)
 signal perk_requested
 signal cheat_requested
 signal synthesis_requested
+const Art = preload("res://scripts/game_art.gd")
 const Icons = preload("res://scripts/ui_icons.gd")
 const Gear = preload("res://scripts/equipment.gd")
 const TABS := ["Shop", "Inventory", "Play", "Perks", "Miscellaneous"]
@@ -54,6 +55,7 @@ var nav_top := 706.0
 var filter_slot := ""
 
 func setup(model) -> void:
+	Art.prepare()
 	hub = model
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -133,16 +135,29 @@ func _build() -> void:
 
 func _build_play() -> void:
 	var page := pages[2]
-	play_title = _label(page, "The Shifting Dungeon", Vector2.ZERO, 24)
+	play_title = _label(page, "The Fallen Sanctuary", Vector2.ZERO, 24)
 	play_title.size.x = 480
 	play_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	play_badge = _label(page, "EXPEDITION • FLOORS 1–3", Vector2.ZERO, 12, Color("dfbd78"))
+	play_badge = _label(page, "REGION I • FLOORS 1–10", Vector2.ZERO, 12, Color("dfbd78"))
 	play_badge.size.x = 480
 	play_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	dungeon_button = _button(page, "", Vector2.ZERO, Vector2(250, 270), func(): dungeon_requested.emit())
 	dungeon_button.name = "DungeonEntrance"
 	dungeon_button.add_theme_stylebox_override("normal", _style(Color(0,0,0,0), Color(0,0,0,0), 0))
-	_icon(dungeon_button, "dungeon", Vector2(0, 0), Vector2(250, 250))
+	var preview := TextureRect.new()
+	preview.texture = Art.ROOM
+	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	preview.position = Vector2(0,0); preview.size = Vector2(250,250)
+	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dungeon_button.add_child(preview)
+	var portal := TextureRect.new()
+	portal.texture = Art.frame("exit")
+	portal.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portal.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portal.position = Vector2(70,50); portal.size = Vector2(110,170)
+	portal.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dungeon_button.add_child(portal)
 	play_hint = _label(page, "Tap the dungeon to begin", Vector2.ZERO, 15, Color("bad2d0"))
 	play_hint.size.x = 480
 	play_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -455,21 +470,12 @@ func _draw() -> void:
 		_draw_character(Vector2(cx, _inventory_y(332)))
 
 func _draw_character(center: Vector2) -> void:
-	draw_circle(center + Vector2(0, 73), 60, Color(0.35,0.65,0.63,0.07))
-	draw_arc(center + Vector2(0, 70), 60, 0, TAU, 40, Color("496666"), 2)
-	var pants_color := Color("668296") if not hub.equipped["pants"].is_empty() else Color("384d61")
-	for x in [-16,16]:
-		draw_line(center + Vector2(x,15),center + Vector2(x,69),pants_color,18)
-		draw_line(center + Vector2(x,65),center + Vector2(x,76),Color("d8c59a") if not hub.equipped["boots"].is_empty() else Color("253340"),20)
-	draw_colored_polygon(PackedVector2Array([center+Vector2(-40,21),center+Vector2(-30,-64),center+Vector2(30,-64),center+Vector2(40,21)]),Color("367e78") if hub.equipped["armor"].is_empty() else Color("4b8892"))
-	for x in [-35,35]: draw_line(center+Vector2(x,-48),center+Vector2(x,-2),Color("d7ba91"),12)
-	draw_circle(center+Vector2(0,-89),24,Color("e5c39a"))
-	draw_arc(center+Vector2(0,-94),25,PI,TAU,20,Color("26394b") if hub.equipped["headgear"].is_empty() else Color("729185"),12)
-	for x in [-8,8]: draw_circle(center+Vector2(x,-90),2,Color("172a32"))
-	if not hub.equipped["necklace"].is_empty(): draw_circle(center+Vector2(0,-43),6,Color("96c9ff"))
-	if not hub.equipped["ring"].is_empty(): draw_circle(center+Vector2(-35,-2),4,Color("e6c57d"))
-	if not hub.equipped["bracelet"].is_empty(): draw_line(center+Vector2(31,-13),center+Vector2(39,-13),Color("e6c57d"),5)
-	draw_texture_rect(Icons.texture(hub.item_type(hub.equipped["weapon"])),Rect2(center+Vector2(26,-63),Vector2(64,64)),false)
+	draw_circle(center+Vector2(0,73),60,Color(0.35,0.65,0.63,0.07))
+	draw_arc(center+Vector2(0,70),60,0,TAU,40,Color("496666"),2)
+	var hero := Art.frame("hero_front")
+	var height := 190.0
+	var width := height*hero.get_width()/hero.get_height()
+	draw_texture_rect(hero,Rect2(center+Vector2(-width*Art.pivot("hero_front"),76-height),Vector2(width,height)),false)
 
 func _inventory_y(y: float) -> float:
 	return 160 + (y - 160) * inventory_scale

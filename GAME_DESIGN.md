@@ -271,3 +271,17 @@ stay lower-tier. Brute HP is reduced15% and boss/guardian HP20%; later-floor
 values are tuning defaults documented in BALANCING.md. Floor10 pays2 gold keys
 per eligible clear (first3 clears/day), and records the pet milestone without
 implementing pet gameplay. Checkpoint selection remains a separate planned feature.
+
+## Approved visual direction and first production pack
+
+Original illustrated three-quarter dark fantasy. Launch art plan: five ten-floor
+regions through50, expandable toward100 and other game modes. Fallen Sanctuary
+(1–10), Crimson Court(11–20), Ashen Foundries(21–30), Living Depths(31–40), Hollow
+Throne(41–50). Architecture/materials evolve; deeper does not simply mean darker.
+[ART_DIRECTION.md](ART_DIRECTION.md) records approved references, assets and scope.
+
+Floors1–10 now use Sanctuary production textures, transparent hero/enemy/prop
+atlases, depth sorting, chest state artwork and gradual border corruption. Future
+region references are archived, not playable production packs. Layout/collision
+and combat balance are unchanged. Full animation, item cosmetics, remaining
+icons, later biome packs and final audio are still future work.

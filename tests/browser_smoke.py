@@ -35,7 +35,7 @@ with sync_playwright() as p:
                 r,g,b=im.getpixel((x,y))
                 if abs(r-57)<3 and abs(g-188)<3 and abs(b-167)<3:points.append((x,y))
         assert points,'Player must be visible'
-        return(sum(x for x,y in points)/len(points)/scale,sum(y for x,y in points)/len(points)/scale+13)
+        return(sum(x for x,y in points)/len(points)/scale,sum(y for x,y in points)/len(points)/scale)
     def align(axis,target):
         for attempt in range(30):
             value=player_pos()[axis]

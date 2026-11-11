@@ -32,7 +32,8 @@ state cannot be farmed by revisiting.
 
 Use [`?seed=9`](https://gabrieldragoscalin-hash.github.io/novels/?seed=9) to repeat a
 layout for balance testing. These numbers are defaults, not a claim of fair balance.
-Art is original procedural placeholder graphics. Advanced room adjacency
+The first illustrated Sanctuary art pack is implemented; art scope and remaining
+work are recorded in [ART_DIRECTION.md](ART_DIRECTION.md). Advanced room adjacency
 constraints, floors 11+, final art/audio, and cloud accounts are not implemented.
 
 The shop has six daily coin offers and copper/silver/gold item chests with saved
@@ -130,3 +131,8 @@ Emergency barrier, Salvage and rare Second Chance. Second Chance instantly reviv
 once at25% maxHP and never appears again in that run. Offers generally pair offense
 with utility/defense. Brute HP is15% lower, boss/guardian HP20% lower, and play now
 continues through floor10. Permanent perk cards can be tapped for their effects.
+
+The Sanctuary art pack covers current floors1–10: painted room textures, transparent
+hero/enemy/prop sprites, gradual corruption and matching hub character/portal art.
+Approved later-region concepts are preserved under `art/concepts` and excluded
+from browser downloads. This art pass does not change combat or collision rules.

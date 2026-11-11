@@ -1,6 +1,7 @@
 extends Node2D
 ## First combat prototype: auto-fire while moving and persistent encounters.
 signal transition_finished
+const Art = preload("res://scripts/game_art.gd")
 const HubMenu = preload("res://scripts/hub_menu.gd")
 const HubState = preload("res://scripts/hub.gd")
 const Services = preload("res://scripts/services.gd")
@@ -51,6 +52,7 @@ var pointer := -1
 var stick_origin := Vector2.ZERO
 var stick_position := Vector2.ZERO
 var pointer_mouse := false
+var facing_y := 1
 var facing := 1.0
 var clock := 0.0
 var distance_walked := 0.0
@@ -60,6 +62,7 @@ var movement_blockers: Array[Control] = []
 var font := ThemeDB.fallback_font
 
 func _ready() -> void:
+	Art.prepare()
 	_read_seed()
 	_build_ui()
 	_build_cheats(hub_menu.get_parent())
@@ -358,6 +361,7 @@ func _physics_process(delta: float) -> void:
 
 func move_player(motion: Vector2) -> void:
 	if transitioning or interacting or combat.progression.pending > 0: return
+	if absf(motion.y)>0.1: facing_y = -1 if motion.y<0 else 1
 	var old := player
 	# Substeps prevent tunnelling through pillars during frame stalls.
 	var steps := maxi(1, int(ceil(motion.length() / 5.0)))
@@ -424,35 +428,23 @@ func _blocked(pos: Vector2) -> bool:
 	return false
 
 func _draw() -> void:
-	# Layered wall faces and tile seams give the room a three-quarter appearance.
-	draw_rect(FLOOR.grow(8), Color("080e18"))
-	draw_rect(Rect2(8,150,464,30), Color("263348"))
-	draw_rect(FLOOR, Color("192539"))
-	for y in range(8):
-		for x in range(9):
-			var tile := Rect2(9+x*51.3,167+y*54.5,49.3,52.5)
-			var palette: Array[Color] = [Color("202f43"), Color("253a40"), Color("343047"), Color("3b3434"), Color("303b36")]
-			var color := palette[(dungeon.current.x + dungeon.current.y) % palette.size()]
-			if (x + y) % 2 != 0: color = color.lightened(0.045)
-			draw_rect(tile, color)
-	draw_rect(Rect2(0,166,8,446), Color("344157"))
-	draw_rect(Rect2(472,166,8,446), Color("344157"))
-	draw_rect(Rect2(0,604,480,8), Color("101a2a"))
-	# Only draw open passages where another grid room exists.
-	for direction in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
-		if dungeon.contains(dungeon.current + direction):
-			_draw_door(direction)
+	var canvas := Rect2(0,142,480,476)
+	var variation: Color = [Color.WHITE,Color(0.96,1,0.98),Color(1,0.98,0.95)][posmod(dungeon.current.x+dungeon.current.y*5,3)]
+	draw_texture_rect(Art.ROOM,canvas,false,Art.floor_tint(dungeon.floor_number)*variation)
+	var corruption := Art.stage(dungeon.floor_number)
+	if corruption>0: draw_texture_rect(Art.CORRUPTION,canvas,false,Color(1,1,1,corruption*0.85))
+	# Cardinal passage indicators match the unchanged collision/transition positions.
+	for direction in [Vector2i.UP,Vector2i.DOWN,Vector2i.LEFT,Vector2i.RIGHT]:
+		if dungeon.contains(dungeon.current+direction): _draw_door(direction)
+		else: _draw_boundary(direction)
 	_draw_minimap()
 	draw_rect(Rect2(150, 88, 130, 8), Color("263348"))
 	draw_rect(Rect2(150, 88, 130.0 * combat.health / combat.progression.max_health(), 8), Color("69d4b8"))
 	draw_rect(Rect2(285, 108, 60, 5), Color("263348"))
 	draw_rect(Rect2(285, 108, 60.0 * combat.progression.xp / combat.progression.required_xp(), 5), Color("96c9ff"))
-	draw_string(font, Vector2(216, 401), dungeon.room_name(), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color(0.8, 0.85, 0.9, 0.18))
-	_draw_room_content()
-	for x in [76, 404]:
-		draw_circle(Vector2(x, 187), 26, Color(0.95, 0.55, 0.2, 0.045))
-		draw_rect(Rect2(x - 3, 175, 6, 15), Color("78634d"))
-		draw_circle(Vector2(x, 173), 5 + sin(clock * 7 + x) * 0.7, Color("f4bb63"))
+	var role: String = dungeon.rooms[dungeon.current]["role"]
+	var raised_content: bool = role in ["loot","bonus"] or (role=="boss" and combat.alive_count()==0)
+	if not raised_content: _draw_room_content()
 	for drop in combat.item_drops:
 		var pos: Vector2 = drop["pos"]
 		draw_circle(pos,12,Color("aab1ba"))
@@ -462,6 +454,7 @@ func _draw() -> void:
 		draw_circle(pos, 10, Color(0.4, 0.7, 1, 0.12))
 		draw_colored_polygon(PackedVector2Array([pos + Vector2(0, -7), pos + Vector2(5, 0), pos + Vector2(0, 7), pos + Vector2(-5, 0)]), Color("96c9ff"))
 	var actors: Array = []
+	if raised_content: actors.append({"y":408,"content":true})
 	for pillar in PILLARS: actors.append({"y": pillar.end.y, "pillar": pillar})
 	actors.append({"y": player.y, "player": true})
 	for enemy in combat.enemies:
@@ -470,6 +463,7 @@ func _draw() -> void:
 	for actor in actors:
 		if actor.has("pillar"): _draw_pillar(actor["pillar"])
 		elif actor.has("enemy"): _draw_enemy(actor["enemy"])
+		elif actor.has("content"): _draw_room_content()
 		elif combat.hurt_time <= 0 or int(clock * 14) % 2 == 0: _draw_player()
 	for hazard in combat.hazards:
 		var color := Color(1,0.3,0.2,0.65) if hazard["warning"]>0 else Color(1,0.65,0.2,0.85)
@@ -505,6 +499,7 @@ func _draw() -> void:
 	_draw_weapon_effects()
 	for impact in combat.impacts:
 		draw_arc(impact["pos"] + Vector2(0, -16), (0.22 - impact["life"]) * 85 + 3, 0, TAU, 12, Color(1, 0.8, 0.4, impact["life"] / 0.22), 2)
+	_draw_player_marker()
 	if pointer != -1 or pointer_mouse:
 		draw_circle(stick_origin, 48, Color(0.5, 0.75, 0.85, 0.12))
 		draw_arc(stick_origin, 48, 0, TAU, 48, Color("7193a6"), 2)
@@ -547,22 +542,37 @@ func _draw_shadow(center: Vector2, radii: Vector2, color: Color) -> void:
 		points.append(center + Vector2(cos(angle), sin(angle)) * radii)
 	draw_colored_polygon(points, color)
 
+func _sprite(key: String,feet: Vector2,height: float,tint: Color = Color.WHITE,flip: bool = false) -> void:
+	var texture := Art.frame(key)
+	var width := height*texture.get_width()/texture.get_height()
+	if key in Art.PROP_KEYS and player.y<feet.y and player.y>feet.y-height and absf(player.x-feet.x)<width/2+12: tint.a *= 0.55
+	draw_set_transform(feet,0,Vector2(-1 if flip else 1,1))
+	draw_texture_rect(texture,Rect2(-width*Art.pivot(key),-height,width,height),false,tint)
+	draw_set_transform(Vector2.ZERO)
+
 func _draw_pillar(pillar: Rect2) -> void:
-	_draw_shadow(pillar.position + Vector2(22, 44), Vector2(29, 10), Color(0, 0, 0, 0.25))
-	draw_rect(pillar, Color("354359"))
-	draw_rect(Rect2(pillar.position - Vector2(4, 15), Vector2(46, 19)), Color("60718a"))
-	draw_line(pillar.position + Vector2(5, 7), pillar.position + Vector2(5, 33), Color("485972"), 3)
+	var feet := Vector2(pillar.get_center().x,pillar.end.y)
+	_draw_shadow(feet+Vector2(0,1),Vector2(25,8),Color(0,0,0,0.32))
+	_sprite("pillar",feet,68,Art.floor_tint(dungeon.floor_number))
 
 func _draw_player() -> void:
-	# Original placeholder adventurer, with feet anchored to the collision position.
 	if combat.barrier_ready and combat.barrier_time>0 and combat.progression.ranks["barrier"]>0: draw_arc(player+Vector2(0,-18),25,0,TAU,32,Color("81d5ff"),3)
-	_draw_shadow(player + Vector2(0, 3), Vector2(15, 6), Color(0, 0, 0, 0.4))
-	draw_colored_polygon(PackedVector2Array([player + Vector2(-12, -5), player + Vector2(-10, -23), player + Vector2(10, -23), player + Vector2(13, -5)]), Color("39bca7"))
-	draw_line(player + Vector2(-5, -4), player + Vector2(-5, 1), Color("b7c5d3"), 5)
-	draw_line(player + Vector2(5, -4), player + Vector2(5, 1), Color("b7c5d3"), 5)
-	draw_circle(player + Vector2(0, -29), 10, Color("edd0a3"))
-	draw_arc(player + Vector2(0, -31), 10, PI, TAU, 12, Color("343043"), 6)
-	draw_circle(player + Vector2(facing * 4, -29), 1.4, Color("172131"))
+	_draw_shadow(player+Vector2(0,1),Vector2(15,6),Color(0,0,0,0.38))
+	var upwards := facing_y<0
+	var target: int = combat.arsenal.nearest(player)
+	if target>=0: upwards = combat.enemies[target]["pos"].y<player.y
+	var bob := absf(sin(distance_walked*0.065))*1.0
+	_sprite("hero_back" if upwards else "hero_front",player+Vector2(0,-bob),48,Color.WHITE,facing<0)
+
+func _draw_boundary(direction: Vector2i) -> void:
+	var rect: Rect2
+	if direction==Vector2i.UP: rect = Rect2(208,150,64,17)
+	elif direction==Vector2i.DOWN: rect = Rect2(208,602,64,12)
+	elif direction==Vector2i.LEFT: rect = Rect2(0,353,9,64)
+	else: rect = Rect2(471,353,9,64)
+	draw_rect(rect,Color("bca487"))
+	draw_rect(rect,Color("70553b"),false,2)
+
 
 func _draw_door(direction: Vector2i) -> void:
 	var door: Rect2
@@ -570,14 +580,14 @@ func _draw_door(direction: Vector2i) -> void:
 	elif direction == Vector2i.DOWN: door = Rect2(208,586,64,26)
 	elif direction == Vector2i.LEFT: door = Rect2(0,353,28,64)
 	else: door = Rect2(452,353,28,64)
-	draw_rect(door.grow(3), Color("8e7247"))
-	draw_rect(door, Color("0a1420"))
+	draw_rect(door.grow(3), Color("bf9b55"))
+	draw_rect(door,Color(0.03,0.15,0.15,0.75))
 	var center := door.get_center()
 	var arrow := Vector2(direction)
 	var side := Vector2(-arrow.y, arrow.x)
-	draw_line(center - arrow * 7, center + arrow * 7, Color("dfbd78"), 2)
-	draw_line(center + arrow * 7, center + side * 5, Color("dfbd78"), 2)
-	draw_line(center + arrow * 7, center - side * 5, Color("dfbd78"), 2)
+	draw_line(center - arrow * 7, center + arrow * 7, Color("c3e8ce"), 2)
+	draw_line(center + arrow * 7, center + side * 5, Color("c3e8ce"), 2)
+	draw_line(center + arrow * 7, center - side * 5, Color("c3e8ce"), 2)
 
 func _draw_minimap() -> void:
 	for y in range(5):
@@ -600,24 +610,19 @@ func _draw_minimap() -> void:
 
 func _draw_enemy(enemy: Dictionary) -> void:
 	var pos: Vector2 = enemy["pos"]
-	_draw_shadow(pos + Vector2(0, 3), Vector2(16, 7), Color(0, 0, 0, 0.35))
-	var base := Color("c85e72")
-	if enemy.get("kind", "") == "shooter": base = Color("be8be8")
-	if enemy.get("kind", "") == "brute": base = Color("db9a52")
-	if enemy.get("kind", "") == "boss": base = Color("e25151")
-	if enemy.get("kind", "") == "miniboss": base = Color("e3a63e")
-	if enemy.get("phase","")=="recover": base = base.darkened(0.4)
-	if enemy.get("frost_time", 0.0) > 0: base = Color("79bfe8")
-	if enemy.get("burn_time", 0.0) > 0: draw_arc(pos + Vector2(0, -13), 18, 0, TAU, 16, Color("f5a255"), 2)
-	var color := Color("ffecce") if enemy["flash"] > 0 else base
-	draw_circle(pos + Vector2(0, -13), 23 if enemy.get("kind", "") == "boss" else (20 if enemy.get("kind","")=="miniboss" else 15), color)
-	draw_colored_polygon(PackedVector2Array([pos + Vector2(-12, -20), pos + Vector2(-12, -33), pos + Vector2(-3, -25)]), color)
-	draw_colored_polygon(PackedVector2Array([pos + Vector2(12, -20), pos + Vector2(12, -33), pos + Vector2(3, -25)]), color)
-	if enemy.get("kind","") in ["boss","miniboss"] and dungeon.floor_number>=3 and enemy["hp"]<enemy["max_hp"]*0.5:
-		draw_arc(pos+Vector2(0,-13),27,clock*3,clock*3+5.5,24,Color("ffb24c"),3)
-	for x in [-5, 5]: draw_circle(pos + Vector2(x, -16), 2.5, Color("ffeaa4"))
-	draw_rect(Rect2(pos + Vector2(-17, -43), Vector2(34, 4)), Color("111a29"))
-	draw_rect(Rect2(pos + Vector2(-17, -43), Vector2(34.0 * enemy["hp"] / enemy.get("max_hp", 3), 4)), Color("ed8392"))
+	var kind: String = enemy.get("kind","normal")
+	var height: float = {"normal":44.0,"shooter":50.0,"brute":52.0,"boss":78.0,"miniboss":66.0}.get(kind,44.0)
+	var recovering: bool = enemy.get("phase","")=="recover"
+	var tint := Color(0.68,0.68,0.72) if recovering else Color.WHITE
+	if enemy["flash"]>0: tint = Color(1.5,1.25,1.05)
+	_draw_shadow(pos+Vector2(0,1),Vector2(22 if kind in ["boss","miniboss","brute"] else 14,6),Color(0,0,0,0.38))
+	var bob: float = 0.0 if recovering else sin(clock*4+pos.x*0.02)*0.6
+	_sprite(kind,pos+Vector2(0,bob),height,tint,pos.x>player.x)
+	if kind in ["boss","miniboss"] and dungeon.floor_number>=3 and enemy["hp"]<enemy["max_hp"]*0.5:
+		draw_arc(pos+Vector2(0,-12),27,clock*3,clock*3+5.5,24,Color("ffb24c"),3)
+	var bar := Rect2(pos+Vector2(-18,-height-7),Vector2(36,4))
+	draw_rect(bar.grow(1),Color("151a20"))
+	draw_rect(Rect2(bar.position,Vector2(36.0*enemy["hp"]/enemy.get("max_hp",5),4)),Color("ed8392") if kind not in ["brute","miniboss"] else Color("e3b56a"))
 
 func _show_level_up(title: String = "") -> void:
 	_release_stick()
@@ -846,24 +851,26 @@ func _draw_room_content() -> void:
 	var state: Dictionary = dungeon.rooms[dungeon.current]
 	var role: String = state["role"]
 	var center := Vector2(240, 385)
-	if role == "loot":
-		draw_rect(Rect2(center - Vector2(24, 17), Vector2(48, 32)), Color("806445") if state["used"] else Color("c99a4b"))
-		draw_line(center + Vector2(0, -17), center + Vector2(0, 15), Color("f6d080"), 5)
-	elif role == "bonus":
-		var label: String = state["service"].to_upper()
-		if state["service"] == "wheel":
-			var colors := [Color("69d4b8"), Color("dfbd78"), Color("96c9ff"), Color("be8be8"), Color("e88a81")]
+	if role=="loot":
+		_draw_shadow(center+Vector2(0,2),Vector2(28,8),Color(0,0,0,0.3))
+		_sprite("chest_open" if state["used"] else "chest_closed",center+Vector2(0,13),57 if state["used"] else 49)
+	elif role=="bonus":
+		var service: String = "shop" if state.get("summoned_shop",false) else state["service"]
+		if service=="wheel":
+			_sprite("wheel",center+Vector2(0,24),68)
+			var colors := [Color("69d4b8"),Color("dfbd78"),Color("96c9ff"),Color("be8be8"),Color("e88a81")]
 			for i in range(5):
-				var points := PackedVector2Array([center])
+				var points := PackedVector2Array([center+Vector2(0,-27)])
 				for part in range(9):
-					var angle := wheel_rotation + (i + part / 8.0) * TAU / 5
-					points.append(center + Vector2.from_angle(angle) * 43)
-				draw_colored_polygon(points, colors[i])
-			draw_colored_polygon(PackedVector2Array([center + Vector2(-7, -51), center + Vector2(7, -51), center + Vector2(0, -39)]), Color.WHITE)
+					var angle := wheel_rotation+(i+part/8.0)*TAU/5
+					points.append(center+Vector2(cos(angle)*30,sin(angle)*13-27))
+				draw_colored_polygon(points,colors[i])
+			draw_colored_polygon(PackedVector2Array([center+Vector2(-4,-46),center+Vector2(4,-46),center+Vector2(0,-37)]),Color("fff0cb"))
 		else:
-			draw_circle(center, 32, Color("5d588e"))
-			draw_string(font, center + Vector2(-8, 7), label.left(1), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color("eee5cc"))
-		draw_string(font, center + Vector2(-45, 65), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("dfbd78"))
+			var prop: String = {"shop":"shop","trader":"upgrade","healer":"healer","upgrade":"upgrade"}.get(service,"upgrade")
+			_sprite(prop,center+Vector2(0,21),74 if service=="shop" else 62)
+			if service in ["shop","trader"]: _sprite("merchant",center+Vector2(38,23),47)
+		draw_string(font,center+Vector2(-48,61),service.to_upper(),HORIZONTAL_ALIGNMENT_LEFT,-1,12,Color("dfbd78"))
 	elif role == "trap":
 		var trap: int = state["trap"]
 		var color := Color("be8be8") if trap == 0 else Color("ff786f")
@@ -874,8 +881,8 @@ func _draw_room_content() -> void:
 				for x in [180, 240, 300]: draw_line(Vector2(x, 195), Vector2(x, 580), Color(1, 0.3, 0.3, 0.3), 3)
 		draw_string(font, center + Vector2(-44, 5), ["SLOW FIELD", "SPIKES", "VOLLEY"][trap], HORIZONTAL_ALIGNMENT_LEFT, -1, 13, color)
 	elif role == "boss" and combat.alive_count() == 0:
-		draw_circle(center, 30, Color("69d4b8"))
-		draw_string(font, center + Vector2(-23, 5), "EXIT", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("132030"))
+		_sprite("exit",center+Vector2(0,20),84)
+		draw_string(font,center+Vector2(-18,40),"DESCEND",HORIZONTAL_ALIGNMENT_LEFT,-1,10,Color("b9e8da"))
 	elif role == "empty":
 		draw_string(font, center + Vector2(-34, 40), "QUIET" if dungeon.floor_number < 3 else "AWAKENED", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("96a3b6"))
 
@@ -928,3 +935,9 @@ func _claim_floor_reward() -> void:
 		state["floor_reward_claimed"] = true
 		var reward: Dictionary = hub.claim_floor(dungeon.floor_number,run_token+"-"+str(dungeon.floor_number))
 		_notice("Floor cleared • +%d %s key(s)" % [reward["amount"],reward["kind"]] if not reward.is_empty() else "Floor cleared • daily key limit reached for this floor")
+
+func _draw_player_marker() -> void:
+	# Keep the footprint readable when the adventurer walks behind raised props.
+	var ring := PackedVector2Array()
+	for i in range(25): ring.append(player+Vector2(cos(i*TAU/24)*14,sin(i*TAU/24)*5))
+	draw_polyline(ring,Color("39bca7"),1.8,true)
