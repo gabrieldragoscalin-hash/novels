@@ -135,15 +135,24 @@ continues through floor10. Permanent perk cards can be tapped for their effects.
 The Sanctuary art pack covers current floors1–10: painted room textures, transparent
 hero/enemy/prop sprites, gradual corruption and matching hub character/portal art.
 Approved later-region concepts are preserved under `art/concepts` and excluded
-from browser downloads. This art pass does not change combat or collision rules.
+from browser downloads.
 
 ### Animated Sanctuary pass
 
 The hero has distance-driven front/back walk cycles and release-driven attack
 frames; mobs have walk/windup/attack poses. All six equipped weapons are visible
 and animate per type, with a dedicated frontal inventory character holding them.
-Six stable prop/collision layouts add memorials, crypts, reliquaries, barricades,
-root gardens and fire courts. Floors1–10 have unique boss silhouettes and attack
+Six architectural templates arrange props around ceremonial routes, canals and
+collapsed floors. Floors1–10 have unique boss silhouettes and attack
 rotations. Boss animation currently uses windup/lunge transforms; dedicated boss
 sprite animation sheets, death frames and armor cosmetics remain future work.
 See [ART_DIRECTION.md](ART_DIRECTION.md) for atlas and boss details.
+
+### Architectural rooms
+
+Six authored room templates replace scattered props: a ceremonial hall, jade-water
+sluice, fractured crypt, collapsed cloister, lava aqueduct and sunken courtyard.
+Recessed canals have wall sources/drains and stone crossings. Terrain gaps block
+walking/charges, while projectiles can pass over them. Solid props still block
+shots. Enemy navigation follows the bridges, and all doors/services remain connected.
+The existing cheat room picker can be used to inspect different room plans.

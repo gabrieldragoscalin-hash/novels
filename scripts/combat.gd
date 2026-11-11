@@ -31,6 +31,7 @@ var room_state: Dictionary = {}
 var floor_number := 1
 var nav := AStarGrid2D.new()
 var bounds: Rect2
+var shot_obstacles: Array[Rect2] = []
 var obstacles: Array[Rect2]
 
 func _init(room_bounds: Rect2, pillars: Array[Rect2]) -> void:
@@ -39,8 +40,10 @@ func _init(room_bounds: Rect2, pillars: Array[Rect2]) -> void:
 	bounds = room_bounds
 	set_obstacles(pillars)
 
-func set_obstacles(pillars: Array[Rect2]) -> void:
-	obstacles = pillars
+func set_obstacles(pillars: Array[Rect2], gaps: Array[Rect2] = []) -> void:
+	shot_obstacles = pillars.duplicate()
+	obstacles = pillars.duplicate()
+	obstacles.append_array(gaps)
 	nav.region = Rect2i(0,0,maxi(1,int(ceil((bounds.size.x-32)/16))),maxi(1,int(ceil((bounds.size.y-32)/16))))
 	nav.cell_size = Vector2(16, 16)
 	nav.offset = bounds.position+Vector2(16,16)
@@ -102,7 +105,7 @@ func blocked(point: Vector2, radius: float) -> bool:
 	return false
 
 func wall_between(a: Vector2, b: Vector2) -> bool:
-	for obstacle in obstacles:
+	for obstacle in shot_obstacles:
 		var rect := obstacle.grow(3)
 		if rect.has_point(a) or rect.has_point(b): return true
 		var corners := [rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]
@@ -117,8 +120,8 @@ func _cell(point: Vector2) -> Vector2i:
 	if nav.is_point_solid(cell):
 		var nearest := INF
 		var best := cell
-		for y in range(maxi(0, cell.y - 3), mini(nav.region.size.y,cell.y+4)):
-			for x in range(maxi(0, cell.x - 3), mini(nav.region.size.x,cell.x+4)):
+		for y in range(nav.region.size.y):
+			for x in range(nav.region.size.x):
 				var candidate := Vector2i(x, y)
 				var distance := nav.get_point_position(candidate).distance_squared_to(point)
 				if not nav.is_point_solid(candidate) and distance < nearest:

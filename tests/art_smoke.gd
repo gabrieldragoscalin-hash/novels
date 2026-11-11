@@ -18,7 +18,7 @@ func run() -> void:
 	var game = load("res://scenes/room.tscn").instantiate(); root.add_child(game)
 	game.hub = preload("res://scripts/hub.gd").new(false)
 	game.start_game()
-	assert(game.FLOOR==Rect2(8,166,464,438) and game.PILLARS.size()>=2 and game.PILLARS==game.combat.obstacles)
+	assert(game.FLOOR==Rect2(8,166,464,438) and game.PILLARS.size()>=2 and game.PILLARS==game.combat.shot_obstacles)
 	assert(game.combat.progression.damage()==1 and game.combat.progression.max_health()==6)
 	game.queue_free()
 	print("PASS: 16 alpha atlas frames/cache, clear overlay center, gradual sanctuary stage, future-region catalog and room-specific collision and preserved stats")

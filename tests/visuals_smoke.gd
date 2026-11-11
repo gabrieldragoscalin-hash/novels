@@ -18,10 +18,11 @@ func run() -> void:
 	var entrances := [Vector2(72,385),Vector2(408,385),Vector2(240,214),Vector2(240,556),Vector2(240,385)]
 	for layout in range(6):
 		var c = Combat.new(Rect2(8,166,464,438),Layouts.obstacles(layout))
+		c.set_obstacles(Layouts.obstacles(layout),Layouts.terrain(layout))
 		for a in entrances:
 			assert(not c.blocked(a,18))
 			for b in entrances: assert(not c.nav.get_point_path(c._cell(a),c._cell(b)).is_empty())
-		for i in range(c.obstacles.size()): assert(Art.Layout.FRAMES.has(Layouts.prop(layout,i)))
+		for i in range(Layouts.props(layout).size()): assert(Art.Layout.FRAMES.has(Layouts.prop(layout,i)))
 	var identities := {}
 	var rotations := {}
 	for floor_number in range(1,11):

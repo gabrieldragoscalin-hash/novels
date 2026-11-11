@@ -282,10 +282,24 @@ Throne(41–50). Architecture/materials evolve; deeper does not simply mean dark
 
 Floors1–10 now use Sanctuary production textures, transparent hero/enemy/prop
 atlases, depth sorting, chest state artwork and gradual border corruption. Future
-region references are archived, not playable production packs. Six room prop layouts now have matching collision/navigation; central door routes remain open.
+region references are archived, not playable production packs. Six architectural room templates now have matching collision/navigation and connected door routes.
 Heroes and regular enemies have movement/attack frames. Weapons are visible and
 animate per type; inventory uses a frontal portrait holding the equipped weapon.
 Each floor has a distinct boss silhouette/name/attack rotation (see ART_DIRECTION.md).
 Boss windup/lunge animation currently uses anchored sprite transforms. Player
 damage, enemy HP and rewards remain unchanged. Additional directional/boss/death
 frames, armor cosmetics, remaining icons, later biome packs and final audio remain.
+
+## Architectural room templates
+
+Rooms now use six authored structural plans: Processional Hall, Jade Sluice,
+Fractured Crypt, Collapsed Cloister, Lava Aqueduct and Sunken Courtyard.
+Canals/ruptures are unwalkable ground; stone bridges and surviving walkways
+connect the reachable floor. Canal sources and drains are built into walls.
+Props are arranged around the architecture with purposeful paired placements.
+Layouts persist across floors as before; room roles continue to rotate separately.
+All doors and central interactions must connect to the entire walkable room.
+Ground enemies and charges respect gaps and crossings. Projectiles pass over gaps,
+while solid scenery remains cover. Gaps are movement barriers with no contact damage
+in this pass. Rendering and navigation share the same authored terrain definitions.
+See ART_DIRECTION.md for each plan and validation details.

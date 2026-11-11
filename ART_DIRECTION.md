@@ -55,7 +55,7 @@ uses the production PNGs, not the full-resolution presentation sheets.
 
 ## Gameplay integration
 
-The playable footprint remains464×438 world units. Room-specific collision rectangles and pathfinding follow six deterministic prop layouts.
+The playable footprint remains464×438 world units. Room-specific collision rectangles and pathfinding follow six authored architectural templates.
 Doors and hitboxes stay fixed; equipment and damage tuning are unchanged. Perspective comes from visible top faces, upright actors,
 contact shadows and depth sorting; the navigation plane remains orthographic so
 phone controls behave exactly as before. The original diamond-shaped concept
@@ -80,12 +80,31 @@ a windup and an attack pose. Bosses have ten distinct painted silhouettes,
 anchored anticipation/lunge transforms, readable warnings, hit flashes and recovery.
 They do not yet have bespoke multi-frame directional sprite sheets.
 
-Six stable room arrangements include memorial statues/pillars, sarcophagi,
-reliquary urns, barricades, root gardens and braziers. A central cross preserves
-all four door routes and access to services. Enemy navigation rebuilds on entry;
-existing spawns inside props are projected to free navigation cells. Bases overlap
-tight contact shadows rather than floating above detached ovals. Tall props fade
-behind the player. The teal footprint remains visible above effects.
+Six authored architectural plans replace scattered quadrant props. Their routes,
+terrain blockers, crossings and props are defined together in `room_layouts.gd`:
+
+| Room | Composition and movement |
+| --- | --- |
+| Processional Hall | Paired statues/columns frame a central ceremonial aisle. |
+| Jade Sluice | A wall outlet feeds a recessed jade-water canal; one central stone bridge connects the banks before a wall drain. |
+| Fractured Crypt | Paired sarcophagi frame a floor-wide rupture crossed by a surviving stone span. |
+| Collapsed Cloister | Opposing collapsed floor sections leave an intact route around their broken edges. |
+| Lava Aqueduct | A wall vent pours molten flow down a masonry canal to a drain; one transverse bridge connects the two sides. |
+| Sunken Courtyard | Four recessed water basins frame a central platform, axial crossings and outer walkways. |
+
+Templates remain stable per room across floors. Rendering (`room_architecture.gd`)
+uses the same terrain and bridge rectangles as navigation: stone lips, recessed
+channel walls, fractured slab edges, crossing blocks, sources and drains explain
+the room's structure. Existing painted props are arranged as pairs, bankside
+fixtures or monuments around those structures. Bases overlap contact shadows;
+tall props fade behind the player and the teal footprint stays visible above effects.
+
+Floor gaps block the player, ground enemies and charges. They do not stop shots;
+solid props still provide cover. Bridges are the only bank-to-bank routes in the
+Sluice, Crypt and Aqueduct. All walkable navigation cells connect to all doors and
+the central interaction point. Spawn positions inside terrain project to the
+nearest free navigation cell. Gaps currently prevent entry rather than applying
+falling/lava damage. The architecture pass does not add flying enemies or jumping.
 
 Floors1–3 use the clean Sanctuary palette; floors4–10 gain crimson border roots.
 Future region packs reuse the catalog interface.
@@ -135,3 +154,9 @@ and rendering errors. Visual review on a real iPhone remains valuable.
 
 `tests/visuals_smoke.gd` validates all70 atlas regions, connected door/service paths
 in every layout, boss identities/rotations and release-synchronized attack poses.
+
+`tests/architecture_smoke.gd` floods every walkable navigation cell, checks door,
+service and spawn access, proves the sole crossings are necessary, and exercises
+enemy bridge traversal/charge blocking and projectile visibility over gaps.
+`tests/browser_architecture.py` renders all six plans and checks that the player
+cannot walk through water but can cross its bridge in the exported mobile game.

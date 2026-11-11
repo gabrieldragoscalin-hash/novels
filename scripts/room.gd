@@ -11,6 +11,7 @@ const SPEED := 185.0
 const RADIUS := 12.0
 const FLOOR := Rect2(8, 166, 464, 438)
 const Bosses = preload("res://scripts/boss_roster.gd")
+const Architecture = preload("res://scripts/room_architecture.gd")
 const Layouts = preload("res://scripts/room_layouts.gd")
 const WeaponArt = preload("res://scripts/weapon_art.gd")
 var layout_index := 0
@@ -429,8 +430,9 @@ func _update_combat_labels() -> void:
 	if combat.progression.slow_time > 0: encounter_label.text += " • SLOW"
 
 func _blocked(pos: Vector2) -> bool:
-	for pillar in PILLARS:
-		if pillar.grow(RADIUS).has_point(pos): return true
+	# Bounds are clamped by move_player; inclusive door thresholds must stay reachable.
+	for obstacle in combat.obstacles:
+		if obstacle.grow(RADIUS).has_point(pos): return true
 	return false
 
 func _draw() -> void:
@@ -522,35 +524,7 @@ func _draw() -> void:
 		draw_circle(stick_origin + (stick_position - stick_origin).limit_length(45), 20, Color("48b9a8"))
 
 func _draw_room_inlay() -> void:
-	# Flat architectural dressing stays below actors and never implies a collider.
-	var gold := Color(0.78,0.63,0.35,0.28)
-	match layout_index:
-		0:
-			for radius in [92,105]: draw_arc(Vector2(240,385),radius,0,TAU,64,gold,1)
-			for i in range(8):
-				var axis := Vector2.from_angle(i*TAU/8)
-				draw_line(Vector2(240,385)+axis*95,Vector2(240,385)+axis*102,gold,3)
-		1:
-			for x in [72,304]:
-				var runner := Rect2(x,240,104,285)
-				draw_rect(runner,Color(0.24,0.08,0.11,0.25))
-				draw_rect(runner,gold,false,1)
-		2:
-			for pos in [Vector2(120,250),Vector2(360,250),Vector2(120,520),Vector2(360,520)]:
-				draw_colored_polygon(PackedVector2Array([pos+Vector2(0,-22),pos+Vector2(30,0),pos+Vector2(0,22),pos+Vector2(-30,0)]),Color(0.08,0.38,0.30,0.3))
-		3:
-			for y in [265,495]:
-				draw_line(Vector2(55,y),Vector2(425,y),Color(0.14,0.12,0.08,0.3),8)
-				for x in range(65,425,25): draw_line(Vector2(x,y-5),Vector2(x+8,y+5),gold,1)
-		4:
-			for i in range(6):
-				var base := Vector2(65+i*67,230 if i%2==0 else 545)
-				draw_arc(base,26+i*2,0.2,2.8,16,Color(0.08,0.36,0.25,0.35),7)
-		5:
-			for rect in PILLARS:
-				var center := rect.get_center()+Vector2(0,8)
-				_draw_shadow(center,Vector2(34,16),Color(0.10,0.06,0.03,0.35))
-				draw_arc(center,32,0,TAU,32,Color(0.7,0.35,0.12,0.24),2)
+	Architecture.draw_plan(self,layout_index,clock)
 
 func _draw_weapon_effects() -> void:
 	for meteor in combat.arsenal.meteors:
@@ -749,7 +723,7 @@ func _return_to_hub() -> void:
 func _enter_current() -> void:
 	layout_index = Layouts.index(dungeon.seed_value,dungeon.current)
 	PILLARS = Layouts.obstacles(layout_index)
-	combat.set_obstacles(PILLARS)
+	combat.set_obstacles(PILLARS,Layouts.terrain(layout_index))
 	combat.enter(dungeon.rooms[dungeon.current], player)
 	services.enter()
 
