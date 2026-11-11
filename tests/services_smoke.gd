@@ -39,7 +39,7 @@ func run() -> void:
 	combat = Combat.new(BOUNDS, [])
 	state = {"role": "boss", "enemies": [Dungeon.make_enemy(Vector2(240, 400), "normal", 1)], "pickups": [], "boss_paid": false}
 	combat.enter(state, Vector2(240, 530))
-	combat.progression.ranks["damage"] = 5
+	combat.progression.base_damage = 6 # Reward-path fixture, independent of card tuning.
 	combat.fire_time = 0
 	combat.tick(0.5, Vector2(240, 530))
 	assert(combat.kills == 1 and combat.progression.flares == 0)

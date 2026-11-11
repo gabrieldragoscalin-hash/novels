@@ -23,13 +23,13 @@ have teal outlines. All identities are shown in this prototype.
 
 | Setting | Floor 1 | Floor 2 | Floor 3 | Floor 4 | Floor 5 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Normal HP | 5 | 9 | 16 | 23 | 32 |
-| Shooter HP | 4 | 7 | 12 | 17 | 24 |
-| Brute HP | 12 | 23 | 37 | 53 | 74 |
+| Normal HP | 5 | 9 | 28 | 46 | 72 |
+| Shooter HP | 4 | 7 | 21 | 34 | 52 |
+| Brute HP | 12 | 23 | 62 | 102 | 156 |
 | Combat enemy count (total across waves) | 4 | 5 | 6 | 7 | 8 |
-| Loot defenders | 0 | 2 | 3 | 4 | 1 treasure guardian (115 HP) |
-| Empty room enemies | 0 | 0 | 2 tier-2 (9 HP) | 2 tier-2 | 2 tier-3 (16 HP) |
-| Boss HP | 66 | 121 | 198 | 286 | 396 |
+| Loot defenders | 0 | 2 | 3 | 4 | 1 treasure guardian (230 HP) |
+| Empty room enemies | 0 | 0 | 2 tier-2 (9 HP) | 2 tier-2 | 2 tier-3 (28 HP) |
+| Boss HP | 66 | 121 | 330 | 560 | 900 |
 | Normal speed | 75 | 90 | 105 | 112 | 120 |
 | Hostile projectile speed | 160 | 190 | 220 | 240 | 260 |
 | Shooter attack cycle | 2.4s | 2.1s | 1.8s | 1.65s | 1.5s |
@@ -62,7 +62,7 @@ Boss floor 1 alternates spread/charge; floor 2 adds ground zones; floors 3–5
 combine spreads and ground zones, with 25% shorter pursuit cooldowns
 below half HP (shown with an orange ring). Ground attacks lock 2/3/4/5 locations
 on floors 2–5, warn for 0.9s and strike once. Bosses still start alone. Treasure
-guardians alternate charge and a three-shot spread, have 115 HP, give 4 XP/2
+guardians alternate charge and a three-shot spread, have 230 HP, give 4 XP/2
 flares, and never pay boss/floor rewards. Their chest remains blocked until defeat.
 
 Boss access remains immediate. Exploration provides XP choices, healing, services
@@ -208,3 +208,12 @@ Enemy HP rose roughly10–20% from the previous pass, rather than trying to canc
 all future equipment power. Milestone starting floors10/20/etc are planned; only
 floors1–5 are currently enabled. Unlock conditions/starting bonuses will be defined
 when checkpoints are implemented. Skipped floors must not grant clear rewards.
+
+## Shared damage budget revision
+
+[POWER_BALANCE.md](POWER_BALANCE.md) supersedes the earlier flat damage, exponential
+speed and full-strength projectile stacking. It documents the current coefficients,
+cycle-level splash/meteor limits, floor3+ health step, and measured stationary
+weapon scenarios. Current settings live in `scripts/combat_balance.gd`.
+Floors1–2 health is unchanged. Empty-room enemies remain lower-tier: tier2 on
+floors3–4, tier3 on floor5 (now28HP). This intentional easier room type remains.

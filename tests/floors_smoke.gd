@@ -103,7 +103,7 @@ func run() -> void:
 	room.set_physics_process(false)
 	room.combat.progression.base_health = 100
 	room.combat.health = 100
-	room.combat.progression.ranks["damage"] = 7
+	room.combat.progression.base_damage = 40 # Isolate boss progression/rewards from balance pacing.
 	for f in range(1, Dungeon.MAX_FLOOR+1):
 		room.dungeon.enter(room.dungeon.exit)
 		room.player = Vector2(240, 530)
@@ -120,7 +120,7 @@ func run() -> void:
 		room._advance_floor()
 		if f < Dungeon.MAX_FLOOR:
 			await room.transition_finished
-			assert(room.dungeon.floor_number == f + 1 and room.combat.progression.damage() == 8)
+			assert(room.dungeon.floor_number == f + 1 and room.combat.progression.damage() == 40)
 		else: assert(room.dungeon.completed and not room.active and room.death_panel.visible)
 	# Awakened empty rooms pay their floor-specific completion reward only once.
 	for cell in room.dungeon.rooms:

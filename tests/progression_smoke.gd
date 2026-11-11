@@ -38,7 +38,7 @@ func run() -> void:
 	combat.tick(10, Vector2(240, 530))
 	assert(combat.health == 6 and combat.enemies[0]["hp"] == 3, "Combat must freeze while choosing")
 	combat.progression.offers.assign(["damage", "movement", "coins"])
-	assert(combat.apply_choice(0) and combat.progression.damage() == 2)
+	assert(combat.apply_choice(0) and is_equal_approx(combat.progression.damage(),1.15))
 	combat.progression.add_xp(combat.progression.required_xp())
 	combat.progression.offers.assign(["movement", "damage", "coins"])
 	combat.health = 3
@@ -49,7 +49,7 @@ func run() -> void:
 	combat.enter(dungeon.rooms[Vector2i.ZERO], Vector2(240, 530))
 	combat.pickups.append({"pos": Vector2(240, 270), "amount": 2})
 	combat.enter(dungeon.rooms[Vector2i(1, 0)], Vector2(72, 385))
-	assert(combat.progression.damage() == 2, "Upgrades must survive room travel")
+	assert(is_equal_approx(combat.progression.damage(),1.15), "Upgrades must survive room travel")
 	combat.enter(dungeon.rooms[Vector2i.ZERO], Vector2(240, 530))
 	assert(combat.pickups.size() == 1, "Uncollected XP must survive revisits")
 

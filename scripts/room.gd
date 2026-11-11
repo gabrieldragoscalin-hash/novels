@@ -404,7 +404,7 @@ func _update_combat_labels() -> void:
 	health_label.text = "HP  %.1f / %d" % [combat.health, combat.progression.max_health()]
 	health_label.modulate = Color("ff8b83") if combat.hurt_time > 0.7 else Color.WHITE
 	xp_label.text = "L%d XP %d/%d • %d C • %d F" % [combat.progression.level, combat.progression.xp, combat.progression.required_xp(), combat.progression.coins, combat.progression.flares]
-	build_label.text = "DMG %d  •  RATE %.1f/s  •  SPEED +%d%%  •  PIERCE %d" % [combat.progression.damage(), 1.0 / combat.progression.fire_interval(), roundi((combat.progression.gear_movement + combat.progression.ranks["movement"] * 0.1) * 100), combat.progression.base_pierce + combat.progression.ranks["piercing"]]
+	build_label.text = "DMG %.2f  •  RATE %.1f/s  •  SPEED +%d%%  •  PIERCE %d" % [combat.progression.damage(), 1.0 / combat.progression.fire_interval(), roundi((combat.progression.gear_movement + combat.progression.ranks["movement"] * 0.1) * 100), combat.progression.base_pierce + combat.progression.ranks["piercing"]]
 	seed_label.text = "SEED %d • %s Lv.%d • %d:%02d ACTIVE" % [dungeon.seed_value, combat.progression.weapon.to_upper(), combat.progression.weapon_level,int(run_time)/60,int(run_time)%60]
 	var alive: int = combat.alive_count()
 	encounter_label.text = "%d ENEMIES  •  %d DEFEATED" % [alive, combat.kills] if alive > 0 else "ROOM SAFE  •  %d DEFEATED" % combat.kills

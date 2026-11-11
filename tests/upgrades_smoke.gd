@@ -39,7 +39,7 @@ func run() -> void:
 	# Ricochet targets another enemy and never reflects off walls.
 	c = encounter("bow",[Vector2(240,330),Vector2(320,330)]); c.progression.ranks["ricochet"] = 1
 	c.arsenal._fire(PLAYER,0,false,0); c.arsenal._tick_bullets(0.85)
-	assert(c.enemies[0]["hp"]==99 and c.enemies[1]["hp"]==99)
+	assert(c.enemies[0]["hp"]==99 and is_equal_approx(c.enemies[1]["hp"],99.15))
 	c = encounter(); c.enemies.clear()
 	c.bullets.append({"pos":Vector2(440,350),"velocity":Vector2(390,0),"life":1.0,"bounces":4})
 	c.arsenal._tick_bullets(0.1); assert(c.bullets.is_empty())
@@ -56,14 +56,14 @@ func run() -> void:
 	assert(c.bullets.size()==1 and c.bullets[0]["remaining"]==1)
 	c.arsenal._tick_bullets(0.2); assert(c.bullets.size()==3)
 	for bullet in c.bullets: assert(not bullet["split"] and bullet["hits"].size()==2)
-	# Explosions are direct damage plus 70% splash, ignoring ordinary pierce/ricochet.
+	# Explosions are direct damage plus 45% splash, ignoring ordinary pierce/ricochet.
 	c = encounter("bow",[Vector2(240,330),Vector2(275,330)])
 	c.progression.ranks["explosive"] = 1; c.progression.ranks["piercing"] = 3; c.progression.ranks["ricochet"] = 3
 	c.arsenal._fire(PLAYER,0,false,0); c.arsenal._tick_bullets(0.7)
-	assert(is_equal_approx(c.enemies[0]["hp"],98.3) and is_equal_approx(c.enemies[1]["hp"],99.3) and c.bullets.is_empty())
+	assert(is_equal_approx(c.enemies[0]["hp"],98.55) and is_equal_approx(c.enemies[1]["hp"],99.55) and c.bullets.is_empty())
 	c = encounter(); c.progression.ranks["stop_aim"] = 1; c.progression.ranks["explosive"] = 1
 	c.arsenal._fire(PLAYER,0,true,0)
-	assert(c.bullets[0]["splash"]==128 and c.bullets[0]["remaining"]>100)
+	assert(c.bullets[0]["splash"]==104 and c.bullets[0]["remaining"]>100)
 	# Split children inherit Follow after the parent's last ricochet hit.
 	c = encounter("bow",[Vector2(240,330),Vector2(320,330)])
 	c.progression.ranks["arrow_split"] = 1; c.progression.ranks["ricochet"] = 1; c.progression.ranks["follow"] = 1
@@ -84,7 +84,7 @@ func run() -> void:
 	c.progression.ranks["multishot"] = 1; c.arsenal._schedule(Vector2(240,390),0,false)
 	assert(c.arsenal.queued.size()==2 and c.arsenal.queued[1]["slash"]==1)
 	c.arsenal._fire(Vector2(240,390),0,false,0)
-	assert(c.enemies[0]["hp"]==97 and c.enemies[1]["hp"]==97)
+	assert(is_equal_approx(c.enemies[0]["hp"],97.975) and is_equal_approx(c.enemies[1]["hp"],97.975))
 	c.arsenal._fire(Vector2(240,390),0,false,1); assert(c.arsenal.effects[-1]["reverse"])
 	# Hammer widens without extending its range.
 	c = encounter("hammer"); c.arsenal._fire(Vector2(240,400),0,false,0)

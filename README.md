@@ -120,3 +120,7 @@ Cheats now includes **Reset everything…**, with confirmation, to erase the loc
 profile and return to the starter bow. Rooms have about16% more playable area.
 Equipment roles, lower chest/item odds and the latest modest HP increases are
 recorded in BALANCING.md. Floor10/20 checkpoint starts are planned for later.
+
+The latest combat stacking rules and repeatable weapon damage scenarios are in
+[POWER_BALANCE.md](POWER_BALANCE.md). Run `tests/power_budget_smoke.gd` to check
+weapon output, explosive/meteor overlap and charge-cooldown regressions.

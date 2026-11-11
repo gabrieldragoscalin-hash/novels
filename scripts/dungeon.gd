@@ -3,10 +3,11 @@ extends RefCounted
 const SIZE := Vector2i(5, 5)
 const SERVICES := ["shop", "trader", "upgrade", "wheel", "healer"]
 const MAX_FLOOR := 5
-const NORMAL_HP := [5,9,16,23,32]
-const SHOOTER_HP := [4,7,12,17,24]
-const BRUTE_HP := [12,23,37,53,74]
-const BOSS_HP := [66,121,198,286,396]
+const Balance = preload("res://scripts/combat_balance.gd")
+const NORMAL_HP = Balance.NORMAL_HP
+const SHOOTER_HP = Balance.SHOOTER_HP
+const BRUTE_HP = Balance.BRUTE_HP
+const BOSS_HP = Balance.BOSS_HP
 const ENEMY_SPEEDS := [75.0,90.0,105.0,112.0,120.0]
 const SHOT_SPEEDS := [160.0,190.0,220.0,240.0,260.0]
 const SHOT_INTERVALS := [2.4,2.1,1.8,1.65,1.5]
@@ -135,7 +136,7 @@ static func make_enemy(pos: Vector2, kind: String, tier: int) -> Dictionary:
 	if kind == "shooter": hp = SHOOTER_HP[index]
 	if kind == "brute": hp = BRUTE_HP[index]
 	if kind == "boss": hp = BOSS_HP[index]
-	if kind == "miniboss": hp = 115
+	if kind == "miniboss": hp = Balance.GUARDIAN_HP
 	return {"pos":pos,"hp":hp,"max_hp":hp,"kind":kind,"tier":tier,"flash":0.0,"repath":0.0,"path":PackedVector2Array(),"attack":1.5,"telegraph":0.0,"aim":Vector2.DOWN,"action":"","phase":"idle","phase_time":0.0,"sequence":0,"burst_left":0,"burst_time":0.0,"dormant":false}
 
 func enter(cell: Vector2i) -> bool:

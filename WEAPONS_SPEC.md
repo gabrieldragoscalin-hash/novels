@@ -55,7 +55,8 @@ split or re-hit enemies already hit by their parent. Replaces Explosive arrows.
 ### Stop and Aim
 
 When stationary with a target, charge up to three seconds. Automatically release
-at three seconds, or release early when movement resumes. No proportional damage
+at three seconds, or release on movement after at least0.35s. Earlier movement
+releases an ordinary shot if the firing cooldown permits. No proportional damage
 ramp is specified: each released charged attack deals double damage, is larger,
 always penetrates enemies and ignores Ricochet and Follow. Normal moving attacks
 remain available between charges. Extra projectile and Multiple Shots still work.
@@ -63,7 +64,7 @@ remain available between charges. Extra projectile and Multiple Shots still work
 ### Explosive arrows
 
 Direct enemy impact deals full projectile damage, followed by an area explosion
-for 70% of projectile damage to every enemy in range, including the impact victim.
+for 45% of pre-delivery attack damage, at most once per victim per attack cycle to every enemy in range, including the impact victim.
 Ordinary explosive arrows stop on impact and ignore Punchthrough/Ricochet.
 Obstacle impacts can explode too; See All bypasses those obstacles. Stop and Aim
 doubles the explosion radius. Replaces Arrow split.
@@ -71,7 +72,8 @@ doubles the explosion radius. Replaces Arrow split.
 **Interaction choice for testing:** the request says charged shots always penetrate
 and explosive shots do not penetrate. Charged explosive shots prioritize the
 charged rule: penetrate, deal doubled impact damage and explode at each distinct
-hit with doubled splash radius. They still ignore Follow and Ricochet.
+hit with doubled splash radius. Each victim still takes splash at most once per
+attack cycle. They ignore Follow and Ricochet.
 
 ## Wand cards
 
@@ -115,10 +117,10 @@ These values are implementation choices for balance testing, not fixed design:
   interval × 1.1 × (1 + critical chance × (critical multiplier − 1)), making expected sustained DPS 10% higher.
   The critical multiplier is averaged for smooth continuous laser damage. Laser chain hits retain
   75% of the preceding hit's damage. Fractional damage is preserved.
-- Arrow splash radius 64 units (128 with Stop and Aim). Charge size multiplier 1.8.
+- Arrow splash radius 52 units (104 with Stop and Aim). Charge size multiplier 1.8.
 - Meteor fall delay 0.45s, radius 17 normal /27 boss before size upgrades;
   rolling speed 180 units/s. Size grows linearly from base, not compounded.
-- Rank caps: damage uncapped; attack speed 8; movement 5; EXP gain 3;
+- Rank caps: damage 12; attack speed 8; movement 5; EXP gain 3;
   Punchthrough/Extra projectile/Multiple Shots/Ricochet 5 each; other cards 1.
   Mutually exclusive cards can reappear when their counterpart replaces them.
 - Burst timings are distributed within the weapon interval; no attack-speed penalty
@@ -126,3 +128,13 @@ These values are implementation choices for balance testing, not fixed design:
 
 The cheat menu now allows selecting a specific eligible run upgrade, so combinations
 can be tested without repeatedly rolling level-up cards. Progression currently ends after floor 5.
+
+## Superseding balance revision
+
+The shapes, replacement pairs and shared-upgrade behavior above remain, but
+[POWER_BALANCE.md](POWER_BALANCE.md) overrides old damage amounts: additive15%
+damage cards, additive12% speed, normalized extra/burst output,45% splash once per
+victim/cycle,52-unit splash radius,45% split children and85% ordinary ricochet
+retention. Meteor overlaps share damage budgets; sword/laser delivery is normalized
+too. Damage is capped12 ranks. A charged release needs0.35s and respects cooldown.
+These replace the earlier70% splash/64 radius/uncapped damage tuning in this file.

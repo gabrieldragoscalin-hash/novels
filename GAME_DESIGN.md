@@ -218,3 +218,13 @@ Planned checkpoint starts: floors10,20,etc, once their milestone is unlocked.
 This will let stronger accounts begin deeper without inflating early-floor HP to
 match late-game damage. Unlock details/starting bonuses remain to define; the
 current five-floor cap means checkpoint selection is not implemented yet.
+
+## Shared power budget
+
+Current damage/attack-speed stacking and all attack delivery use the shared
+contract in [POWER_BALANCE.md](POWER_BALANCE.md). Extra projectiles and sequential
+shots still increase count, but share a bounded damage budget; overlapping splash
+and meteor impacts cannot multiply repeatedly against the same victim in one
+attack cycle. Floors1–2 stay forgiving, with a stronger health step from floor3.
+New weapons/upgrades/perks must be checked against the repeatable scenarios and
+live mobile testing before treating their tuning as balanced.

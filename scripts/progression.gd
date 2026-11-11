@@ -1,28 +1,29 @@
 extends RefCounted
 ## All values belong to one run. Upgrade offers are generated once per level.
+const Balance = preload("res://scripts/combat_balance.gd")
 const UPGRADES := {
-	"damage":["Increased damage","+1 damage"],
-	"attack_speed":["Increased attack speed","Attack 15% faster"],
+	"damage":["Increased damage","+15% equipment damage (additive)"],
+	"attack_speed":["Increased attack speed","+12% attack speed (additive)"],
 	"movement":["Increased move speed","+10% movement speed"],
 	"experience":["Increased EXP gain","+20% experience gained"],
 	"piercing":["Punchthrough","Pass through one more enemy"],
-	"multishot":["Extra projectile","+1 parallel projectile"],
-	"multiple_shots":["Multiple Shots","+1 sequential attack per cycle"],
+	"multishot":["Extra projectile","+1 projectile; +35% total output"],
+	"multiple_shots":["Multiple Shots","+1 attack; +30% total output"],
 	"ricochet":["Ricochet","Bounce to one more enemy; never off walls"],
 	"follow":["Follow","Projectiles home toward unhit enemies"],
 	"see_all":["See All","Attacks pass through obstacles"],
 	"arrow_split":["Arrow split","Split in 3 after the final hit.\nReplaces Explosive arrows."],
 	"stop_aim":["Stop and Aim","Stop to charge; move/3s to fire.\nDouble damage; always penetrates."],
-	"explosive":["Explosive arrows","Impact +70% splash.\nReplaces Arrow split."],
+	"explosive":["Explosive arrows","Impact +45% splash, once per cycle.\nReplaces Arrow split."],
 	"perpetuum":["Perpetuum","Continuous laser.\nReplaces Magic Meteor."],
 	"meteor":["Magic Meteor","Falling area damage.\nReplaces Perpetuum."],
 
 }
 const ACTIVE := ["damage","attack_speed","movement","experience","piercing","multishot","multiple_shots","ricochet","follow","see_all","arrow_split","stop_aim","explosive","perpetuum","meteor"]
-const CAPS := {"attack_speed":8,"movement":5,"experience":3,"piercing":5,"multishot":5,"multiple_shots":5,"ricochet":5,"follow":1,"see_all":1,"arrow_split":1,"stop_aim":1,"explosive":1,"perpetuum":1,"meteor":1}
+const CAPS := {"damage":12,"attack_speed":8,"movement":5,"experience":3,"piercing":5,"multishot":5,"multiple_shots":5,"ricochet":5,"follow":1,"see_all":1,"arrow_split":1,"stop_aim":1,"explosive":1,"perpetuum":1,"meteor":1}
 var weapon := "bow"
 var weapon_level := 1
-var base_damage := 1
+var base_damage := 1.0
 var base_interval := 0.45
 var projectile_speed := 390.0
 var base_pierce := 0
@@ -91,11 +92,11 @@ func choose(index: int) -> String:
 	if pending > 0: _roll_offers()
 	return id
 
-func damage() -> int:
-	return base_damage + ranks["damage"]
+func damage() -> float:
+	return base_damage*(1.0+Balance.DAMAGE_PER_RANK*ranks["damage"])
 
 func fire_interval() -> float:
-	return base_interval / pow(1.15, ranks["attack_speed"])
+	return maxf(Balance.MIN_INTERVAL,base_interval/(1.0+Balance.HASTE_PER_RANK*ranks["attack_speed"]))
 
 func movement_multiplier() -> float:
 	return (1.0 + gear_movement + ranks["movement"] * 0.1) * (0.65 if slow_time > 0 else 1.0)
@@ -145,14 +146,14 @@ func apply_loadout(stats: Dictionary) -> void:
 	base_health += stats["health"]
 
 func grant_upgrade(id: String) -> void:
-	if not ranks.has(id): return
+	if not ranks.has(id) or (CAPS.has(id) and ranks[id]>=CAPS[id]): return
 	var opposite: String = {"arrow_split":"explosive","explosive":"arrow_split","perpetuum":"meteor","meteor":"perpetuum"}.get(id,"")
 	if not opposite.is_empty(): ranks[opposite] = 0
 	ranks[id] += 1
 	if id == "see_all" and not seen_once.has(id): seen_once.append(id)
 
 func upgrade_info(id: String) -> Array:
-	if id == "multishot" and weapon == "sword": return ["Extra projectile","+1 alternating slash per attack"]
+	if id == "multishot" and weapon == "sword": return ["Extra projectile","+1 slash; +35% total output"]
 	if id == "multishot" and weapon == "hammer": return ["Extra projectile","Wider cone; unchanged reach"]
 	if weapon == "wand" and ranks["meteor"] > 0:
 		if id == "piercing": return ["Meteor Size","+20% base meteor radius per rank"]
@@ -165,3 +166,11 @@ func through_obstacles() -> bool:
 
 func critical_multiplier() -> float: return 2.0+critical_damage
 func roll_damage() -> float: return damage()*(critical_multiplier() if rng.randf()<critical_chance() else 1.0)
+
+func cycle_output() -> float:
+	var extra: int = 0 if weapon=="hammer" else ranks["multishot"]
+	return (1.0+extra*Balance.EXTRA_OUTPUT)*(1.0+ranks["multiple_shots"]*Balance.BURST_OUTPUT)
+
+func delivery_factor() -> float:
+	var extra: int = 0 if weapon=="hammer" else ranks["multishot"]
+	return cycle_output()/((1+extra)*(1+ranks["multiple_shots"]))
