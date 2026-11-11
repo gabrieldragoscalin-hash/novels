@@ -8,6 +8,8 @@ const BULLET_SPEED := 390.0
 const MAX_HEALTH := 6
 var progression = Progression.new()
 var pickups: Array = []
+var item_drops: Array = []
+var collected_items: Array = []
 var health := MAX_HEALTH
 var hurt_time := 0.0
 var grace_time := 0.0
@@ -48,6 +50,9 @@ func enter(state: Dictionary, player: Vector2) -> void:
 	enemies = state["enemies"]
 	if not state.has("pickups"): state["pickups"] = []
 	pickups = state["pickups"]
+	if not state.has("item_drops"): state["item_drops"] = []
+	item_drops = state["item_drops"]
+	collected_items.clear()
 	# Keep doorway arrivals safe without healing or resurrecting enemies.
 	for enemy in enemies:
 		if enemy["hp"] <= 0: continue
@@ -171,6 +176,10 @@ func tick(delta: float, player: Vector2) -> void:
 					break
 			if hit: break
 	bullets = bullets.filter(func(bullet): return bullet["life"] > 0)
+	for index in range(item_drops.size()-1,-1,-1):
+		if item_drops[index]["pos"].distance_to(player) < 32:
+			collected_items.append(item_drops[index])
+			item_drops.remove_at(index)
 	_collect_xp(delta, player)
 	if progression.pending > 0: return
 	for enemy in enemies:
@@ -231,6 +240,9 @@ func apply_choice(index: int) -> bool:
 
 func hurt(amount: int) -> void:
 	if hurt_time > 0 or grace_time > 0 or health <= 0: return
+	if progression.rng.randf() < progression.dodge_chance:
+		hurt_time = 1.0
+		return
 	health = maxi(0, health - amount)
 	hurt_time = 1.0
 
@@ -280,10 +292,13 @@ func _tick_trap(delta: float, player: Vector2) -> void:
 
 func _damage_enemy(enemy: Dictionary, amount: int) -> void:
 	if enemy["hp"] <= 0: return
-	enemy["hp"] -= amount
+	enemy["hp"] -= amount * (1.0 + progression.boss_damage_bonus if enemy.get("kind", "") == "boss" else 1.0)
 	enemy["flash"] = 0.13
 	if enemy["hp"] > 0: return
 	kills += 1
+	if enemy.get("kind", "normal") != "boss" and progression.rng.randf() < 0.02:
+		var catalog: Array = preload("res://scripts/equipment.gd").ITEMS.keys()
+		item_drops.append({"pos":enemy["pos"],"type":catalog[progression.rng.randi_range(0,catalog.size()-1)],"rarity":0})
 	pickups.append({"pos": enemy["pos"], "amount": 8 if enemy.get("kind", "normal") == "boss" else 2})
 	if enemy.get("kind", "normal") == "boss":
 		hostile_bullets.clear()

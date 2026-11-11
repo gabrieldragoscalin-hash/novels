@@ -8,16 +8,6 @@ func _initialize() -> void:
 	call_deferred("run")
 
 func run() -> void:
-	var path := "user://hub-test-%d.json" % Time.get_ticks_usec()
-	var hub = Hub.new(true, path)
-	hub.keys = 2
-	hub.seals = 1
-	assert(hub.save())
-	hub = Hub.new(true, path)
-	assert(hub.keys == 2 and hub.seals == 1 and hub.train())
-	hub = Hub.new(true, path)
-	assert(hub.keys == 1 and hub.training == 1)
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 	var combat = Combat.new(BOUNDS, [])
 	var state := {"role": "trap", "enemies": [], "pickups": [], "trap": 0, "trap_time": 0.01}
@@ -56,13 +46,12 @@ func run() -> void:
 
 	var room = load("res://scenes/room.tscn").instantiate()
 	root.add_child(room)
-	room.hub.enabled = false
-	room.hub.training = 0
-	room.hub.seals = 0
+	room.hub = load("res://scripts/hub.gd").new(false)
 	room.seed_override = 9
 	room.start_game()
 	room.set_physics_process(false)
 	for result in range(5):
+		room.hub.coins = 0
 		room.restart_run()
 		enter_service(room, "wheel")
 		room.combat.health = 3
@@ -94,6 +83,7 @@ func run() -> void:
 				assert(room.combat.progression.ranks["damage"] == 0 and room.combat.progression.ranks[offered[0]] == 1)
 			4: assert(room.services.state()["summoned_shop"] and room.service_panel.visible)
 		room._close_service()
+	room.hub.coins = 0
 	room.restart_run()
 	enter_service(room, "upgrade")
 	room._interact()

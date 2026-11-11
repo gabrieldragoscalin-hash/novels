@@ -7,10 +7,7 @@ func run() -> void:
 	var room = load("res://scenes/room.tscn").instantiate()
 	root.add_child(room)
 	assert(not room.active, "Start screen must pause movement")
-	room.hub.enabled = false
-	room.hub.keys = 0
-	room.hub.seals = 0
-	room.hub.training = 0
+	room.hub = load("res://scripts/hub.gd").new(false)
 	room.start_game()
 	assert(room.active and not room.start_panel.visible)
 	room.move_player(Vector2(0, -30))

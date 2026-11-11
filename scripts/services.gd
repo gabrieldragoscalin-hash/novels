@@ -8,6 +8,7 @@ func _init(d, c, h) -> void:
 	dungeon = d
 	combat = c
 	hub = h
+	if combat.progression.wallet == null: combat.progression.wallet = hub
 
 func state() -> Dictionary:
 	return dungeon.rooms[dungeon.current]
@@ -26,12 +27,17 @@ func loot() -> bool:
 	room["room_paid"] = true
 	combat.progression.flares += 20 if dungeon.floor_number % 5 == 0 else 10
 	combat.progression.coins += 15 + dungeon.floor_number * 5
-	hub.grant_materials(dungeon.floor_number)
-	room["reward"] = "+%d scrap stored at the hub" % dungeon.floor_number
-	if dungeon.rng.randf() < 0.3:
-		var catalog: Array = hub.Equipment.ITEMS.keys()
-		var id: String = catalog[dungeon.rng.randi_range(0, catalog.size() - 1)]
-		room["reward"] += "\n" + hub.find_equipment(id)
+	var catalog: Array = hub.Equipment.ITEMS.keys()
+	var kind: String = catalog[dungeon.rng.randi_range(0,catalog.size()-1)]
+	var uid: String = hub.find_equipment(kind,1 if dungeon.rng.randf() < 0.2 else 0)
+	room["reward"] = "Stored " + hub.item_name(uid)
+	if dungeon.rng.randf() < 0.05:
+		var roll: float = dungeon.rng.randf()
+		var key_kind := "copper" if roll < 0.7 else ("silver" if roll < 0.95 else "gold")
+		hub.keys[key_kind] += 1
+		hub.save()
+		room["reward"] += "\nFound a %s key" % key_kind
+	hub.record_progress("loot")
 	# Better loot across the three floors without consuming an XP level.
 	if dungeon.floor_number >= 2: combat.progression.reward_choices()
 	return true
@@ -57,10 +63,10 @@ func buy(id: String) -> String:
 	if room["stock"].get(id, false): return "Already purchased on this floor."
 	var p = combat.progression
 	var cost := 0
-	var permanent := id in ["key", "seal"]
+	var permanent := id in ["weapon_item", "armor_item"]
 	match id:
-		"key": cost = 20
-		"seal": cost = 40
+		"weapon_item": cost = 150
+		"armor_item": cost = 150
 		"upgrade": cost = 20
 		"heal":
 			cost = 10
@@ -72,12 +78,8 @@ func buy(id: String) -> String:
 	else: p.flares -= cost
 	room["stock"][id] = true
 	match id:
-		"key":
-			hub.keys += 1
-			hub.save()
-		"seal":
-			hub.seals += 1
-			hub.save()
+		"weapon_item": hub.find_equipment("bow")
+		"armor_item": hub.find_equipment("vest")
 		"upgrade": p.reward_choices()
 		"heal": combat.health = mini(p.max_health(), combat.health + 3)
 		"coins": p.coins += 20

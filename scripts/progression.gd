@@ -28,7 +28,17 @@ var gear_xp := 0.0
 var base_health := 6
 var level := 1
 var xp := 0
-var coins := 0
+var wallet
+var local_coins := 0
+var coins: int:
+	get: return int(wallet.coins) if wallet != null else local_coins
+	set(value):
+		if wallet != null:
+			wallet.coins = maxi(0,value)
+			wallet.save()
+		else: local_coins = maxi(0,value)
+var dodge_chance := 0.0
+var boss_damage_bonus := 0.0
 var flares := 0
 var slow_time := 0.0
 var pending := 0

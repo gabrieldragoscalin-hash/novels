@@ -61,9 +61,7 @@ func run() -> void:
 
 	var room = load("res://scenes/room.tscn").instantiate()
 	root.add_child(room)
-	room.hub.enabled = false
-	room.hub.training = 0
-	room.hub.seals = 0
+	room.hub = load("res://scripts/hub.gd").new(false)
 	room.start_game()
 	room.combat.health = 0
 	room._physics_process(1.0 / 60)

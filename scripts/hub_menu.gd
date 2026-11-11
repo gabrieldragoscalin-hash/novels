@@ -3,7 +3,8 @@ extends Control
 signal tab_changed(index: int)
 signal dungeon_requested
 signal item_requested(id: String)
-signal training_requested
+signal perk_requested
+signal synthesis_requested
 const Icons = preload("res://scripts/ui_icons.gd")
 const Gear = preload("res://scripts/equipment.gd")
 const TABS := ["Shop", "Inventory", "Play", "Perks", "Miscellaneous"]
@@ -20,7 +21,20 @@ var future_buttons: Dictionary = {}
 var resource_label: Label
 var best_label: Label
 var inventory_grid: GridContainer
-var shop_grid: GridContainer
+var shop_grid: VBoxContainer
+var perk_grid: GridContainer
+var task_buttons: Array[Button] = []
+var perk_message := ""
+var synthesis_mode := false
+var synthesis_base := ""
+var synthesis_fodder: Array[String] = []
+var synthesis_top: Control
+var synthesis_label: Label
+var synthesis_base_button: Button
+var synthesis_ingredients: Array[Button] = []
+var synthesis_commit: Button
+var synthesis_toggle: Button
+var message := ""
 var inventory_scroll: ScrollContainer
 var shop_scroll: ScrollContainer
 var inventory_heading: Label
@@ -134,7 +148,19 @@ func _build_play() -> void:
 func _build_inventory() -> void:
 	var page := pages[1]
 	_label(page, "INVENTORY", Vector2(24, 108), 22)
-	_label(page, "Equipment applies when you enter the dungeon", Vector2(24, 139), 11, Color("8cb6ba"))
+	_label(page, "Equip items, level with parts, or synthesize duplicates", Vector2(24, 139), 11, Color("8cb6ba"))
+	synthesis_toggle = _button(page,"Synthesis",Vector2(300,106),Vector2(156,30),_toggle_synthesis)
+	synthesis_top = Control.new()
+	synthesis_top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	page.add_child(synthesis_top)
+	synthesis_base_button = _button(synthesis_top,"Select base item",Vector2(42,170),Vector2(116,88),_clear_synthesis)
+	_button(synthesis_top,"Clear selection",Vector2(275,186),Vector2(160,40),_clear_synthesis)
+	for index in range(3):
+		var ingredient := _button(synthesis_top,"",Vector2(42+index*130,285),Vector2(116,78),_remove_ingredient.bind(index))
+		synthesis_ingredients.append(ingredient)
+	synthesis_label = _label(synthesis_top,"",Vector2(42,378),12,Color("bad2d0"))
+	synthesis_commit = _button(synthesis_top,"Synthesize",Vector2(42,450),Vector2(396,44),_commit_synthesis)
+	synthesis_top.hide()
 	for side in range(2):
 		var slots: Array = LEFT_SLOTS if side == 0 else RIGHT_SLOTS
 		for row in range(4):
@@ -173,30 +199,35 @@ func _build_inventory() -> void:
 
 func _build_shop() -> void:
 	var page := pages[0]
-	_label(page, "SHOP", Vector2(24, 108), 22)
-	_label(page, "Craft equipment with scrap from your expeditions.", Vector2(24, 143), 12, Color("8cb6ba"))
+	_label(page,"SHOP",Vector2(24,108),22)
+	_label(page,"Daily coin offers • keys or gems open chests",Vector2(24,143),12,Color("8cb6ba"))
 	shop_scroll = ScrollContainer.new()
-	shop_scroll.position = Vector2(24, 183)
+	shop_scroll.position = Vector2(24,183)
 	shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	page.add_child(shop_scroll)
-	shop_grid = GridContainer.new()
-	shop_grid.columns = 2
-	shop_grid.add_theme_constant_override("h_separation", 10)
-	shop_grid.add_theme_constant_override("v_separation", 10)
+	shop_grid = VBoxContainer.new()
+	shop_grid.add_theme_constant_override("separation",12)
 	shop_scroll.add_child(shop_grid)
 
 func _build_perks() -> void:
 	var page := pages[3]
-	_label(page, "PERKS", Vector2(24, 108), 22)
-	_label(page, "Lasting preparation for your next expedition", Vector2(24, 143), 12, Color("8cb6ba"))
-	_icon(page, "perks", Vector2(192, 226), Vector2(96, 96))
-	perk_label = _label(page, "", Vector2(36, 350), 16)
-	train_button = _button(page, "Train +1 starting HP • 1 key", Vector2(58, 444), Vector2(364, 52), func(): training_requested.emit())
+	_label(page,"PERKS",Vector2(24,108),22)
+	_label(page,"Unlock all four available perks before leveling",Vector2(24,143),12,Color("8cb6ba"))
+	perk_grid = GridContainer.new()
+	perk_grid.position = Vector2(24,184)
+	perk_grid.columns = 4
+	perk_grid.add_theme_constant_override("h_separation",8)
+	perk_grid.add_theme_constant_override("v_separation",10)
+	page.add_child(perk_grid)
+	perk_label = _label(page,"",Vector2(24,490),12)
+	train_button = _button(page,"",Vector2(58,562),Vector2(364,50),func(): perk_requested.emit())
 
 func _build_misc() -> void:
 	var page := pages[4]
-	_label(page, "MISCELLANEOUS", Vector2(24, 108), 22)
-	misc_label = _label(page, "", Vector2(30, 180), 15, Color("bad2d0"))
+	_label(page,"MISCELLANEOUS",Vector2(24,108),22)
+	misc_label = _label(page,"",Vector2(24,154),12,Color("bad2d0"))
+	_label(page,"GEMS & TASKS",Vector2(24,300),18)
+	_label(page,"Reserved until tasks and rewards are defined.\nGem purchases are not available.",Vector2(24,340),13,Color("bad2d0"))
 
 func select_tab(index: int) -> void:
 	if index < 0 or index >= TABS.size(): return
@@ -214,54 +245,147 @@ func _slot_selected(slot: String) -> void:
 		filter_slot = slot
 		refresh()
 
-func _clear_grid(grid: GridContainer) -> void:
+func _clear_grid(grid: Node) -> void:
 	for child in grid.get_children():
-		grid.remove_child(child)
+		# Keep the pressed control in the tree until input dispatch finishes.
+		if child is CanvasItem: child.hide()
 		child.queue_free()
 
 func refresh() -> void:
 	if hub == null or content == null: return
-	resource_label.text = "%d SCRAP    %d KEYS    %d SEALS" % [hub.materials, hub.keys, hub.seals]
+	hub.refresh_day()
+	resource_label.text = "%d COINS  %d GEMS  •  KEYS %dC/%dS/%dG" % [hub.coins,hub.gems,hub.keys["copper"],hub.keys["silver"],hub.keys["gold"]]
 	best_label.text = "BEST FLOOR %d" % hub.highest_floor
 	for slot in slot_buttons:
-		var id: String = hub.equipped[slot]
+		var uid: String = hub.equipped[slot]
+		var id: String = hub.item_type(uid)
 		var button: Button = slot_buttons[slot]
+		button.visible = not synthesis_mode
 		slot_icons[slot].texture = Icons.texture(id if not id.is_empty() else slot)
 		slot_icons[slot].modulate.a = 1.0 if not id.is_empty() else 0.35
-		button.add_theme_stylebox_override("normal", _style(Color("29444b") if not id.is_empty() else Color("152734"), Color("c6ad70") if not id.is_empty() else Color("3b5360")))
-		button.tooltip_text = slot.capitalize() + ": " + (Gear.ITEMS[id]["name"] + " Lv.%d" % hub.inventory[id] if not id.is_empty() else "Empty")
-	future_buttons["pet"].tooltip_text = "Unlocks after first reaching floor 10. Pet content comes later." if not hub.pet_slot_unlocked() else "Floor 10 reached. Pet content comes later."
-	future_buttons["spirit"].tooltip_text = "Locked. Unlock requirement will be set later."
+		var color: Color = hub.Economy.COLORS[hub.inventory[uid]["rarity"]] if not uid.is_empty() else Color("3b5360")
+		button.add_theme_stylebox_override("normal",_style(Color("203741") if not uid.is_empty() else Color("152734"),color))
+		button.tooltip_text = slot.capitalize()+": "+hub.item_name(uid)
+	for button in future_buttons.values(): button.visible = not synthesis_mode
+	future_buttons["pet"].tooltip_text = "First reach floor 10."
+	future_buttons["spirit"].tooltip_text = "Unlocks later."
+	synthesis_top.visible = synthesis_mode
+	synthesis_toggle.text = "Equipment" if synthesis_mode else "Synthesis"
 	_clear_grid(inventory_grid)
 	var count := 0
-	for id in Gear.ITEMS:
-		if not hub.inventory.has(id): continue
-		if not filter_slot.is_empty() and Gear.ITEMS[id]["slot"] != filter_slot: continue
-		_add_item(inventory_grid, id, false)
+	for uid in hub.sorted_items(synthesis_mode):
+		if not synthesis_mode and not filter_slot.is_empty() and Gear.ITEMS[hub.item_type(uid)]["slot"] != filter_slot: continue
+		_add_item(inventory_grid,uid)
 		count += 1
-	inventory_note.text = "Tap an item to equip or upgrade it" if count > 0 else "Nothing stored in this slot yet. Craft equipment in Shop."
-	_clear_grid(shop_grid)
-	for id in Gear.ITEMS: _add_item(shop_grid, id, true)
-	perk_label.text = "Starting health training: %d / 3\nBonus: +%d maximum HP\nKeys available: %d" % [hub.training, hub.training, hub.keys]
-	train_button.disabled = hub.keys <= 0 or hub.training >= 3
-	misc_label.text = "BEST FLOOR: %d\n\nProgress saves on this device/browser.\nEquipment survives your expeditions.\nSupply seals give 20 coins on departure.\n\nCurrent expedition limit: floor 3.\nPets unlock after first reaching floor 10.\nSpirit unlocks later.\n\nSwipe item lists to browse your equipment." % hub.highest_floor
-	if not hub.persistence_ok: misc_label.text += "\n\nStorage unavailable: progress is session-only."
+	inventory_note.text = "Choose a base, then its required duplicates" if synthesis_mode else ("Tap an item to equip or level it with parts" if count > 0 else "No items here yet. Find equipment or open shop chests.")
+	_refresh_synthesis()
+	_refresh_shop()
+	_clear_grid(perk_grid)
+	var ids: Array = hub.PERK_NAMES.keys()
+	for index in range(12):
+		var caption := "Reserved\nLocked"
+		if index < ids.size():
+			var id: String = ids[index]
+			caption = "%s\n%s" % [hub.PERK_NAMES[id],"Locked" if hub.perks[id] == 0 else "Lv.%d/%d" % [hub.perks[id],hub.PERK_CAPS[id]]]
+		var card := _button(perk_grid,caption,Vector2.ZERO,Vector2.ZERO,func(): pass)
+		card.custom_minimum_size = Vector2(100,88)
+		card.add_theme_font_size_override("font_size",11)
+		card.disabled = true
+	perk_label.text = "%s\nArmor %d • Accessory %d • Weapon %d parts\n%s" % [perk_message,hub.parts["armor"],hub.parts["accessory"],hub.parts["weapon"],"Eight perk effects are reserved; leveling remains locked." if hub.Economy.REQUIRE_RESERVED_PERKS else "Leveling begins after the four defined perks unlock."]
+	train_button.text = "Buy random perk • %d coins" % hub.perk_price()
+	train_button.disabled = not hub.can_buy_perk()
+	misc_label.text = "Best floor %d • local-device save\nEach floor pays keys for its first 3 daily clears.\nPet: first reach floor 10. Spirit: later.\nCurrent expedition cap: floor 3." % hub.highest_floor
 	queue_redraw()
 
-func _add_item(grid: GridContainer, id: String, shop: bool) -> void:
-	var owned: bool = hub.inventory.has(id)
-	var button := _button(grid, "", Vector2.ZERO, Vector2.ZERO, func(): item_requested.emit(id))
-	button.custom_minimum_size = Vector2(204 if shop else 98, 116 if shop else 100)
-	var width := 204.0 if shop else 98.0
-	_icon(button, id, Vector2((width - 40) / 2, 6), Vector2(40, 40))
-	var name_label := _label(button, Gear.ITEMS[id]["name"] if shop else Gear.ITEMS[id]["name"].replace(" ", "\n"), Vector2(3, 49), 12 if shop else 10)
-	name_label.size.x = width - 6
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var caption := "Lv.%d" % hub.inventory[id] if owned else "%d scrap" % Gear.ITEMS[id]["cost"]
-	if owned and hub.equipped[Gear.ITEMS[id]["slot"]] == id: caption += " • equipped"
-	var status := _label(button, caption, Vector2(3, 91 if shop else 82), 11 if shop else 9, Color("dfbd78"))
-	status.size.x = width - 6
-	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+func _add_item(grid: GridContainer, uid: String) -> void:
+	var item: Dictionary = hub.inventory[uid]
+	var kind: String = item["type"]
+	var button := _button(grid,"",Vector2.ZERO,Vector2.ZERO,_item_clicked.bind(uid))
+	button.custom_minimum_size = Vector2(98,112)
+	button.add_theme_stylebox_override("normal",_style(Color("172c38"),hub.Economy.COLORS[item["rarity"]],2))
+	_icon(button,kind,Vector2(29,5),Vector2(40,40))
+	var title := _label(button,Gear.ITEMS[kind]["name"].replace(" ","\n"),Vector2(3,48),10)
+	title.size.x = 92; title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var caption := "%s%s Lv.%d" % [hub.Economy.RARITIES[item["rarity"]],"+%d" % item["plus"] if item["plus"] > 0 else "",item["level"]]
+	if hub.equipped.values().has(uid): caption += " [E]"
+	if synthesis_fodder.has(uid): caption = "INGREDIENT"
+	if synthesis_base == uid: caption = "BASE"
+	var label := _label(button,caption,Vector2(2,87),9,hub.Economy.COLORS[item["rarity"]])
+	label.size.x = 94; label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if synthesis_mode and not synthesis_base.is_empty() and uid != synthesis_base and not synthesis_fodder.has(uid): button.disabled = not hub.synthesis_candidates(synthesis_base).has(uid)
+
+func _refresh_shop() -> void:
+	_clear_grid(shop_grid)
+	var heading := Label.new(); heading.text = "DAILY OFFERS • refresh at 00:00 UTC"; heading.add_theme_font_size_override("font_size",13); shop_grid.add_child(heading)
+	var daily := GridContainer.new(); daily.columns = 2
+	daily.add_theme_constant_override("h_separation",10); daily.add_theme_constant_override("v_separation",8); shop_grid.add_child(daily)
+	for index in range(6):
+		var offer: Dictionary = hub.offers[index]
+		var title: String = "%d %s parts" % [offer["quantity"],offer["type"]] if offer["kind"] == "parts" else "Common "+Gear.ITEMS[offer["type"]]["name"]
+		var button := _button(daily,"%s\n%s" % [title,"SOLD" if offer["sold"] else "%d coins" % offer["price"]],Vector2.ZERO,Vector2.ZERO,_buy_offer.bind(index))
+		button.custom_minimum_size = Vector2(204,80); button.add_theme_font_size_override("font_size",11)
+		button.disabled = offer["sold"] or hub.coins < offer["price"]
+	var chest_heading := Label.new(); chest_heading.text = "ITEM CHESTS • duplicates are kept"; chest_heading.add_theme_font_size_override("font_size",13); shop_grid.add_child(chest_heading)
+	for kind in ["copper","silver","gold"]:
+		var card := Panel.new(); card.custom_minimum_size = Vector2(418,170); card.add_theme_stylebox_override("panel",_style(Color("172c38"),Color("50616c"))); shop_grid.add_child(card)
+		_label(card,kind.capitalize()+" chest",Vector2(12,9),18)
+		var highest := "Epic" if kind == "copper" else ("Legendary" if kind == "silver" else "Legendary +1")
+		_label(card,"Guaranteed %s in ≤%d misses" % [highest,35-hub.pity[kind]],Vector2(12,39),11,Color("dfbd78"))
+		var odds: Array = hub.Economy.ODDS[kind]
+		_label(card,"Grey %s%% • Green %s%% • Blue %s%%\nPurple %s%% • Yellow %s%%%s" % [odds[0],odds[1],odds[2],odds[3],odds[4]," (10% of yellow is +1)" if kind == "gold" else ""],Vector2(12,60),10,Color("bad2d0"))
+		if kind == "gold": _label(card,"Any yellow resets the gold guarantee.",Vector2(12,94),10,Color("bad2d0"))
+		var key := _button(card,"Use 1 key (%d)" % hub.keys[kind],Vector2(12,122),Vector2(190,36),_open_chest.bind(kind,"key")); key.disabled = hub.keys[kind] <= 0
+		var gem := _button(card,"%d gems" % hub.Economy.GEM_COST[kind],Vector2(216,122),Vector2(190,36),_open_chest.bind(kind,"gems")); gem.disabled = hub.gems < hub.Economy.GEM_COST[kind]
+	var notice := Label.new(); notice.text = message; notice.add_theme_font_size_override("font_size",12); shop_grid.add_child(notice)
+
+func _buy_offer(index: int) -> void:
+	message = hub.buy_offer(index); refresh()
+
+func _open_chest(kind: String,payment: String) -> void:
+	var result: Dictionary = hub.open_chest(kind,payment)
+	message = "Not enough currency." if result.is_empty() else ("Guaranteed: " if result["guaranteed"] else "Opened: ")+hub.item_name(result["uid"])
+	refresh()
+	if not result.is_empty(): item_requested.emit(result["uid"])
+
+func _claim_task(kind: String) -> void:
+	hub.claim_task(kind); refresh()
+
+func _toggle_synthesis() -> void:
+	synthesis_mode = not synthesis_mode; synthesis_base = ""; synthesis_fodder.clear(); filter_slot = ""; refresh()
+
+func _clear_synthesis() -> void:
+	synthesis_base = ""; synthesis_fodder.clear(); refresh()
+
+func _item_clicked(uid: String) -> void:
+	if not synthesis_mode: item_requested.emit(uid); return
+	if synthesis_base.is_empty(): synthesis_base = uid
+	elif synthesis_fodder.has(uid): synthesis_fodder.erase(uid)
+	elif uid != synthesis_base and hub.synthesis_candidates(synthesis_base).has(uid):
+		var recipe: Dictionary = hub.Economy.recipe(hub.inventory[synthesis_base])
+		if synthesis_fodder.size() < recipe["count"]: synthesis_fodder.append(uid)
+	refresh()
+
+func _remove_ingredient(index: int) -> void:
+	if index < synthesis_fodder.size(): synthesis_fodder.remove_at(index); refresh()
+
+func _refresh_synthesis() -> void:
+	synthesis_base_button.text = "Select base item" if synthesis_base.is_empty() else _synthesis_slot_name(synthesis_base)
+	synthesis_base_button.add_theme_font_size_override("font_size",10)
+	var recipe: Dictionary = {} if synthesis_base.is_empty() else hub.Economy.recipe(hub.inventory[synthesis_base])
+	for index in range(3):
+		synthesis_ingredients[index].visible = not recipe.is_empty() and index < recipe["count"]
+		synthesis_ingredients[index].text = _synthesis_slot_name(synthesis_fodder[index]) if index < synthesis_fodder.size() else "Add ingredient"
+		synthesis_ingredients[index].add_theme_font_size_override("font_size",10)
+	if synthesis_base.is_empty(): synthesis_label.text = "Select any item below as the base."
+	elif recipe.is_empty(): synthesis_label.text = "Mythic is the current synthesis limit."
+	else:
+		var base: Dictionary = hub.inventory[synthesis_base]
+		synthesis_label.text = "%d OTHER %s%s %s required.\nResult: %s%s (base level retained).\nIngredients are consumed; equipped items are protected." % [recipe["count"],hub.Economy.RARITIES[base["rarity"]],"+%d" % recipe["fodder_plus"] if recipe["fodder_plus"] > 0 else "",Gear.ITEMS[base["type"]]["name"] if recipe["exact"] else Gear.ITEMS[base["type"]]["slot"]+" items",hub.Economy.RARITIES[recipe["rarity"]],"+%d" % recipe["plus"] if recipe["plus"] > 0 else ""]
+	synthesis_commit.disabled = recipe.is_empty() or synthesis_fodder.size() != recipe["count"]
+
+func _commit_synthesis() -> void:
+	if hub.synthesize(synthesis_base,synthesis_fodder):
+		synthesis_fodder.clear(); synthesis_requested.emit(); refresh()
 
 func _layout() -> void:
 	if content == null: return
@@ -309,7 +433,7 @@ func _draw() -> void:
 		draw_colored_polygon(points, Color("142f38").darkened(layer * 0.16))
 	draw_line(Vector2(cx - 210,90),Vector2(cx + 210,90),Color("38515b"),1)
 	draw_rect(Rect2(0,nav_top - 10,view.x,104),Color("0a1721"))
-	if selected == 1:
+	if selected == 1 and not synthesis_mode:
 		_draw_character(Vector2(cx, _inventory_y(332)))
 
 func _draw_character(center: Vector2) -> void:
@@ -327,7 +451,11 @@ func _draw_character(center: Vector2) -> void:
 	if not hub.equipped["necklace"].is_empty(): draw_circle(center+Vector2(0,-43),6,Color("96c9ff"))
 	if not hub.equipped["ring"].is_empty(): draw_circle(center+Vector2(-35,-2),4,Color("e6c57d"))
 	if not hub.equipped["bracelet"].is_empty(): draw_line(center+Vector2(31,-13),center+Vector2(39,-13),Color("e6c57d"),5)
-	draw_texture_rect(Icons.texture(hub.equipped["weapon"]),Rect2(center+Vector2(26,-63),Vector2(64,64)),false)
+	draw_texture_rect(Icons.texture(hub.item_type(hub.equipped["weapon"])),Rect2(center+Vector2(26,-63),Vector2(64,64)),false)
 
 func _inventory_y(y: float) -> float:
 	return 160 + (y - 160) * inventory_scale
+
+func _synthesis_slot_name(uid: String) -> String:
+	var item: Dictionary = hub.inventory[uid]
+	return "%s%s\n%s" % [hub.Economy.RARITIES[item["rarity"]],"+%d" % item["plus"] if item["plus"] > 0 else "",Gear.ITEMS[item["type"]]["name"]]

@@ -75,32 +75,29 @@ func run() -> void:
 			assert(rules.loot())
 			assert(not rules.loot())
 	assert(c.progression.flares == 65 and c.progression.coins == 80)
-	# Purchases consume funds once and permanent items belong to the hub immediately.
+	# Coin wallet persists, common items stay as separate copies, run help uses flares.
 	for cell in d.rooms:
 		if d.rooms[cell]["service"] == "shop": d.enter(cell); break
-	assert(rules.buy("key") == "Purchased." and h.keys == 1 and c.progression.coins == 60)
-	assert(rules.buy("key") != "Purchased." and h.keys == 1)
-	assert(h.train() and h.training == 1 and h.keys == 0)
-	assert(rules.buy("seal") == "Purchased." and h.seals == 1)
+	h.coins = 300
+	var copies: int = h.inventory.size()
+	assert(rules.buy("weapon_item") == "Purchased." and h.coins == 150 and h.inventory.size() == copies+1)
+	assert(rules.buy("weapon_item") != "Purchased.")
 	assert(rules.buy("coins") == "Purchased.")
 	var flares: int = c.progression.flares
 	assert(rules.buy("upgrade") == "Purchased." and c.progression.pending == 1)
-	assert(c.progression.flares == flares - 20)
+	assert(c.progression.flares == flares-20)
 	c.apply_choice(2)
 	c.progression.ranks["damage"] = 1
 	for cell in d.rooms:
 		if d.rooms[cell]["service"] == "trader": d.enter(cell); break
 	var offered: Array[String] = rules.trade_options("damage")
-	assert(offered.size() == 3)
-	assert(rules.trade("damage", offered[0], offered))
-	assert(not rules.trade("damage", offered[1], offered))
+	assert(offered.size() == 3 and rules.trade("damage",offered[0],offered))
+	assert(not rules.trade("damage",offered[1],offered))
 
 	# Play actual boss combat on each floor; advance through the controller.
 	var room = load("res://scenes/room.tscn").instantiate()
 	root.add_child(room)
-	room.hub.enabled = false
-	room.hub.training = 0
-	room.hub.seals = 0
+	room.hub = load("res://scripts/hub.gd").new(false)
 	room.seed_override = 9
 	room.start_game()
 	room.set_physics_process(false)

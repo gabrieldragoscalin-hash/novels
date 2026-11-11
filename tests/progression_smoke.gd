@@ -66,9 +66,7 @@ func run() -> void:
 
 	var room = load("res://scenes/room.tscn").instantiate()
 	root.add_child(room)
-	room.hub.enabled = false
-	room.hub.training = 0
-	room.hub.seals = 0
+	room.hub = load("res://scripts/hub.gd").new(false)
 	room.start_game()
 	room.combat.progression.add_xp(4)
 	room._show_level_up()
@@ -78,7 +76,7 @@ func run() -> void:
 	room._choose_upgrade(2)
 	assert(not room.level_panel.visible and room.combat.progression.coins == 20)
 	room.restart_run()
-	assert(room.combat.progression.level == 1 and room.combat.progression.coins == 0 and room.combat.progression.damage() == 1)
+	assert(room.combat.progression.level == 1 and room.combat.progression.coins == 20 and room.combat.progression.damage() == 1)
 	assert(not room.level_panel.visible)
 	print("PASS: XP thresholds, overflow, distinct stable offers, coins, upgrades, pause, piercing, persistence, restart")
 	room.queue_free()

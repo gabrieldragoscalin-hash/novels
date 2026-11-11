@@ -1,48 +1,23 @@
-# Three-floor balance build
+# Prototype tuning and testing
 
-This is the complete **ranged, three-floor prototype**, not a balanced release.
-Defeating floor 3 ends the expedition; there is no floor 4. Melee and the fifth-floor
-miniboss milestones remain future work.
+The expedition still ends after floor 3. These values are implementation defaults,
+not claims that balance is finished. The user's economic rules and all synthesis
+recipes are in [ECONOMY_SPEC.md](ECONOMY_SPEC.md).
 
-## Reproduce a run
+## Reproduce and control
 
-Open `https://gabrieldragoscalin-hash.github.io/novels/?seed=9` to repeat a layout.
-Omit the seed for a fresh random map each run. The seed appears below the room.
-The same seed and action sequence reproduce room placement, floor changes, and
-upgrade offers. Different purchases/choices can change later random outcomes.
-Local hub training and supply seals also affect starting strength.
+Use `?seed=9` on the game URL, or `godot --path . -- --seed=9`, to repeat a map.
+Record seed, floor, equipped item instances/rarities/levels, perks, chosen cards,
+route, health loss and currencies when reporting balance. Timing and action order
+can affect later random outcomes. All neighbouring rooms remain connected.
 
-Native equivalent: `godot --path . -- --seed=9`.
+Touch and drag to move; WASD/arrows also work. Attacks fire while moving. Walk into
+doors. Tap the action button or E for chests, services and cleared boss exits.
+Play in the hub is a tab; tap its dungeon icon to depart. Menus pause gameplay.
 
-Record the seed, floor, starting hub training, route, chosen upgrades, health lost,
-coins/flares earned and spent, and approximate floor duration when reporting balance.
-These automated tests establish functioning rules, **not fair difficulty**.
-
-## Controls and map
-
-Touch and drag anywhere except buttons; WASD/arrows also work. Walk into a doorway
-to travel. The action button (or E) opens cleared chests/services or descends after
-boss victory. Doors stay open for retreat. Services and reward choices pause play.
-
-Minimap: **S** start, **B** boss (red), **C** combat, **L** loot, **!** trap,
-**.** initially empty; bonus initials are **S** shop, **T** trader, **U** upgrade,
-**W** wheel, **H** healer. The start has a teal background; shops are purple.
-The current room is gold and visited rooms have teal outlines. All identities are
-shown for this balance build, without a discovery system.
-
-## Generation
-
-Floor 1: 1 start, 1 boss, 5 bonus, 7 combat, 3 empty, 4 loot, 4 traps.
-The two initial S/B locations have an underlying empty identity. Later S/B roles
-move, so visible counts of ordinary room types can change. Bonus rooms are never
-overridden. Starts are on an edge and must move; bosses are in the opposite half
-and must move. For a five-cell axis, the middle row/column is excluded from the
-opposite-half destination selection. Corners retain their selected starting edge.
-
-Room identities stay fixed across floors. Floor state (enemies, rewards, shop
-stock, uses, and visits) refreshes. Bonus services rotate together through all five
-roles, with one of each per floor. Trap types never repeat on adjacent floors.
-Room adjacency constraints have not been added; all neighbouring rooms connect.
+Minimap: S start, B boss, C combat, L loot, ! trap, . initially empty; purple bonus
+initials identify Shop/Trader/Upgrade/Wheel/Healer. Current is gold; visited rooms
+have teal outlines. All identities are shown in this prototype.
 
 ## Combat defaults
 
@@ -50,173 +25,115 @@ Room adjacency constraints have not been added; all neighbouring rooms connect.
 | --- | ---: | ---: | ---: |
 | Normal/shooter HP | 3 | 9 | 18 |
 | Brute HP | 6 | 18 | 36 |
-| Combat room enemy count | 3 | 4 | 5 |
-| Loot room enemy count | 0 | 2 | 3 |
-| Initially empty room enemies | 0 | 0 | 2 normal, tier 2 (9 HP) |
+| Combat enemy count | 3 | 4 | 5 |
+| Loot defenders | 0 | 2 | 3 |
+| Initially empty room enemies | 0 | 0 | 2 tier-2 normals, 9 HP |
 | Boss HP | 22 | 38 | 54 |
-| Boss spread | 3 shots | 5 shots | 5 shots |
-| Boss flare reward | 50 | 60 | 70 |
+| Boss spread shots | 3 | 5 | 5 |
+| Boss flares | 50 | 60 | 70 |
 
-Starter bow: 6 starting HP plus hub training/equipment; 185 movement speed; 1 damage;
-one shot per 0.45 seconds. Equipped weapons replace base attack stats, while armor,
-headgear, pants, boots, necklaces, rings and bracelets add their own bonuses. Contact and hostile projectiles deal 1 damage, with
-one second of invulnerability after a hit and 0.7 seconds of safe arrival time.
+Starter Common bow level1: 1 damage, 0.45s firing interval, movement185, HP6.
+Equipment and perks modify these values. Contact/projectiles deal 1 damage;
+hit immunity lasts 1s, arrival protection 0.7s. Bosses telegraph for 0.65s.
+Pillars block shots. Boss death clears hostile projectiles.
 
-Normal enemies chase. Brutes are slower and tougher. Shooters reposition until
-they have a clear shot and keep distance. Bosses chase slowly and telegraph their
-spread for 0.65 seconds. Pillars block both sides' shots. Bosses begin alone; no
-summons are currently implemented, but any future boss-room adds are XP-only.
-Enemy health/deaths, unopened chests, uncollected XP, and service uses survive
-room revisits. Boss death clears hostile projectiles.
+Normal enemies give 2 XP, bosses 8. Levels require 4,6,8,... XP. Coin choice:20.
+The XP magnet starts at radius110. Rarity multipliers and enhancement are defaults:
+Common1, Uncommon1.15, Rare1.35, Epic1.7, Legendary2.3, Mythic3.6, with +0.25 per
+synthesis enhancement. Weapons additionally gain +1 damage per enhancement;
+health-bearing equipment gains +1 HP per enhancement. Base item levels remain1–5.
 
-Enemies give 2 XP; bosses give 8 XP. Levels require 4, 6, 8, ... XP.
-Level-up offers two distinct upgrades or 20 coins. There are now **13 run upgrades**, all resetting on a new expedition:
-
-| Upgrade | Effect per rank | Cap |
+| Card | Effect per rank | Cap |
 | --- | --- | ---: |
-| Heavy bolts | +1 damage | Uncapped |
+| Heavy bolts | +1 damage | None |
 | Quick draw | 15% faster firing | 8 |
-| Light feet | +10% base movement | 5 |
-| Piercing bolts | Pierce one additional enemy | 5 |
-| Vitality | +2 max HP and heal 2 | Uncapped |
-| Deadeye | +10% double-damage critical chance | 5 |
-| Split volley | One additional side projectile | 2 |
-| Ricochet | One additional wall/pillar bounce | 2 |
-| Frostbite | Hits slow enemies by 15% for 2 seconds | 3 |
-| Ember touch | Hits burn for 1 damage/s for 3 seconds | 3 |
+| Light feet | +10% movement | 5 |
+| Piercing bolts | +1 enemy pierced | 5 |
+| Vitality | +2 max HP, heal2 | None |
+| Deadeye | +10% double-damage chance | 5 |
+| Split volley | +1 side projectile | 2 |
+| Ricochet | +1 wall/pillar bounce | 2 |
+| Frostbite | 15% slow for2s | 3 |
+| Ember touch | 1 burn damage/s for3s | 3 |
 | Gatherer | +40 XP attraction radius | 4 |
-| Fast learner | +20% XP gained | 3 |
-| Second wind | Heal 1 every 12/8/6 seconds by rank | 3 |
+| Fast learner | +20% XP | 3 |
+| Second wind | Heal1 every12/8/6s | 3 |
 
-Critical hits, multishot, piercing, bounces, frost and burn combine. A bolt cannot
-hit the same enemy twice. Burn kills use the same one-time reward path as direct
-hits. XP bonuses keep fractional XP between pickups instead of rounding each
-crystal separately. Equipment bonuses are separate from ranks and cannot be traded.
-Caps also apply to offers from the trader, wheel, and shop.
+Fractional XP is retained. A projectile cannot hit the same enemy twice. Burn kills
+use the same single reward path. Equipment is not part of the trader's rank pool.
 
-## Rewards and services
+## Economy defaults
 
-HUD **C** means coins; **F** means dungeon flares. Both carry across floors and
-reset on a new run. Shops make coins and flares useful now.
+- Coins persist across runs. Flares reset on a new run, carrying across floors.
+- Dungeon loot:20/25/30 coins by floor, existing room flares, an item copy with
+  80% Common /20% Uncommon odds. Floors2–3 also offer a run-upgrade/coin choice.
+- Dungeon loot key chance5%; conditional types70% Copper /25% Silver /5% Gold.
+- Normal enemies have a2% chance to leave a Common equipment pickup. Collect it by
+  approaching within32 units. It stays in the room if uncollected.
+- Daily hub offers refresh at00:00 UTC: five matching parts for50 coins each, and
+  three Common item copies for150 coins each. Each offer sells once per day.
+- Part leveling costs5 × current item level, only from the matching category.
+  It does not consume item copies or coins directly. No scrap/crafting remains.
+- Floor keys: see exact reward table/formula in ECONOMY_SPEC.md. Three paying
+  clears per day PER FLOOR, saved across reloads. No third key source was invented.
+- Chest prices: one matching key OR60/200/500 gems for Copper/Silver/Gold.
+  Gem earning/tasks/purchases are reserved, so normal new profiles have0 gems.
+- Copper odds55/35/9/1/0%; Silver38/32/26/3.5/0.5%; Gold15/20/45/16/4%, ordered
+  Common/Uncommon/Rare/Epic/Legendary. On ordinary Gold legendary drops,10% are+1.
+- Pity: Copper Epic, Silver Legendary, Gold Legendary+1 at35 after34 misses.
+  Normal Gold legendary ALSO resets pity. Counters are saved separately by chest
+  type and shared between key/gem payment methods. Odds/guarantees are shown in UI.
+- Perks start250 coins, +50 per purchase. First unlock: Starting upgrade, two upgrade
+  choices without a coin card. All four known perks must unlock before leveling;
+  the other eight are reserved. HP:+1 per level, dodge:+1 percentage point per
+  level, boss damage:+2 percentage points per level. Limits1/25/25/25.
 
-- Normal/shooter kill: 1 flare. Brute kill: 2. Boss: its floor reward only.
-- Loot chest: 10 flares once, plus 20/25/30 coins by floor. Floors 2–3 also give
-  an upgrade-or-coins choice. Defenders give their own XP/flares. Each chest also banks scrap equal to its floor
-  number and has a 30% chance to find one catalog item; duplicates become 2 scrap.
-- Initially empty room: no room reward on floors 1–2. Floor 3: 5 flares once when
-  its enemies are defeated, in addition to their individual kill rewards.
-- Bonus room: 5 flares on first entrance each floor, independent of service use.
-- Trap room: no flare reward.
-- Healer: full heal once per floor; visiting at full health does not consume it.
-- Free upgrade: two upgrades or 20 coins, once per floor, without increasing level.
-- Trader: surrender one owned upgrade rank for one of three other upgrades,
-  once per floor. Nothing is removed until confirmation. Offers stay fixed for
-  each surrendered type. At least three eligible replacements must exist.
-- Wheel: one animated spin per floor. Five equally likely results: heal 3 HP;
-  20 coins; choose between two upgrades (no coin card); trade one upgrade for one
-  of three; summon a shopkeeper. If there is no eligible trade, that result gives
-  20 coins. Summoned shops do not repeat the room's entrance flare reward.
-- Shop: finite stock per room per floor, including a wheel shop. Left column:
-  hub key for 20 coins, supply seal for 40 coins. Right column: upgrade choice for
-  20 flares, heal 3 HP for 10 flares, 20 coins for 10 flares. Full-health healing
-  purchases are rejected without payment.
+Daily limits currently use the device clock; no server anti-tamper guarantee or
+cloud synchronization is claimed. All exact odds/prices/effects above can be tuned.
 
-Shop stock and wheel/trader/healer uses all reset on floor advancement.
-No resources or enemies respawn through room re-entry.
+## Room services and traps retained
 
-## Trap defaults
+Healer:full heal once per floor. Free upgrade:two upgrades/20coins once. Trader:
+one rank for one of three eligible choices once. Wheel:one equal-probability spin
+among heal3,20coins,two-upgrade choice,trade,shopkeeper; no trade available gives
+20coins. Wheel shops never repeat bonus entrance flares.
 
-Traps activate one second after entry, then every 2.5 seconds. Slow fields apply
-four seconds of 35% movement reduction within radius 100. Spikes deal one damage
-within radius 80. Volleys fire three downward shots with visible lane warnings.
-Centre circles/lanes pulse before activation. Pillars offer cover for volleys.
-Each trap location chooses a different type on the next floor.
+Dungeon-room shop remains separate from hub shop: Common bow/armor copies150coins;
+run upgrade choice20flares,heal3HP10flares,20coins10flares, each once per room/floor.
+It no longer sells generic keys or seals. Floor advancement refreshes finite stock.
 
-## Hub defaults and persistence
+Traps first trigger after1s, then every2.5s. Slow field:35% slow4s within radius100;
+spikes:1 damage within80; volley:three downward shots, visible lane warning.
+Trap types change between floors. Initially empty rooms award5 room flares on
+floor3 after clearing, in addition to their enemy rewards.
 
-These are **prototype choices for previously undecided systems**:
+## Inventory and persistence
 
-- Permanent shop items are paid for with coins and secured immediately, including
-  if the player dies later. This provides a reason to choose coins over upgrades.
-- A key buys +1 starting HP at the hub, up to three permanent training levels.
-- A supply seal is consumed automatically when starting the next run and gives
-  20 starting coins. The hub displays this before departure.
-- Keys, seals, training, scrap, equipment levels and equipped slots save locally to `user://hub.json` (browser storage for
-  the web build). There is no login, cross-device synchronization, or cloud account.
-  Clearing site data removes this local progress; current-run state is not saved.
-  Old hub saves migrate without losing keys, seals or training. Save replacement
-  uses a temporary file to protect against partially written JSON.
-- Death, completion, or the Return to hub button leads back to preparation. Health,
-  XP, levels, ranks, coins, and flares are reset when the next expedition begins.
+Eight slots surround the character (four per side), plus locked Pet/Spirit spaces.
+Pet milestone:first reach10; Spirit threshold remains undefined. Inventory shows
+INDIVIDUAL copies. Synthesis keeps the item grid below a base/ingredient workspace,
+ordered highest rarity first and grouped by duplicates. Exact recipe counts,
+identity/category rules, and stages are documented in ECONOMY_SPEC.md.
 
-## Hub menu and inventory
+Part levels, synthesis rarity and enhancement are distinct. Equipped ingredient
+copies are protected; the chosen base can be equipped and retains its ID/level.
+A preview shows the resulting stage and consumption before committing.
 
-The hub is now a full-screen menu with an original background and a central dungeon
-doodle. **Play** selects the home page; clicking the dungeon icon starts a run.
-The bottom navigation is, in order: **Shop, Inventory, Play, Perks, Miscellaneous**.
-Shop lists crafting recipes; Inventory contains owned items and their details;
-Perks contains the existing key-based training; Miscellaneous contains help and
-progress information. Dungeon shops still provide their normal run services.
+Atomic version4 saves include wallet, instances, equipped UIDs, parts, keys, pity,
+perks, shop day/stock and daily floor counts. Existing prototype gear levels and
+necklace migration are preserved. Retired unsupported resources are archived in
+`legacy_data`, without invented conversion rates. Clearing site data removes local
+progress. Current runs are not saved; stored progress and coins survive death.
 
-Inventory has **eight active slots** above the stored-item grid. Left: Weapon,
-Armor, Headgear, Pants. Right: Boots, Necklace, Ring, Bracelet. A character preview
-stands in the middle. Tapping a stored/equipped item opens equip/upgrade details;
-an empty slot filters the inventory. Owned items are scrollable below the loadout.
+## Tuning locations
 
-Two reserved squares below the character are **Pet** and **Spirit**, outside the
-eight active slots. Both remain non-interactive in this build. The Pet milestone
-is first reaching floor 10, tracked permanently; the current floor-3 cap means it
-cannot yet be reached. Spirit's later unlock floor has deliberately not been set.
-Events/battle pass on the left and daily/play-time rewards on the right are future
-features; no fake offers, timers or event buttons have been added.
+- `scripts/economy.gd`: odds, prices, floor-key formula, synthesis recipes, policy.
+- `scripts/hub.gd`: transactions, individual inventory, save migration, daily limits.
+- `scripts/hub_menu.gd`: shop, inventory, synthesis, perks, reserved gem UI.
+- `scripts/equipment.gd`: templates, item-level and rarity stat defaults.
+- `scripts/dungeon.gd`: room composition, enemies, floor limit.
+- `scripts/combat.gd`, `progression.gd`, `services.gd`: run combat/rewards.
 
-The former charm slot is migrated to **Necklace**, preserving the item ID, level,
-and equipped status from existing saves. All earlier keys, seals, scrap, training
-and equipment remain available. A fresh loadout snapshot is taken on departure;
-equipment still cannot be changed during a run.
-Weapons are not lost on death, and there is no equipment durability.
-
-| Item | Slot | Craft cost (scrap) | Level-1 effect |
-| --- | --- | ---: | --- |
-| Ranger bow | Weapon | Starter | 1 damage, 0.45s interval |
-| Iron crossbow | Weapon | 8 | 2 damage, 0.72s interval, +1 pierce |
-| Ember wand | Weapon | 10 | 1 damage, 0.34s interval, 10% critical chance |
-| Warden vest | Armor | 6 | +2 max HP |
-| Scout boots | Boots | 6 | +8% movement |
-| Pathfinder hood | Headgear | 6 | +1 max HP |
-| Trailguard pants | Pants | 6 | +5% movement |
-| Scholar necklace | Necklace | 8 | +10% XP |
-| Ember ring | Ring | 8 | +5% critical chance |
-| Archer bracelet | Bracelet | 8 | +5% firing speed |
-
-All gear has five permanent levels. Upgrading costs 3 × current level scrap
-(3/6/9/12). Bow/wand damage increases every second level; crossbow damage increases
-every level. All weapons gain 5% firing speed per permanent level. Vest HP increases
-by 1 per level, as does hood HP. Boots add 3 percentage points of movement per
-level, pants 2; necklace XP adds 5; ring critical chance and bracelet firing speed
-add 2.5 percentage points per level.
-The item view previews the next level before upgrading.
-
-Every loot chest banks 1/2/3 scrap by floor. Boss victories bank 3/6/9 scrap, once
-per boss, even before departure. Equipment finds are stored immediately; owning a
-duplicate grants 2 scrap without changing its level. Crafting creates one unique
-stored item type, rather than multiple identical copies. Equipment can be upgraded
-only from the hub UI. Keys, seals and training continue to work as before.
-
-The stash, recipes and costs are a foundation for more items; rarity, melee weapons,
-unique random affixes and inventory capacity are not implemented yet.
-
-## Main tuning locations
-
-- `scripts/dungeon.gd`: room counts, generation, encounter HP/counts, floor limit.
-- `scripts/combat.gd`: attacks, damage, AI, projectile speeds, trap effects, rewards.
-- `scripts/progression.gd`: XP thresholds, upgrade effects, caps, coin card reward.
-- `scripts/services.gd`: finite rewards, shop prices, healing, trading.
-- `scripts/hub.gd`: stash, crafting, upgrade costs, slots, local saves and migration.
-- `scripts/equipment.gd`: gear catalog, permanent levels, and loadout stats.
-- `scripts/hub_menu.gd`: hub pages, eight-slot layout, reserved slots and navigation.
-- `scripts/ui_icons.gd`: original procedural menu and equipment artwork.
-
-Before scaling beyond floor 3, check whether players have reasons to skip rooms,
-whether each currency/upgrade choice is useful, whether boss patterns are readable,
-and whether floors 2–3 remain viable without clearing every room.
+Tests cover all synthesis recipes, duplicate identity, rejection without partial
+consumption, floor-key limits across reloads/days, pity and normal-gold resets,
+wallet spending, perk unlock order/caps, room rules, and actual boss combat.

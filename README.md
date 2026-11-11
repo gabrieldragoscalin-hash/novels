@@ -20,8 +20,8 @@ awaken with weaker enemies on floor 3. Defeating the third boss ends the expedit
 
 Core features: three enemy archetypes and a telegraphed boss; XP pickups and upgrade
 choices; coins/flares; loot, three trap effects, shop, trader, free upgrade, wheel,
-healer; and a full-screen hub menu with an eight-slot **Inventory**, crafting,
-permanent item upgrades, keys, supply seals, and training. Inventory shows four
+healer; and a full-screen hub menu with an eight-slot **Inventory**, individual item copies,
+parts upgrades, rarity synthesis, typed keys, chest pity, and coin-bought perks. Inventory shows four
 slots on each side of the character, with locked Pet/Spirit spaces beneath.
 Bottom tabs: **Shop, Inventory, Play, Perks, Miscellaneous**. Menus pause combat.
 There are 13 temporary run upgrades, including critical hits, multishot, ricochet,
@@ -32,6 +32,12 @@ Use [`?seed=9`](https://gabrieldragoscalin-hash.github.io/novels/?seed=9) to rep
 layout for balance testing. These numbers are defaults, not a claim of fair balance.
 Art is original procedural placeholder graphics. Melee, advanced room adjacency
 constraints, floors 4+, final art/audio, and cloud accounts are not implemented.
+
+The shop has six daily coin offers and copper/silver/gold item chests with saved
+35-open guarantees. Each floor pays typed keys for its first three daily clears.
+Four perks are active; eight remain reserved. Gems and tasks are reserved until
+defined. [ECONOMY_SPEC.md](ECONOMY_SPEC.md) records recipes, rewards, odds and
+prototype prices. Progress is saved locally; old equipment levels are preserved.
 
 ## Develop and test
 
@@ -47,11 +53,14 @@ godot --headless --path . --script tests/services_smoke.gd
 godot --headless --path . --script tests/equipment_smoke.gd
 godot --headless --path . --script tests/upgrades_smoke.gd
 godot --headless --path . --script tests/hub_menu_smoke.gd
+godot --headless --path . --script tests/economy_smoke.gd
+godot --headless --path . --script tests/synthesis_smoke.gd
 ```
 
 Floor tests cover 80 seeds through all three floors and actual projectile boss
-kills. Service tests cover wheel outcomes, traps, finite rewards, and local saves. Equipment tests check legacy saves, crafting, loadouts and upgrade
-costs; upgrade tests exercise the new combat effects.
+kills. Service tests cover wheel outcomes, traps, finite rewards, and local saves. Equipment tests check legacy saves, loadouts and parts upgrade
+costs; economy tests cover daily rewards, chest pity, migration, and perk unlocks;
+synthesis tests cover all eight recipes and ingredient protection. Upgrade tests exercise combat effects.
 `tests/describe_run.gd` prints the seed-9 map used by the browser checks.
 
 ## Export and deploy

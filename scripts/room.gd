@@ -26,6 +26,7 @@ var interact_button: Button
 var hub_menu
 var outcome_title: Label
 var outcome_text: Label
+var run_token := ""
 var wheel_rotation := 0.0
 var death_panel: PanelContainer
 var level_panel: Panel
@@ -115,10 +116,13 @@ func _build_ui() -> void:
 	)
 	hub_menu.dungeon_requested.connect(start_game)
 	hub_menu.item_requested.connect(_inventory_item)
-	hub_menu.training_requested.connect(func():
-		if in_hub: hub.train()
+	hub_menu.perk_requested.connect(func():
+		if in_hub:
+			var result: String = hub.buy_perk()
+			hub_menu.perk_message = "Received %s Lv.%d" % [hub.PERK_NAMES[result],hub.perks[result]] if not result.is_empty() else "No perk purchased."
 		_refresh_hub()
 	)
+	hub_menu.synthesis_requested.connect(_synthesis_changed)
 	death_panel = PanelContainer.new()
 	death_panel.position = Vector2(54, 250)
 	death_panel.size = Vector2(372, 240)
@@ -204,6 +208,7 @@ func start_game() -> void:
 	in_hub = false
 	active = true
 	start_panel.hide()
+	if combat.progression.pending > 0: _show_level_up("STARTING UPGRADE")
 
 func restart_run() -> void:
 	if transitioning: return
@@ -211,19 +216,20 @@ func restart_run() -> void:
 	in_hub = false
 	active = true
 	start_panel.hide()
+	if combat.progression.pending > 0: _show_level_up("STARTING UPGRADE")
 
 func _new_run() -> void:
 	dungeon = DungeonState.new(seed_override)
 	combat = CombatState.new(FLOOR, PILLARS)
 	combat.progression.rng.seed = dungeon.seed_value + 101
-	combat.progression.base_health = 6 + hub.training
+	run_token = "%s-%s" % [Time.get_unix_time_from_system(),Time.get_ticks_usec()]
+	combat.progression.wallet = hub
+	combat.progression.base_health = 6 + int(hub.perks["starting_hp"])
+	combat.progression.dodge_chance = hub.perks["dodge"] * 0.01
+	combat.progression.boss_damage_bonus = hub.perks["boss_damage"] * 0.02
 	combat.progression.apply_loadout(hub.loadout_stats())
 	combat.health = combat.progression.max_health()
 	hub.record_floor(1)
-	if hub.seals > 0:
-		hub.seals -= 1
-		hub.save()
-		combat.progression.coins = 20
 	services = Services.new(dungeon, combat, hub)
 	reset_player()
 	_enter_current()
@@ -234,6 +240,7 @@ func _new_run() -> void:
 	notice_time = 0
 	notice_label.hide()
 	_update_room_label()
+	if hub.perks["starting_upgrade"] > 0: combat.progression.reward_choices(2,false)
 
 func reset_player() -> void:
 	if transitioning: return
@@ -300,14 +307,20 @@ func _physics_process(delta: float) -> void:
 		if not transitioning:
 			notice_time = maxf(0, notice_time - delta)
 			notice_label.visible = notice_time > 0
+			var before_kills: int = combat.kills
 			combat.tick(delta, player)
-			_bank_boss_materials()
+			if combat.kills > before_kills: hub.record_progress("kills",combat.kills-before_kills)
+			for drop in combat.collected_items:
+				var uid: String = hub.find_equipment(drop["type"],drop["rarity"])
+				_notice("Picked up " + hub.item_name(uid))
+			combat.collected_items.clear()
+			_claim_floor_reward()
 			if combat.progression.pending > 0: _show_level_up()
 			if combat.health <= 0:
 				active = false
 				_release_stick()
 				outcome_title.text = "Your run has ended"
-				outcome_text.text = "Floor %d • %d enemies defeated\nInventory, scrap, keys and seals are kept." % [dungeon.floor_number, combat.kills]
+				outcome_text.text = "Floor %d • %d enemies defeated\nItems, coins, gems and typed keys are kept." % [dungeon.floor_number, combat.kills]
 				death_panel.show()
 	_update_combat_labels()
 	_update_interact()
@@ -368,7 +381,7 @@ func _update_combat_labels() -> void:
 	health_label.modulate = Color("ff8b83") if combat.hurt_time > 0.7 else Color.WHITE
 	xp_label.text = "L%d XP %d/%d • %d C • %d F" % [combat.progression.level, combat.progression.xp, combat.progression.required_xp(), combat.progression.coins, combat.progression.flares]
 	build_label.text = "DMG %d  •  RATE %.1f/s  •  SPEED +%d%%  •  PIERCE %d" % [combat.progression.damage(), 1.0 / combat.progression.fire_interval(), roundi((combat.progression.gear_movement + combat.progression.ranks["movement"] * 0.1) * 100), combat.progression.base_pierce + combat.progression.ranks["piercing"]]
-	seed_label.text = "SEED %d • %s Lv.%d • HUB %d SCRAP" % [dungeon.seed_value, combat.progression.weapon.to_upper(), combat.progression.weapon_level, hub.materials]
+	seed_label.text = "SEED %d • %s Lv.%d • %d GEMS" % [dungeon.seed_value, combat.progression.weapon.to_upper(), combat.progression.weapon_level, hub.gems]
 	var alive: int = combat.alive_count()
 	encounter_label.text = "%d ENEMIES  •  %d DEFEATED" % [alive, combat.kills] if alive > 0 else "ROOM SAFE  •  %d DEFEATED" % combat.kills
 	if combat.progression.slow_time > 0: encounter_label.text += " • SLOW"
@@ -408,6 +421,10 @@ func _draw() -> void:
 		draw_circle(Vector2(x, 187), 26, Color(0.95, 0.55, 0.2, 0.045))
 		draw_rect(Rect2(x - 3, 175, 6, 15), Color("78634d"))
 		draw_circle(Vector2(x, 173), 5 + sin(clock * 7 + x) * 0.7, Color("f4bb63"))
+	for drop in combat.item_drops:
+		var pos: Vector2 = drop["pos"]
+		draw_circle(pos,12,Color("aab1ba"))
+		draw_string(font,pos+Vector2(-4,5),"I",HORIZONTAL_ALIGNMENT_LEFT,-1,14,Color("172a32"))
 	for pickup in combat.pickups:
 		var pos: Vector2 = pickup["pos"]
 		draw_circle(pos, 10, Color(0.4, 0.7, 1, 0.12))
@@ -609,7 +626,7 @@ func _interact() -> void:
 func _advance_floor() -> void:
 	var state: Dictionary = dungeon.rooms[dungeon.current]
 	if state["role"] != "boss" or combat.alive_count() > 0 or not state["boss_paid"]: return
-	_bank_boss_materials()
+	_claim_floor_reward()
 	if dungeon.advance():
 		hub.record_floor(dungeon.floor_number)
 		player = Vector2(240, 530)
@@ -665,7 +682,7 @@ func _open_shop(message: String = "") -> void:
 	var stock: Dictionary = services.state()["stock"]
 	var options: Array = []
 	# Alternating indices form permanent-left / run-right columns.
-	for item in [["key", "Hub key • 20 coins"], ["upgrade", "Upgrade choice • 20 F"], ["seal", "Supply seal • 40 coins"], ["heal", "Heal 3 HP • 10 F"], ["", "Keys train +1 starting HP"], ["coins", "20 coins • 10 F"]]:
+	for item in [["weapon_item", "Common bow • 150 coins"], ["upgrade", "Upgrade choice • 20 F"], ["armor_item", "Common armor • 150 coins"], ["heal", "Heal 3 HP • 10 F"], ["", "Items stored in Inventory"], ["coins", "20 coins • 10 F"]]:
 		var id: String = item[0]
 		options.append({"text": item[1] + ("\nSOLD" if stock.get(id, false) else ""), "disabled": id.is_empty() or stock.get(id, false), "action": _shop_buy.bind(id)})
 	_menu("Shop • permanent / this run", "Left: hub items (coins). Right: run help (flares).\n%d coins • %d flares\n%s" % [combat.progression.coins, combat.progression.flares, message], options, 2)
@@ -781,51 +798,46 @@ func _open_inventory(_message: String = "") -> void:
 	hub_menu.select_tab(1)
 	_refresh_hub()
 
-func _inventory_item(id: String, message: String = "") -> void:
-	if not in_hub: return
-	var catalog = hub.Equipment
-	var item: Dictionary = catalog.ITEMS[id]
-	var owned: bool = hub.inventory.has(id)
-	var level: int = hub.inventory.get(id, 1)
-	var equipped_now: bool = owned and hub.equipped[item["slot"]] == id
-	var options: Array = []
-	if not owned:
-		options.append({"text": "Craft • %d scrap" % item["cost"], "disabled": hub.materials < item["cost"], "action": _inventory_craft.bind(id)})
-	else:
-		options.append({"text": "Equipped" if equipped_now else "Equip for next run", "disabled": equipped_now, "action": _inventory_equip.bind(id)})
-		options.append({"text": "Maximum level" if level >= catalog.MAX_LEVEL else "Upgrade to Lv.%d • %d scrap" % [level + 1, hub.upgrade_cost(id)], "disabled": level >= catalog.MAX_LEVEL or hub.materials < hub.upgrade_cost(id), "action": _inventory_upgrade.bind(id)})
-		if item["slot"] != "weapon" and equipped_now: options.append({"text": "Unequip", "action": _inventory_unequip.bind(id)})
-	options.append({"text": "Back to stored equipment", "action": _open_inventory})
-	_menu("%s • Lv.%d" % [item["name"], level] if owned else item["name"], "%s\n%s\n%d scrap • %s" % [catalog.summary(id, level), "Next: " + catalog.summary(id, level + 1) if owned and level < catalog.MAX_LEVEL else item["description"], hub.materials, message], options)
+func _inventory_item(uid: String, message: String = "") -> void:
+	if not in_hub or not hub.inventory.has(uid): return
+	var item: Dictionary = hub.inventory[uid]
+	var slot: String = hub.Equipment.ITEMS[item["type"]]["slot"]
+	var category: String = hub.Economy.part_for(slot)
+	var owned_equipped: bool = hub.equipped[slot] == uid
+	var options: Array = [
+		{"text":"Equipped" if owned_equipped else "Equip for next run","disabled":owned_equipped,"action":_inventory_equip.bind(uid)},
+		{"text":"Maximum item level" if item["level"] >= hub.Equipment.MAX_LEVEL else "Level up • %d %s parts" % [hub.upgrade_cost(uid),category],"disabled":item["level"] >= hub.Equipment.MAX_LEVEL or hub.parts[category] < hub.upgrade_cost(uid),"action":_inventory_upgrade.bind(uid)}
+	]
+	if slot != "weapon" and owned_equipped: options.append({"text":"Unequip","action":_inventory_unequip.bind(uid)})
+	_menu("%s Lv.%d" % [hub.item_name(uid),item["level"]],"%s\n%d %s parts available.\n%s" % [hub.Equipment.instance_summary(item),hub.parts[category],category,message],options)
+	service_title.add_theme_font_size_override("font_size",17)
 
-func _inventory_craft(id: String) -> void:
-	if in_hub and hub.craft(id):
+func _inventory_equip(uid: String) -> void:
+	if in_hub and hub.equip_item(uid):
 		_refresh_hub()
-		_inventory_item(id, "Crafted and stored.")
+		_inventory_item(uid,"Equipped.")
 
-func _inventory_equip(id: String) -> void:
-	if in_hub and hub.equip_item(id):
+func _inventory_upgrade(uid: String) -> void:
+	if in_hub and hub.upgrade(uid):
 		_refresh_hub()
-		_inventory_item(id, "Equipped for next run.")
+		_inventory_item(uid,"Item level increased.")
 
-func _inventory_upgrade(id: String) -> void:
-	if in_hub and hub.upgrade(id):
+func _inventory_unequip(uid: String) -> void:
+	if in_hub and hub.unequip(hub.Equipment.ITEMS[hub.item_type(uid)]["slot"]):
 		_refresh_hub()
-		_inventory_item(id, "Permanently upgraded.")
+		_inventory_item(uid,"Unequipped.")
 
-func _inventory_unequip(id: String) -> void:
-	if in_hub and hub.unequip(hub.Equipment.ITEMS[id]["slot"]):
-		_refresh_hub()
-		_inventory_item(id, "Stored in your inventory.")
+func _synthesis_changed() -> void:
+	_refresh_hub()
 
 func _notice(text: String) -> void:
 	notice_label.text = text.replace("\n", " • ")
 	notice_time = 5.0
 	notice_label.show()
 
-func _bank_boss_materials() -> void:
+func _claim_floor_reward() -> void:
 	var state: Dictionary = dungeon.rooms[dungeon.current]
-	if state["role"] == "boss" and state["boss_paid"] and not state.get("materials_paid", false):
-		state["materials_paid"] = true
-		hub.grant_materials(dungeon.floor_number * 3)
-		_notice("Boss defeated • %d scrap stored at the hub" % (dungeon.floor_number * 3))
+	if state["role"] == "boss" and state["boss_paid"] and not state.get("floor_reward_claimed", false):
+		state["floor_reward_claimed"] = true
+		var reward: Dictionary = hub.claim_floor(dungeon.floor_number,run_token+"-"+str(dungeon.floor_number))
+		_notice("Floor cleared • +%d %s key(s)" % [reward["amount"],reward["kind"]] if not reward.is_empty() else "Floor cleared • daily key limit reached for this floor")

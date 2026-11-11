@@ -1,313 +1,178 @@
-# Game Design — Working Document
+# Game design — current working specification
 
-Last updated: 2026-11-10
+Status: playable three-floor ranged roguelite prototype. This is a living design.
+[ECONOMY_SPEC.md](ECONOMY_SPEC.md) is the detailed economy/synthesis contract;
+[BALANCING.md](BALANCING.md) lists implementation defaults, controls and testing.
 
-Status: three-floor ranged prototype with a persistent eight-slot inventory and expanded run upgrades. See BALANCING.md for implemented defaults and remaining scope.
-No final title has been selected. The prototype uses Godot 4.6.3 with GDScript. Open decisions below must not be treated as
-settled requirements. This game replaces the earlier book project in this repository.
+## Core loop and platforms
 
-## Vision and platforms
+Browser first, PC-download and mobile-adaptable Godot 4.6.3 / GDScript project.
+Three-quarter top-down presentation inspired by the camera angle of Archero, with
+original placeholder visuals and mechanics. Automatic ranged attacks continue
+while moving. Melee weapons and range upgrades are planned for later.
 
-A roguelite in which the player learns a dungeon's geography while its rooms
-evolve across increasingly difficult floors. Changing starting and boss positions
-creates new journeys through a familiar layout. The player aims to reach higher
-floors, then returns to a hub after death to use retained loot for progression.
+Prepare at the menu hub → start a fresh dungeon → explore/fight/build the character
+→ defeat the exit boss → descend through a harder version of the same layout.
+Death or completion returns to the hub. The current expedition ends after floor 3;
+floor 4+ is not enabled. Saved inventory, coins, gems, keys, parts and perks survive
+runs. Run XP levels, card upgrades, health state and flares reset on a new run.
 
-The game should feel familiar but have its own identity, rather than copy an
-existing survivor, mobile action, or dungeon game.
+## Map and room identities
 
-Intended platforms: playable in a browser, downloadable on PC, and adaptable to
-mobile. Development should begin with mostly free tools and minimal operating
-costs. Store releases and monetization are undecided.
+- 5 × 5 rooms, coordinates A–E / 1–5. All neighbouring rooms remain connected.
+  No doors close, and paths never become walls.
+- Generate once per run. Room base identities persist across all floors in that run.
+- Start on a random perimeter location. Exit/boss is in the opposite half.
+- Start and boss move each floor and temporarily override ordinary room identities.
+  They never override bonus rooms. When they move away, the base identity returns.
+- Prototype opposite-half rule excludes the middle row/column: top starts use exit
+  rows 4–5; bottom starts use 1–2, with equivalent columns. Corners retain their
+  generating edge. Both start and boss must move from their previous position.
+- Initial start/boss rooms have underlying empty identities; visible ordinary-room
+  counts may therefore change after temporary roles move.
+- Adjacency constraints beyond connectivity remain a future design task.
 
-## Terms and core loop
-
-- **Room:** one cell in the dungeon grid, containing its own encounter or service.
-- **Floor:** one traversal from the starting room to defeating the exit boss.
-- **Run:** the attempt spanning multiple floors, ending on death.
-- **Hub:** the location outside runs where retained loot supports progression.
-
-1. Prepare at the hub.
-2. Start a run and randomly generate a dungeon.
-3. Explore rooms, gain XP, choose upgrades, and gather resources.
-4. Defeat the exit boss to advance to the next floor.
-5. Retain the same dungeon layout and underlying room identities, but change the
-   start and exit positions and update floor-dependent contents.
-6. Repeat until death.
-7. Return to the hub and use retained loot. The next run generates a fresh dungeon.
-
-Prototype: equipment, scrap, keys, supply seals, and hub training survive death in device-local storage. Run XP, levels, upgrades, coins, and flares reset on the next expedition; stored equipment and its levels do not. These defaults can be balanced or revised.
-
-## Dungeon structure
-
-- Grid: **5 × 5**, with coordinates **A–E** and **1–5**.
-- All rooms remain accessible. **No doors close and no paths turn into walls.**
-- The dungeon's room layout and base identities persist between floors in a run.
-- A new run generates a new random layout.
-- Room adjacency/generation constraints will be designed later.
-- Movement between neighbouring rooms is understood as orthogonal; movement uses a floating joystick or keyboard, with a three-quarter top-down camera and automatic ranged attacks while moving.
-
-### Starting floor composition
-
-| Role/type | Count |
+| Floor-one room | Count |
 | --- | ---: |
 | Start | 1 |
-| Boss / exit | 1 |
-| Bonus rooms: one of each of the five services | 5 |
-| Combat rooms | 7 |
-| Initially empty rooms | 3 |
-| Loot rooms | 4 |
-| Trap rooms | 4 |
+| Boss/exit | 1 |
+| Bonus: shop, trader, free upgrade, wheel, healer | 5 |
+| Combat | 7 |
+| Initially empty | 3 |
+| Loot | 4 |
+| Trap | 4 |
 | **Total** | **25** |
 
-These are the agreed starting counts. Because start and exit are temporary roles,
-the visible counts of ordinary room types can change on subsequent floors.
+### Progression by room
 
-### Start and boss placement
+Combat rooms increase encounter strength. Loot rooms are free of defenders on
+floor 1, gain defenders and better rewards on floor 2, and grow harder on floor 3.
+Future floors divisible by 5 will use miniboss protection; those milestones are
+not part of the three-floor build.
 
-- The starting room is randomly selected on an outside edge of the grid.
-- Its position changes between floors.
-- The exit is randomly placed in the opposite half of the grid relative to the
-  selected starting edge: top start → lower half; bottom → upper half;
-  left → right half; right → left half.
-- Every exit room contains a boss.
-- Start and exit are **temporary roles overriding a room's base identity**.
-  When the role moves away, that base identity becomes active again.
-- **Neither start nor exit may override a bonus room.** All five services must
-  remain present on every floor.
-- Presence of all five services is required; visiting every service is not an
-  established requirement for reaching the boss.
+Initially empty rooms are empty on floors 1–2. On floor 3 they contain weaker,
+tier-2 enemies. They award their completion flares separately from enemy kills.
 
-Generation defaults now implemented (subject to revision):
+Trap rooms retain their identity but never repeat the same trap on consecutive
+floors. Current traps are a slow field, timed spikes, and a projectile volley.
 
-- The middle row/column is excluded from opposite-half destinations; top starts use rows 4–5, bottom starts use rows 1–2, with the equivalent rule for columns.
-- Corners use their selected generating edge; the opposite-half rule provides separation.
-- Both start and exit must move from their previous positions.
-- Initial start and boss locations have underlying empty identities. Their temporary overrides move away on subsequent floors.
+The five bonus locations rotate through all five service types, retaining one of
+each on every floor and returning to the same service every five floors. Their
+first-entrance reward is paid once per room per floor, even if the service is unused.
+All floor-specific encounters, stock, rewards and uses refresh on descent.
 
-## Room identities and floor progression
+## Combat, XP and run choices
 
-### Combat rooms
+- Touch: floating joystick anywhere except interface buttons. Keyboard: WASD/arrows.
+- Normal enemies chase, brutes are tougher/slower, shooters keep range/reposition.
+- Bosses start alone, chase slowly and telegraph spread projectiles. Future summons
+  may give XP only, never extra boss-room flares.
+- Pillars block both sides' projectiles. Doors remain open for retreat.
+- Dead and wounded enemies retain their state across room visits. Bullets do not
+  travel across rooms. Brief hit invulnerability and arrival protection apply.
+- Enemies drop XP crystals. Nearby unobstructed crystals are attracted to the player;
+  uncollected crystals and item pickups remain in their rooms.
+- Level-up pauses combat and movement. Choose one of two distinct upgrades or a
+  persistent coin reward. Excess XP is retained and additional choices queue.
+- Thirteen card upgrades: damage, attack speed, movement, piercing, max HP/healing,
+  critical hits, multishot, ricochet, frost, burn, XP attraction, XP gain, regeneration.
+- Coin choices, loot and wheel coin rewards use the persistent coin wallet.
+- The permanent Starting upgrade perk gives two upgrades without a coin option,
+  preventing free currency farming by repeatedly starting and abandoning runs.
 
-Remain combat rooms, with increasing encounter difficulty across floors. Prototype normal, shooter, and brute archetypes, floor counts, and HP scaling are listed in BALANCING.md. Final balance remains open.
+## Flares and room services
 
-Enemies award XP and dungeon flares. Ordinary revisits must not reset rewards.
+Flares are temporary per-run currency, retained between floors.
 
-### Loot rooms
+| Source | Flare reward |
+| --- | --- |
+| Bonus first entrance | 5 on floors 1–5, then +5 per five-floor band |
+| Normal/shooter kill | 1 |
+| Brute kill | 2 |
+| Loot pickup | 10, or 20 on floors divisible by 5 |
+| Initially empty room | 0 on floors 1–2; 5 on floor 3, +1 each later floor |
+| Trap room | 0 |
+| Boss | 50 on floor 1, +10 per subsequent floor |
 
-- Floor 1: free loot, with no defending enemies.
-- Floor 2 onward: better loot and enemies defending it.
-- Floors 3–4 continue increasing rewards and changing encounters.
-- Every fifth floor (5, 10, 15, …): miniboss protection and improved loot.
-- Floors between these milestones increase enemy levels/numbers and rewards.
-- A room remains a loot room across floors unless temporarily overridden by S/E.
-- Loot may mean currency, an item, a chest, or a trapped reward; it does not imply
-  one specific reward format. Dedicated trap rooms remain a separate category.
+Room rewards are once per room per floor. Eligible defenders also pay individual
+kill rewards. Boss-room adds never give flares. No revisit resets rewards.
 
-### Initially empty rooms
+- Healer: full heal once per floor; full-health visits do not consume it.
+- Free upgrade: two upgrade cards plus a coin card, once per floor.
+- Trader: exchange one owned run-upgrade rank for one of three eligible alternatives,
+  once per floor. Nothing is removed until confirmation.
+- Wheel: one spin; heal, coins, choose between two upgrades, trade an upgrade for
+  one of three, or summon a shopkeeper. No eligible trade gives coins instead.
+  Summoning a shopkeeper never repeats the bonus-room entrance reward.
+- Dungeon shop: common equipment copies paid with coins; run upgrades/healing/coins
+  paid with flares. Finite stock per room per floor. No keys or seals are sold.
 
-- Floors 1–2: empty.
-- Floor 3 onward: contain weaker enemies rather than keeping pace with normal
-  combat rooms. The examples given were floor-2 enemies on both floors 3 and 4.
-- The general enemy-scaling formula beyond those examples is undecided.
-- These rooms retain their underlying category for their distinct progression and
-  flare rewards even after they acquire enemies.
+## Hub menu and inventory
 
-### Trap rooms
+Full-screen original background and central dungeon doodle. Bottom tabs, exactly:
+**Shop → Inventory → Play → Perks → Miscellaneous**. Play selects the home page;
+clicking the dungeon icon starts the run. All menus pause gameplay.
 
-- Remain trap rooms.
-- Change trap type every floor: no identical trap on consecutive floors.
-- Earlier traps can recur after an intervening floor, e.g. debuff A → trap B → debuff A.
-- Prototype traps are a slowing field, timed spikes, and a projectile volley; timings and counterplay are listed in BALANCING.md.
+Inventory has eight active slots around the central character:
+left Weapon/Armor/Headgear/Pants; right Boots/Necklace/Ring/Bracelet.
+The owned-item grid is underneath. Each copy has its own identity, level, rarity
+and enhancement. Duplicate finds remain separate items, never scrap.
 
-### Bonus rooms
+Two extra squares below the character are reserved and locked. Pet's milestone is
+first reaching floor 10 (saved permanently); Spirit unlocks later with its threshold
+still undefined. The current floor-3 cap makes Pet inaccessible for now.
+Left-side events/battle pass and right-side daily/play-time rewards are deferred.
+Gems and tasks are also reserved until the user defines them.
 
-Five permanent bonus-room locations, with these five service roles:
+Equipment stats are copied into a new run. Equipping, leveling or synthesizing in
+the hub cannot retroactively change the active run. Existing charm saves migrate
+to Necklace without losing the item or its level.
 
-1. Shop.
-2. Trader.
-3. Free upgrade.
-4. Spin-the-wheel room.
-5. Healer.
+## Coins, gems, floor keys, shop and synthesis
 
-Each location cycles through all five roles before repeating, returning to the
-same role every five floors. Every floor must contain one of each service.
-The prototype rotation is shop → trader → upgrade → wheel → healer, staggered across the five locations so no service is missing or duplicated.
+**There is no scrap currency or scrap crafting.** Equipment is found in dungeons,
+opened from shop chests, or purchased as one of the daily common-item offers.
 
-#### Free upgrade
+The hub shop has six daily coin offers: armor/accessory/weapon parts plus three
+random common copies. Armor parts level armor/headgear/pants/boots; accessory parts
+level bracelet/necklace/ring; weapon parts level weapons. Item levels and rarity
+synthesis are separate operations.
 
-Choose **one of three cards**: two upgrade options and one in-game coin option.
+Copper/silver/gold shop chests use matching keys or gems. Exact odds are tuning
+values but preserve the requested distribution. Each has a saved, separate
+35-open pity mechanic. Gold guarantees Legendary +1 after 34 non-legendary opens;
+ANY legendary gold drop, including normal legendary, resets that counter.
 
-#### Spin-the-wheel room
+Keys come from low-chance dungeon loot and limited daily floor clears. Every floor
+has its own allowance of three key-paying clears per day. Floors 1–5 pay copper1,
+silver1, copper2, silver2, gold1. Floors 6–9 alternate copper3/silver3; floor10 gold2.
+Floors11–14 alternate copper4/silver4; floor15 gold3, continuing thereafter.
 
-A wheel in the middle of the room awards one of:
+Synthesis replaces the character area with a top-left base slot and ingredient
+slots. The inventory remains below, grouped by duplicates, highest rarity first.
+The exact eight recipes through bright-orange Mythic are in ECONOMY_SPEC.md.
+The base retains its level and equipped identity; additional equipped copies are
+protected from consumption. There is no automatic duplicate conversion.
 
-- Healing.
-- Coins.
-- An upgrade choice: choose one of **two upgrade cards**.
-- Trade an owned upgrade for another: choose the replacement from **three options**.
-- Spawn a shopkeeper.
+## Permanent perks
 
-Prototype: one free animated spin per floor; all five outcomes have equal odds. Healing restores up to 3 HP; the coin outcome gives 20 coins. With no owned upgrade, a trade result gives 20 coins instead. A summoned shopkeeper does not create another room-entry flare reward.
+Twelve slots. Four defined perks: Starting upgrade (one level), Starting HP,
+Dodge chance and Boss damage (25 levels each). Eight slots remain reserved.
+First purchase always unlocks Starting upgrade at level 1. Other locked perks
+unlock randomly at level 1. Per the user clarification, leveling begins after
+ALL FOUR DEFINED perks unlock; reserved slots do not block it. Further purchases
+randomly level eligible non-maxed perks. Maxed perks cannot be drawn.
+Prices start at 250 coins and increase each purchase; the current +50 increment
+and per-level effects are prototype tuning values documented in BALANCING.md.
 
-#### Shop
+## Saves, migration and deferred work
 
-Two columns:
+Device-local atomic JSON/browser storage; no cloud accounts or cross-device sync.
+New saves retain item instances, wallet, parts, keys, daily counters, pity, perks,
+loadout and highest floor. Old equipment levels/equipped identities are migrated.
+Retired prototype scrap, generic keys, seals and training are archived without
+inventing an exchange rate. Current-run state is not saved.
 
-| Column | Contents | Payment |
-| --- | --- | --- |
-| Permanent account progression | Items, keys, and other things useful at the hub, outside runs | Coins (prototype default) |
-| Current-run assistance | Upgrades, healing, or coins | Dungeon flares |
-
-Prototype prices and stock are documented in BALANCING.md: permanent keys/seals cost coins; run assistance costs flares. Purchases are finite per room per floor. Permanent items are secured immediately in device-local hub storage. These resolve earlier open questions as testable defaults, not final balance.
-
-#### Trader and healer
-
-Prototype: the healer restores full health once per floor; full-health visits do not spend its use. The trader exchanges one owned upgrade rank for one of three alternatives, free once per floor. Nothing is removed until confirmation.
-
-## Combat direction
-
-- Three-quarter top-down presentation, using Archero as a camera reference.
-- Automatic ranged attacks continue **while moving**; no stop-to-shoot requirement.
-- Touch uses a floating joystick wherever the player touches, excluding UI buttons.
-- Ranged combat is the first implementation target.
-- Melee weapons are planned for later, including upgrades that increase their range.
-- The prototype uses chasing enemies, contact damage, brief hit invulnerability,
-  persistent enemy state on room revisits, open doors for retreat, and restart on death.
-  These are initial combat defaults, not final balance or complete progression.
-
-## XP, levels, and upgrade choices
-
-- Enemies drop XP.
-- XP increases the player's level **for the current run**.
-- On each level-up, offer three cards: **two upgrades and one coin reward**.
-- The player chooses one card.
-- The free upgrade room uses the same choice structure.
-- Character progression across floors belongs to the same run; permanent hub
-  progression is separate.
-
-Current prototype defaults (subject to balancing):
-
-- Normal enemies drop collectible crystals worth 2 XP; bosses drop 8 XP. Nearby crystals are attracted
-  to the player with a clear path; uncollected XP stays in its room.
-- Start at level 1. The next level needs `4 + 2 × (current level - 1)` XP.
-- Level-up pauses combat and movement for the reward selection. Overflow XP is
-  retained, and multiple earned choices are handled in sequence.
-- Offers contain two distinct upgrade types and a 20-coin option. Offers stay fixed
-  until selected. Coins purchase permanent shop items; run assistance uses flares.
-- The pool now has 13 upgrades: damage, attack speed, movement speed, piercing, max HP/healing, critical hits, multishot, ricochet, frost, burn, XP attraction, XP gain and regeneration. Exact effects and caps are in BALANCING.md.
-- Ranks stack. Prototype caps: movement 5, firing speed 8, piercing 5; damage and
-  vitality remain uncapped. Capped upgrades leave the offer pool.
-- Run levels, XP, coins, and upgrade ranks reset on death/restart.
-
-Final balance, rarity, and further upgrade/weapon additions remain open.
-
-## Dungeon flare economy
-
-Dungeon flares are temporary currency for the current run and reset when it ends.
-They purchase current-run assistance in the shop.
-
-Let `f` be the floor number, starting at 1.
-
-| Source | Reward | Trigger |
-| --- | --- | --- |
-| Initially empty room, floors 1–2 | 0 | No room reward |
-| Initially empty room, floor 3 onward | `f + 2`: 5 on floor 3, 6 on floor 4, etc. | All enemies defeated, once per floor |
-| Bonus room | `5 × (1 + floor((f - 1) / 5))` | First entrance per floor |
-| Loot room | 10 normally; 20 when `f` is divisible by 5 | Collect loot / open chest, once per floor |
-| Normal enemy | 1 | Enemy death |
-| Larger enemy | 2 | Enemy death; other classifications may be added |
-| Trap room | 0 | No room flare reward |
-| Exit boss | `50 + 10 × (f - 1)` | Boss death |
-
-Examples: bonus rooms give 5 on floors 1–5, 10 on 6–10, and 15 on
-11–15. Bosses give 50, 60, 70, … starting on floor 1.
-
-### Award rules and exceptions
-
-- Room rewards are awarded once per room **per floor**. Re-entry does not reset them.
-- Eligible enemies award flares once on death, separately from room rewards.
-- Bonus-room flares trigger on first entrance, not on service use or purchase.
-- A wheel-spawned shopkeeper cannot award another bonus-room entrance reward.
-- Loot-room defenders, appearing from floor 2, award normal enemy flares in
-  addition to the loot pickup's room reward.
-- Enemies in initially empty rooms also award normal enemy flares in addition to
-  those rooms' completion rewards.
-- The boss is alone when the player enters its room.
-- **Only the boss entity awards flares in the boss room.** Boss summons award
-  **XP only**, with no flares or other rewards.
-- Whether loot-room minibosses have a special flare value is undecided. Do not
-  automatically apply the exit boss's 50-plus reward to them.
-- Repeatable boss summons must not become an unlimited XP farm; the exact
-  spawning/XP safeguard still needs designing.
-
-## Hub and persistent progression
-
-- Death returns the player to the hub.
-- Some gained loot supports progression outside runs.
-- Shops can offer permanent account items, keys, and hub-related purchases.
-- Dungeon flares and run levels are temporary.
-
-Prototype defaults: permanent shop purchases cost coins and are secured immediately; a key trains +1 starting HP (up to three times); a supply seal automatically provides 20 coins on the next expedition. Hub data is local to a device/browser, without account synchronization. Prices and retention can be revised during balancing.
-
-## Hub menu and equipment inventory (current milestone)
-
-- The hub stores unique owned item types and their permanent levels, across runs.
-- Eight slots: Weapon, Armor, Headgear, Pants, Boots, Necklace, Ring, Bracelet. Four are shown on each side of the central character, above the inventory grid. Gear can be equipped, unequipped (except the weapon), crafted and upgraded from the hub.
-- Starter Ranger bow; craftable Iron crossbow and Ember wand; Warden vest,
-  Scout boots, Scholar necklace, Pathfinder hood, Trailguard pants, Ember ring and Archer bracelet. All gear has five permanent levels.
-- Chests grant scrap equal to the floor and a 30% equipment-find chance. Duplicate
-  finds grant 2 scrap. Bosses bank 3 × floor scrap once on defeat.
-- Scrap and finds are secured immediately. Costs, stats and level previews are in
-  BALANCING.md; these remain prototype values.
-- Gear stats are copied into each new run and combine with temporary run ranks.
-  Hub changes cannot alter an active run. Death removes run ranks but not equipment.
-- Old local hub saves gain starter equipment without losing keys/seals/training.
-  This is device-local storage, without cloud account synchronization.
-- Normal enemy HP now scales 3 → 9 → 18 through floors 1–3; brutes have double HP.
-  Awakened empty rooms on floor 3 use the tier-2 enemy HP of 9.
-
-### Hub presentation and future slots
-
-- Full-screen menu with its own original background and central dungeon doodle.
-- Bottom tabs, in this exact order: Shop, Inventory, Play, Perks, Miscellaneous.
-- Play selects the page; clicking the dungeon icon enters the expedition.
-- Inventory replaces the former armory terminology and shows owned items below
-  the character's eight active equipment slots.
-- Two additional squares below the character are reserved and locked: Pet unlocks
-  on first reaching floor 10; Spirit unlocks later, with no threshold set yet.
-- Highest floor reached is saved permanently for future unlocks. The expedition
-  remains capped at floor 3, so Pet/Spirit equipment is not implemented yet.
-- Left-side events/battle pass and right-side daily/play-time rewards are deferred;
-  reserve visual space without adding simulated offers or reward timers.
-- Existing charm saves migrate to Necklace without losing equipment or levels.
-
-## Replaced concepts — do not implement
-
-- The earlier 14 × 10 and 15 × 10 map sizes.
-- Walking paths becoming wall tiles.
-- Used doors closing between floors.
-- Protected corridors or a permanent door backbone.
-- A 70%-treasure-accessibility threshold and wall-placement connectivity checks.
-- Previous-run ghosts or recorded-action cooperation.
-- The earlier book-writing or publishing automation project.
-
-All rooms are accessible in the current concept; dynamic paths are no longer its mechanic.
-
-## Open design questions and risks
-
-These are discussion items, not approved feature requirements:
-
-- Weapon variety, melee behaviour, enemy attacks, room dimensions, and encounter duration.
-- Final art direction, audio, input adaptation, and browser/mobile performance.
-- Room generation/adjacency constraints and the placement details listed above.
-- Room discovery, map visibility, and how upcoming encounters are communicated.
-- Whether encounters lock the player inside temporarily, and how retreat works.
-- Target floor and run duration. The current balance build ends after the floor-3 boss; there is no floor 4.
-- Why players would skip rooms instead of always clearing the entire floor.
-- Whether five bonus rooms and early free loot create too much downtime.
-- Enemy variety and new behaviours, rather than only higher HP and numbers.
-- Service cycling, economy balance, coins' purpose, and anti-farming details.
-- Current-run saves, cloud persistence/accounts, richer permanent progression, and monetization. Local hub saving and combat-pausing menus are implemented.
-
-The current milestone includes all room categories and services through floor 3, including weaker enemies in initially empty rooms on floor 3. Balance this build before extending floor scaling. Fifth-floor miniboss milestones, melee, and later content remain future work.
+Future: defined gem tasks/earning, the remaining eight perk effects, higher floors,
+melee, further rarities, pets/spirit content, more item templates/affixes, adjacency
+constraints, final art/audio, richer combat and an authoritative account backend.

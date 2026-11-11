@@ -1,17 +1,17 @@
 extends RefCounted
-## Unique stored items; level and equipped slots persist, run ranks do not.
+## Item templates. Hub stores individually identified copies, levels and rarities.
 const MAX_LEVEL := 5
 const ITEMS := {
-	"bow": {"name": "Ranger bow", "slot": "weapon", "cost": 0, "description": "Balanced bolts. Reliable attack speed."},
-	"crossbow": {"name": "Iron crossbow", "slot": "weapon", "cost": 8, "description": "Heavy, slower bolts; pierces one enemy."},
-	"wand": {"name": "Ember wand", "slot": "weapon", "cost": 10, "description": "Fast magic orbs with 10% base critical chance."},
-	"vest": {"name": "Warden vest", "slot": "armor", "cost": 6, "description": "Adds maximum health."},
-	"boots": {"name": "Scout boots", "slot": "boots", "cost": 6, "description": "Adds movement speed."},
-	"hood": {"name": "Pathfinder hood", "slot": "headgear", "cost": 6, "description": "Adds maximum health."},
-	"pants": {"name": "Trailguard pants", "slot": "pants", "cost": 6, "description": "Adds movement speed."},
-	"ring": {"name": "Ember ring", "slot": "ring", "cost": 8, "description": "Adds critical chance."},
-	"bracelet": {"name": "Archer bracelet", "slot": "bracelet", "cost": 8, "description": "Adds firing speed."},
-	"charm": {"name": "Scholar necklace", "slot": "necklace", "cost": 8, "description": "Increases experience gained."}
+	"bow": {"name": "Ranger bow", "slot": "weapon", "description": "Balanced bolts. Reliable attack speed."},
+	"crossbow": {"name": "Iron crossbow", "slot": "weapon", "description": "Heavy, slower bolts; pierces one enemy."},
+	"wand": {"name": "Ember wand", "slot": "weapon", "description": "Fast magic orbs with 10% base critical chance."},
+	"vest": {"name": "Warden vest", "slot": "armor", "description": "Adds maximum health."},
+	"boots": {"name": "Scout boots", "slot": "boots", "description": "Adds movement speed."},
+	"hood": {"name": "Pathfinder hood", "slot": "headgear", "description": "Adds maximum health."},
+	"pants": {"name": "Trailguard pants", "slot": "pants", "description": "Adds movement speed."},
+	"ring": {"name": "Ember ring", "slot": "ring", "description": "Adds critical chance."},
+	"bracelet": {"name": "Archer bracelet", "slot": "bracelet", "description": "Adds firing speed."},
+	"charm": {"name": "Scholar necklace", "slot": "necklace", "description": "Increases experience gained."}
 }
 const SLOTS := ["weapon", "armor", "headgear", "pants", "boots", "necklace", "ring", "bracelet"]
 
@@ -49,3 +49,23 @@ static func summary(id: String, level: int) -> String:
 		"ring": return "+%d%% critical chance" % roundi(s["critical"] * 100)
 		"bracelet": return "+%d%% firing speed" % roundi(s["haste"] * 100)
 		_: return "+%d%% XP gained" % roundi(s["xp"] * 100)
+
+static func instance_stats(item: Dictionary) -> Dictionary:
+	var result := stats(item["type"], item["level"])
+	var multiplier: float = [1.0,1.15,1.35,1.7,2.3,3.6][item["rarity"]] + item["plus"] * 0.25
+	if ITEMS[item["type"]]["slot"] == "weapon":
+		result["damage"] = maxi(1, int(ceil(result["damage"] * multiplier)) + int(item["plus"]))
+	else:
+		result["health"] = int(ceil(result["health"] * multiplier)) + (int(item["plus"]) if result["health"] > 0 else 0)
+		for stat in ["movement","xp","critical","haste"]: result[stat] *= multiplier
+	return result
+
+static func instance_summary(item: Dictionary) -> String:
+	var s := instance_stats(item)
+	match ITEMS[item["type"]]["slot"]:
+		"weapon": return "%d DMG • %.1f/s • %d pierce • %d%% crit" % [s["damage"],1.0/s["interval"],s["pierce"],roundi(s["critical"]*100)]
+		"armor","headgear": return "+%d maximum HP" % s["health"]
+		"boots","pants": return "+%d%% movement" % roundi(s["movement"]*100)
+		"ring": return "+%d%% critical chance" % roundi(s["critical"]*100)
+		"bracelet": return "+%d%% firing speed" % roundi(s["haste"]*100)
+		_: return "+%d%% XP" % roundi(s["xp"]*100)
