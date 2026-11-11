@@ -78,7 +78,7 @@ func _build_ui() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui.add_child(root)
 	_label(root, "THE DUNGEON", Vector2(28, 25), 25, Color("eee5cc"))
-	_label(root, "FIVE FLOORS   /   BALANCE PROTOTYPE", Vector2(29, 61), 11, Color("96a3b6"))
+	_label(root, "TEN FLOORS   /   BALANCE PROTOTYPE", Vector2(29, 61), 11, Color("96a3b6"))
 	health_label = _label(root, "HP  6 / 6", Vector2(29, 83), 15, Color("69d4b8"))
 	encounter_label = _label(root, "", Vector2(245, 130), 11, Color("96a3b6"))
 	xp_label = _label(root, "", Vector2(29, 103), 11, Color("96c9ff"))
@@ -125,6 +125,9 @@ func _build_ui() -> void:
 			var result: String = hub.buy_perk()
 			hub_menu.perk_message = "Received %s Lv.%d" % [hub.PERK_NAMES[result],hub.perks[result]] if not result.is_empty() else "No perk purchased."
 		_refresh_hub()
+	)
+	hub_menu.perk_info_requested.connect(func(id):
+		_menu(hub.PERK_NAMES[id],hub.PERK_EFFECTS[id].replace("Excludes", "\nExcludes")+"\nLevel %d / %d" % [hub.perks[id],hub.PERK_CAPS[id]],[])
 	)
 	hub_menu.synthesis_requested.connect(_synthesis_changed)
 	hub_menu.cheat_requested.connect(func(): cheat_menu.open())
@@ -244,6 +247,7 @@ func _new_run(mark_floor: bool = true) -> void:
 	combat.progression.rng.seed = dungeon.seed_value + 101
 	run_token = "%s-%s" % [Time.get_unix_time_from_system(),Time.get_ticks_usec()]
 	combat.progression.wallet = hub
+	combat.progression.perk_ranks = hub.perks.duplicate()
 	combat.progression.base_health = 6 + int(hub.perks["starting_hp"])
 	combat.progression.dodge_chance = hub.perks["dodge"] * 0.01
 	combat.progression.boss_damage_bonus = hub.perks["boss_damage"] * 0.02
@@ -332,7 +336,9 @@ func _physics_process(delta: float) -> void:
 			notice_time = maxf(0, notice_time - delta)
 			notice_label.visible = notice_time > 0
 			var before_kills: int = combat.kills
+			var was_revived: bool = combat.progression.revive_used
 			combat.tick(delta, player)
+			if combat.progression.revive_used and not was_revived: _notice("Second Chance • revived at 25% HP")
 			if combat.kills > before_kills: hub.record_progress("kills",combat.kills-before_kills)
 			for drop in combat.collected_items:
 				var uid: String = hub.find_equipment(drop["type"],drop["rarity"])
@@ -401,7 +407,7 @@ func _update_room_label() -> void:
 	status_label.text = "%s • %s • FLOOR %d/%d" % [dungeon.room_name(), dungeon.rooms[dungeon.current]["role"].to_upper(), dungeon.floor_number,DungeonState.MAX_FLOOR]
 
 func _update_combat_labels() -> void:
-	health_label.text = "HP  %.1f / %d" % [combat.health, combat.progression.max_health()]
+	health_label.text = "HP  %.1f / %.1f" % [combat.health, combat.progression.max_health()]
 	health_label.modulate = Color("ff8b83") if combat.hurt_time > 0.7 else Color.WHITE
 	xp_label.text = "L%d XP %d/%d • %d C • %d F" % [combat.progression.level, combat.progression.xp, combat.progression.required_xp(), combat.progression.coins, combat.progression.flares]
 	build_label.text = "DMG %.2f  •  RATE %.1f/s  •  SPEED +%d%%  •  PIERCE %d" % [combat.progression.damage(), 1.0 / combat.progression.fire_interval(), roundi((combat.progression.gear_movement + combat.progression.ranks["movement"] * 0.1) * 100), combat.progression.base_pierce + combat.progression.ranks["piercing"]]
@@ -549,6 +555,7 @@ func _draw_pillar(pillar: Rect2) -> void:
 
 func _draw_player() -> void:
 	# Original placeholder adventurer, with feet anchored to the collision position.
+	if combat.barrier_ready and combat.barrier_time>0 and combat.progression.ranks["barrier"]>0: draw_arc(player+Vector2(0,-18),25,0,TAU,32,Color("81d5ff"),3)
 	_draw_shadow(player + Vector2(0, 3), Vector2(15, 6), Color(0, 0, 0, 0.4))
 	draw_colored_polygon(PackedVector2Array([player + Vector2(-12, -5), player + Vector2(-10, -23), player + Vector2(10, -23), player + Vector2(13, -5)]), Color("39bca7"))
 	draw_line(player + Vector2(-5, -4), player + Vector2(-5, 1), Color("b7c5d3"), 5)
@@ -689,7 +696,7 @@ func _interact() -> void:
 			if services.loot():
 				_notice(state["reward"])
 				if combat.progression.pending > 0: _show_level_up("LOOT — CHOOSE A REWARD")
-				else: _menu("Loot secured", "+%d coins • %d flares\n%s" % [15 + dungeon.floor_number * 5,20 if dungeon.floor_number%5==0 else 10,state["reward"]], [])
+				else: _menu("Loot secured", "+%d coins • %d flares\n%s" % [state.get("coin_reward",15+dungeon.floor_number*5),20 if dungeon.floor_number%5==0 else 10,state["reward"]], [])
 		"bonus":
 			if state.get("summoned_shop", false): _open_shop()
 			elif state["service"] == "shop": _open_shop()
@@ -724,15 +731,15 @@ func _advance_floor() -> void:
 	else:
 		active = false
 		_release_stick()
-		outcome_title.text = "Five floors conquered!"
+		outcome_title.text = "Ten floors conquered!"
 		outcome_title.add_theme_font_size_override("font_size", 21)
-		outcome_text.text = "Level %d • %d enemies defeated\n%d coins • %d flares remaining\nReturn to the hub. Floor 6 is disabled." % [combat.progression.level, combat.kills, combat.progression.coins, combat.progression.flares]
+		outcome_text.text = "Level %d • %d enemies defeated\n%d coins • %d flares remaining\nReturn to the hub. Floor 11 is disabled." % [combat.progression.level, combat.kills, combat.progression.coins, combat.progression.flares]
 		death_panel.show()
 
 func _menu(title: String, description: String, options: Array, columns: int = 1) -> void:
 	interacting = true
 	_release_stick()
-	service_close_button.text = ("Back to inventory" if hub_menu.selected == 1 else "Back to shop") if in_hub else "Back to room"
+	service_close_button.text = ("Back to inventory" if hub_menu.selected == 1 else "Back to hub") if in_hub else "Back to room"
 	service_panel.position.x = (get_viewport_rect().size.x - service_panel.size.x) / 2 if in_hub else 30
 	service_title.text = title
 	service_description.text = description
@@ -764,7 +771,7 @@ func _open_shop(message: String = "") -> void:
 	# Alternating indices form permanent-left / run-right columns.
 	for item in [["weapon_item", "Common bow • 150 coins"], ["upgrade", "Upgrade choice • 20 F"], ["armor_item", "Common armor • 150 coins"], ["heal", "Heal 3 HP • 10 F"], ["", "Items stored in Inventory"], ["coins", "20 coins • 10 F"]]:
 		var id: String = item[0]
-		options.append({"text": item[1] + ("\nSOLD" if stock.get(id, false) else ""), "disabled": id.is_empty() or stock.get(id, false), "action": _shop_buy.bind(id)})
+		options.append({"text": item[1].replace("150",str(services.price(id))).replace("20 F",str(services.price(id))+" F").replace("10 F",str(services.price(id))+" F") + ("\nSOLD" if stock.get(id, false) else ""), "disabled": id.is_empty() or stock.get(id, false), "action": _shop_buy.bind(id)})
 	_menu("Shop • permanent / this run", "Left: hub items (coins). Right: run help (flares).\n%d coins • %d flares\n%s" % [combat.progression.coins, combat.progression.flares, message], options, 2)
 
 func _shop_buy(id: String) -> void:
@@ -815,7 +822,7 @@ func _spin_wheel() -> void:
 		interacting = false
 		match result:
 			0:
-				combat.health = minf(combat.progression.max_health(), combat.health + 3)
+				combat.heal(3)
 				_menu("Wheel: healing", "Recovered up to 3 HP.", [])
 			1:
 				combat.progression.coins += 20

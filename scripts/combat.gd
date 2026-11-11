@@ -15,6 +15,8 @@ var pickups: Array = []
 var item_drops: Array = []
 var collected_items: Array = []
 var health := float(MAX_HEALTH)
+var barrier_time := 0.0
+var barrier_ready := false
 var hurt_time := 0.0
 var grace_time := 0.0
 var fire_time := 0.0
@@ -54,7 +56,14 @@ func enter(state: Dictionary, player: Vector2) -> void:
 	room_state = state
 	impacts.clear()
 	fire_time = 0.15
+	enemies = state["enemies"]
 	grace_time = 0.7
+	progression.momentum_active = progression.momentum_pending
+	progression.momentum_pending = false
+	barrier_time = 0.0; barrier_ready = false
+	if progression.ranks["barrier"]>0 and alive_count()>0 and not state.get("barrier_given",false):
+		state["barrier_given"] = true; barrier_time = 4.0; barrier_ready = true
+	progression.current_health = health
 	enemies = state["enemies"]
 	if not state.has("pickups"): state["pickups"] = []
 	pickups = state["pickups"]
@@ -114,6 +123,9 @@ func _cell(point: Vector2) -> Vector2i:
 
 func tick(delta: float, player: Vector2) -> void:
 	if health <= 0 or progression.pending > 0: return
+	barrier_time = maxf(0,barrier_time-delta)
+	progression.current_health = health
+	progression.last_enemy_active = alive_count()==1
 	hurt_time = maxf(0, hurt_time - delta)
 	grace_time = maxf(0, grace_time - delta)
 	fire_time -= delta
@@ -138,6 +150,10 @@ func tick(delta: float, player: Vector2) -> void:
 	_tick_hazards(delta,player)
 	_tick_hostile(delta, player)
 	_tick_trap(delta, player)
+	if room_state.get("role","")=="combat" and alive_count()==0 and not room_state.get("combat_paid",false):
+		room_state["combat_paid"] = true
+		progression.award_coins(3*progression.ranks["salvage"])
+		if progression.ranks["momentum"]>0: progression.momentum_pending = true
 	if room_state.get("role", "") == "empty" and floor_number >= 3 and alive_count() == 0 and not room_state.get("room_paid", false):
 		progression.flares += floor_number + 2
 		room_state["room_paid"] = true
@@ -152,7 +168,7 @@ func _collect_xp(delta: float, player: Vector2) -> void:
 	for i in range(pickups.size() - 1, -1, -1):
 		var pickup: Dictionary = pickups[i]
 		var distance: float = pickup["pos"].distance_to(player)
-		if distance <= 110 and not wall_between(pickup["pos"], player):
+		if distance <= progression.pickup_radius() and not wall_between(pickup["pos"], player):
 			pickup["pos"] = pickup["pos"].move_toward(player, 240 * delta)
 		if pickup["pos"].distance_to(player) <= 20:
 			var amount: int = pickup["amount"]
@@ -164,16 +180,29 @@ func _collect_xp(delta: float, player: Vector2) -> void:
 			if progression.pending > 0: return
 
 func apply_choice(index: int) -> bool:
+	var before: float = progression.max_health()
 	var choice: String = progression.choose(index)
 	if choice.is_empty(): return false
+	apply_upgrade_effect(choice,before)
+	progression.current_health = health
+	if progression.pending>0: progression._roll_offers()
 	return true
 
-func hurt(amount: int) -> void:
-	if invincible or hurt_time > 0 or grace_time > 0 or health <= 0: return
-	if progression.rng.randf() < progression.dodge_chance:
-		hurt_time = 1.0
-		return
-	health = maxf(0.0,health-amount*(1.0-progression.damage_reduction))
+func heal(amount: float) -> void:
+	health = minf(progression.max_health(),health+amount*progression.healing_multiplier())
+	progression.current_health = health
+
+func hurt(amount: int,trap: bool = false) -> void:
+	if invincible or hurt_time>0 or grace_time>0 or health<=0: return
+	if barrier_ready and barrier_time>0 and progression.ranks["barrier"]>0:
+		barrier_ready = false; hurt_time = 1.0; return
+	if progression.rng.randf()<progression.dodge_chance: hurt_time = 1.0; return
+	health = maxf(0.0,health-amount*(1.0-progression.damage_reduction)*(1.0-0.01*progression.perk("trap_resist") if trap else 1.0))
+	if health<=0 and progression.ranks["second_chance"]>0 and not progression.revive_used:
+		progression.revive_used = true
+		health = progression.max_health()*0.25
+		grace_time = 1.5
+	progression.current_health = health
 	hurt_time = 1.0
 
 func _enemy_shoot(enemy: Dictionary,delta: float,player: Vector2) -> void:
@@ -191,7 +220,7 @@ func _tick_hostile(delta: float, player: Vector2) -> void:
 				break
 			bullet["pos"] = next
 			if next.distance_to(player) < 16:
-				hurt(1)
+				hurt(1,bullet.get("trap",false))
 				bullet["life"] = 0
 				break
 	hostile_bullets = hostile_bullets.filter(func(b): return b["life"] > 0)
@@ -205,14 +234,16 @@ func _tick_trap(delta: float, player: Vector2) -> void:
 	if trap == 0:
 		if player.distance_to(Vector2(240, 385)) < 100: progression.slow_time = 4
 	elif trap == 1:
-		if player.distance_to(Vector2(240, 385)) < 80: hurt(1)
+		if player.distance_to(Vector2(240, 385)) < 80: hurt(1,true)
 	else:
 		for x in [180, 240, 300]:
-			hostile_bullets.append({"pos": Vector2(x, 195), "velocity": Vector2(0, 140), "life": 3.0})
+			hostile_bullets.append({"pos": Vector2(x, 195), "velocity": Vector2(0, 140), "life": 3.0,"trap":true})
 
 func _damage_enemy(enemy: Dictionary, amount: float) -> void:
 	if enemy["hp"] <= 0 or enemy.get("dormant",false): return
-	enemy["hp"] -= amount * (1.0 + progression.boss_damage_bonus if enemy.get("kind", "") in ["boss","miniboss"] else 1.0)
+	var bonus: float = progression.boss_damage_bonus if enemy.get("kind","") in ["boss","miniboss"] else 0.0
+	if enemy.get("kind","") in ["brute","miniboss"]: bonus += 0.005*progression.perk("elite_hunter")
+	enemy["hp"] -= amount*(1.0+bonus)
 	enemy["flash"] = 0.13
 	if enemy["hp"] > 0: return
 	kills += 1
@@ -251,3 +282,13 @@ func _tick_hazards(delta: float,player: Vector2) -> void:
 			hazard["fired"] = true
 			if hazard["pos"].distance_to(player)<=hazard["radius"]: hurt(1)
 	hazards = hazards.filter(func(h): return h["life"]>0)
+
+func apply_upgrade_effect(id: String,previous_max: float) -> void:
+	if id=="vitality": health = minf(progression.max_health(),health+maxf(0,progression.max_health()-previous_max))
+	if id=="medicine": heal(progression.max_health()*0.15)
+	progression.current_health = health
+
+func give_upgrade(id: String) -> void:
+	var before := progression.max_health()
+	progression.grant_upgrade(id)
+	apply_upgrade_effect(id,before)

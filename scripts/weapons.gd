@@ -83,21 +83,21 @@ func _fire(player: Vector2, target: int, charged: bool, slash: int, attack_cycle
 			if next < 0: break
 			targets.append(next)
 			for extra in range(count):
-				meteors.append({"pos":c.enemies[next]["pos"]+direction.orthogonal()*(extra-(count-1)*0.5)*14,"delay":0.45,"radius":(27.0 if c.enemies[next].get("kind","")=="boss" else 17.0)*(1.0+p.ranks["piercing"]*0.2),"damage":p.roll_damage()*p.cycle_output(),"cycle":attack_cycle,"roll":p.ranks["follow"]>0})
+				meteors.append({"pos":c.enemies[next]["pos"]+direction.orthogonal()*(extra-(count-1)*0.5)*14,"delay":0.45/(1.0+0.1*p.ranks["reach"]),"radius":(27.0 if c.enemies[next].get("kind","")=="boss" else 17.0)*(1.0+p.ranks["piercing"]*0.2),"damage":p.roll_damage()*p.cycle_output(),"cycle":attack_cycle,"roll":p.ranks["follow"]>0})
 		return
 	for shot in range(count):
 		var origin: Vector2 = player+direction.orthogonal()*(shot-(count-1)*0.5)*12
 		if p.weapon == "wand" and p.ranks["perpetuum"] > 0:
 			_laser(origin,direction,target); continue
 		var critical: bool = p.rng.randf() < p.critical_chance()
-		var bullet := {"pos":origin,"velocity":direction*p.projectile_speed,"damage":float(p.damage()*p.delivery_factor()*(p.critical_multiplier() if critical else 1.0)*(2 if charged else 1)),"critical":critical,"life":2.0,"hits":[],"remaining":999 if charged else 1+p.base_pierce+p.ranks["piercing"],"bounces":0 if charged else p.ranks["ricochet"]+(3 if p.weapon=="chakram" else 0),"charged":charged,"follow":p.ranks["follow"]>0 and not charged,"through":p.through_obstacles(),"kind":p.weapon,"radius":8.0 if p.weapon=="crossbow" else 4.0,"split":p.ranks["arrow_split"]>0,"explosive":p.ranks["explosive"]>0,"cycle":attack_cycle,"splash_damage":p.damage()*(p.critical_multiplier() if critical else 1.0)*(2 if charged else 1)*Balance.SPLASH_RATIO,"splash":Balance.SPLASH_RADIUS*(2 if p.ranks["stop_aim"]>0 else 1)}
+		var bullet := {"pos":origin,"velocity":direction*p.shot_speed(),"damage":float(p.damage()*p.delivery_factor()*(p.critical_multiplier() if critical else 1.0)*(2 if charged else 1)),"critical":critical,"life":2.0,"hits":[],"remaining":999 if charged else 1+p.base_pierce+p.ranks["piercing"],"bounces":0 if charged else p.ranks["ricochet"]+(3 if p.weapon=="chakram" else 0),"charged":charged,"follow":p.ranks["follow"]>0 and not charged,"through":p.through_obstacles(),"kind":p.weapon,"radius":8.0 if p.weapon=="crossbow" else 4.0,"split":p.ranks["arrow_split"]>0,"explosive":p.ranks["explosive"]>0,"cycle":attack_cycle,"splash_damage":p.damage()*(p.critical_multiplier() if critical else 1.0)*(2 if charged else 1)*Balance.SPLASH_RATIO,"splash":Balance.SPLASH_RADIUS*(2 if p.ranks["stop_aim"]>0 else 1)}
 		if charged: bullet["radius"] *= 1.8
 		c.bullets.append(bullet)
 
 func _melee(origin: Vector2, direction: Vector2, slash: int) -> void:
 	var p = c.progression
 	var hammer: bool = p.weapon == "hammer"
-	var radius := 125.0 if hammer else 88.0
+	var radius: float = (125.0 if hammer else 88.0)*(1.0+p.ranks["reach"]*0.05)
 	var angle := minf(1.4,0.45+p.ranks["multishot"]*0.14) if hammer else 1.1
 	effects.append({"kind":"wave" if hammer else "slash","pos":origin,"direction":direction,"radius":radius,"angle":angle,"reverse":slash%2==1,"life":0.24,"duration":0.24})
 	for enemy in c.enemies:
@@ -121,7 +121,7 @@ func _laser(origin: Vector2, direction: Vector2, target: int) -> void:
 	for i in range(c.enemies.size()):
 		if c.enemies[i]["hp"] <= 0 or c.enemies[i].get("dormant",false): continue
 		var offset: Vector2 = c.enemies[i]["pos"]-origin
-		if offset.dot(direction) >= 0 and absf(offset.cross(direction)) < (27 if c.enemies[i].get("kind","")=="boss" else 17): line.append(i)
+		if offset.dot(direction) >= 0 and absf(offset.cross(direction)) < (27 if c.enemies[i].get("kind","")=="boss" else 17)*(1.0+0.05*p.ranks["reach"]): line.append(i)
 	line.sort_custom(func(a,b): return origin.distance_squared_to(c.enemies[a]["pos"]) < origin.distance_squared_to(c.enemies[b]["pos"]))
 	for i in line.slice(0,limit):
 		if not hits.is_empty() and (p.ranks["follow"]>0 or p.ranks["ricochet"]>0): amount *= 0.75
@@ -157,7 +157,7 @@ func _tick_meteors(delta: float) -> void:
 				if c.enemies[i]["pos"].distance_to(meteor["pos"]) < 1: excluded.append(i)
 			var next := nearest(meteor["pos"],excluded,false)
 			if next >= 0:
-				c.bullets.append({"pos":meteor["pos"],"velocity":meteor["pos"].direction_to(c.enemies[next]["pos"])*180,"damage":meteor["damage"]*0.25,"radius":meteor["radius"],"life":6.0,"remaining":999,"hits":[],"through":true,"kind":"rolling_meteor","cycle":meteor.get("cycle",-1)})
+				c.bullets.append({"pos":meteor["pos"],"velocity":meteor["pos"].direction_to(c.enemies[next]["pos"])*(180*(1.0+0.1*c.progression.ranks["reach"])),"damage":meteor["damage"]*0.25,"radius":meteor["radius"],"life":6.0,"remaining":999,"hits":[],"through":true,"kind":"rolling_meteor","cycle":meteor.get("cycle",-1)})
 	meteors = meteors.filter(func(m): return m["delay"]>0)
 
 func _explode(pos: Vector2,radius: float,damage: float, attack_cycle: int = -1) -> void:
@@ -178,7 +178,7 @@ func _finish(bullet: Dictionary) -> void:
 		var forward: Vector2 = bullet["velocity"].normalized()
 		for angle in [-PI/2,0.0,PI/2]:
 			var child: Dictionary = bullet.duplicate(true)
-			child["velocity"] = forward.rotated(angle)*c.progression.projectile_speed
+			child["velocity"] = forward.rotated(angle)*c.progression.shot_speed()
 			child["damage"] *= Balance.SPLIT_RATIO
 			child["life"] = 2.0; child["remaining"] = 999 if child.get("charged",false) else 1; child["bounces"] = 0
 			# Children retain exclusions so they do not re-hit their source enemy.

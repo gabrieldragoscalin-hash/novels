@@ -1,6 +1,6 @@
 # Game design — current working specification
 
-Status: playable five-floor action roguelite prototype. This is a living design.
+Status: playable ten-floor action roguelite prototype. This is a living design.
 [ECONOMY_SPEC.md](ECONOMY_SPEC.md) is the detailed economy/synthesis contract;
 [BALANCING.md](BALANCING.md) lists implementation defaults, controls and testing.
 
@@ -13,8 +13,8 @@ original placeholder visuals and mechanics. Automatic attacks continue while mov
 
 Prepare at the menu hub → start a fresh dungeon → explore/fight/build the character
 → defeat the exit boss → descend through a harder version of the same layout.
-Death or completion returns to the hub. The current expedition ends after floor 5;
-floor 6+ is not enabled. Saved inventory, coins, gems, keys, parts and perks survive
+Death or completion returns to the hub. The current expedition ends after floor 10;
+floor 11+ is not enabled. Saved inventory, coins, gems, keys, parts and perks survive
 runs. Run XP levels, card upgrades, health state and flares reset on a new run.
 
 ## Map and room identities
@@ -47,7 +47,7 @@ runs. Run XP levels, card upgrades, health state and flares reset on a new run.
 
 Combat rooms increase encounter strength. Loot rooms are free of defenders on
 floor 1, gain defenders and better rewards on floor 2, and grow harder on floor 3.
-Floor 5 loot rooms have a miniboss treasure guardian and improved chest rarity
+Floors 5 and 10 loot rooms have a miniboss treasure guardian and improved chest rarity
 odds. Later multiples of 5 will continue this milestone pattern.
 
 Initially empty rooms are empty on floors 1–2. On floor 3 they contain weaker,
@@ -107,7 +107,7 @@ Flares are temporary per-run currency, retained between floors.
 
 | Source | Flare reward |
 | --- | --- |
-| Bonus first entrance | 5 on floors 1–5, then +5 per five-floor band |
+| Bonus first entrance | 5 on floors 1–5, then +5 per ten-floor band |
 | Normal/shooter kill | 1 |
 | Brute kill | 2 |
 | Loot pickup | 10, or 20 on floors divisible by 5 |
@@ -141,7 +141,7 @@ and enhancement. Duplicate finds remain separate items, never scrap.
 
 Two extra squares below the character are reserved and locked. Pet's milestone is
 first reaching floor 10 (saved permanently); Spirit unlocks later with its threshold
-still undefined. The current floor-5 cap makes Pet inaccessible for now.
+still undefined. The Pet milestone is tracked, but pet gameplay remains reserved.
 Left-side events/battle pass and right-side daily/play-time rewards are deferred.
 Gems and tasks are also reserved until the user defines them.
 
@@ -182,14 +182,30 @@ protected from consumption. There is no automatic duplicate conversion.
 
 ## Permanent perks
 
-Twelve slots. Four defined perks: Starting upgrade (one level), Starting HP,
-Dodge chance and Boss damage (25 levels each). Eight slots remain reserved.
-First purchase always unlocks Starting upgrade at level 1. Other locked perks
-unlock randomly at level 1. Per the user clarification, leveling begins after
-ALL FOUR DEFINED perks unlock; reserved slots do not block it. Further purchases
-randomly level eligible non-maxed perks. Maxed perks cannot be drawn.
-Prices start at 250 coins and increase each purchase; the current +50 increment
-and per-level effects are prototype tuning values documented in BALANCING.md.
+All12 slots are defined. First purchase always unlocks Starting upgrade. Further
+purchases unlock the other11 randomly, then level eligible non-maxed perks only
+after every perk is unlocked. Existing levels are preserved when new slots arrive.
+Prices start250 coins, +50 per purchase. Effects are copied into the next run.
+
+| Perk | Effect per level | Cap |
+| --- | --- | ---: |
+| Starting upgrade | Start with one two-upgrade choice, no coin card |1|
+| Starting HP | +1 starting HP |25|
+| Dodge | +1 percentage point dodge |25|
+| Boss damage | +2% boss/guardian damage |25|
+| Recovery | +1% healing received |25|
+| Resourcefulness | -0.5% dungeon-shop prices, coins and flares |20|
+| Scavenger | +1% dungeon-earned coins, excluding cards/shop payouts |25|
+| Collector | +2% XP pickup radius |25|
+| Trap resistance | -1% trap damage |20|
+| Elite hunter | +0.5% damage to brutes/guardians |20|
+| Treasure sense | +0.2 percentage points loot-equipment chance |25|
+| Loot gold | +1% coins from loot rooms |25|
+
+Scavenger and Loot gold add together on loot coins. Fractional coin bonuses accrue
+within the run instead of rounding every small payout up. Dungeon discounts do
+not affect the hub shop, chests, perks or synthesis. Tap perk cards for effects.
+Second Chance is a rare run upgrade, never a permanent perk.
 
 ## Saves, migration and deferred work
 
@@ -199,7 +215,7 @@ loadout and highest floor. Old equipment levels/equipped identities are migrated
 Retired prototype scrap, generic keys, seals and training are archived without
 inventing an exchange rate. Current-run state is not saved.
 
-Future: defined gem tasks/earning, the remaining eight perk effects, higher floors,
+Future: defined gem tasks/earning, higher floors,
 melee-specific upgrades, further rarities, pets/spirit content, more item templates/affixes, adjacency
 constraints, final art/audio, richer combat and an authoritative account backend.
 
@@ -217,7 +233,7 @@ profile with its starter bow and no currencies, perks, counters or progress.
 Planned checkpoint starts: floors10,20,etc, once their milestone is unlocked.
 This will let stronger accounts begin deeper without inflating early-floor HP to
 match late-game damage. Unlock details/starting bonuses remain to define; the
-current five-floor cap means checkpoint selection is not implemented yet.
+checkpoint selection is not implemented yet.
 
 ## Shared power budget
 
@@ -228,3 +244,30 @@ and meteor impacts cannot multiply repeatedly against the same victim in one
 attack cycle. Floors1–2 stay forgiving, with a stronger health step from floor3.
 New weapons/upgrades/perks must be checked against the repeatable scenarios and
 live mobile testing before treating their tuning as balanced.
+
+## Utility cards and ten-floor expansion
+
+Vitality:+10% starting maxHP per rank (cap5), healing only the HP gained.
+Field medicine:restore15% maxHP immediately, repeatable, hidden at full HP.
+Gatherer:+25% pickup radius per rank (cap3). Long reach:+10% projectile speed or
++5% melee reach per rank (cap3); lasers gain beam width and meteors fall/roll faster.
+Last enemy:+15% damage per rank when one enemy remains (cap2).
+Momentum:clear combat for+10% movement in the next room (cap1).
+Emergency barrier:block one hit during the first4s of a hostile room (cap1).
+Salvage:+3 coins per combat clear per rank (cap3).
+Second Chance:rare, cap1, instantly revive at exactly25% maxHP once per run.
+It never reappears after selection/consumption and cannot be traded. A1.5s grace
+window prevents the same impact from immediately killing the revived player.
+
+Most choices pair offense with defense/utility, plus coins. Defining cards use
+relative weight0.35, ordinary cards1, Second Chance0.08. Declined form-switch
+cards have reduced repeat weight. These are relative weights, not fixed odds.
+Barriers never refresh on revisits; Salvage/Momentum require a first combat clear.
+Instant Field medicine cannot be traded after its healing is consumed.
+
+Progression now ends after floor10. Floors6–10 have stronger tiered encounters;
+combat counts cap8, loot defenders cap4 except guardians on5/10, empty enemies
+stay lower-tier. Brute HP is reduced15% and boss/guardian HP20%; later-floor
+values are tuning defaults documented in BALANCING.md. Floor10 pays2 gold keys
+per eligible clear (first3 clears/day), and records the pet milestone without
+implementing pet gameplay. Checkpoint selection remains a separate planned feature.

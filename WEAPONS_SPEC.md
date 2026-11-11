@@ -127,7 +127,7 @@ These values are implementation choices for balance testing, not fixed design:
   is added. Each projectile tracks its own prior hits to prevent repeated rewards.
 
 The cheat menu now allows selecting a specific eligible run upgrade, so combinations
-can be tested without repeatedly rolling level-up cards. Progression currently ends after floor 5.
+can be tested without repeatedly rolling level-up cards. Progression currently ends after floor 10.
 
 ## Superseding balance revision
 
@@ -138,3 +138,6 @@ victim/cycle,52-unit splash radius,45% split children and85% ordinary ricochet
 retention. Meteor overlaps share damage budgets; sword/laser delivery is normalized
 too. Damage is capped12 ranks. A charged release needs0.35s and respects cooldown.
 These replace the earlier70% splash/64 radius/uncapped damage tuning in this file.
+
+Utility cards additionally support melee reach, projectile speed, laser width and
+meteor fall/roll speed. See GAME_DESIGN.md for these cards and Second Chance.

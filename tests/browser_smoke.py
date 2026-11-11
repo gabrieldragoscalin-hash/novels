@@ -129,7 +129,7 @@ with sync_playwright() as p:
     saved_when(lambda d:d['perks']['starting_upgrade']==1 and d['perk_purchases']==1)
     for i in range(4):tap(240,587)
     perks=saved_when(lambda d:d['perk_purchases']==5)
-    assert all(v>=1 for v in perks['perks'].values()) and sum(perks['perks'].values())==5
+    assert sum(v>0 for v in perks['perks'].values())==5 and sum(perks['perks'].values())==5
     capture('economy-perks.png')
     tab(4);capture('economy-reserved-tasks.png')
     assert perks['gems']==1000,'Reserved tasks cannot grant gems'

@@ -22,7 +22,7 @@ func _walk(enemy: Dictionary,delta: float,player: Vector2) -> void:
 		if enemy["path"].size()>1: enemy["path"].remove_at(0)
 	var destination := player
 	if not enemy["path"].is_empty(): destination = enemy["path"][0]
-	var index := clampi(int(enemy.get("tier",1))-1,0,4)
+	var index := clampi(int(enemy.get("tier",1))-1,0,Dungeon.MAX_FLOOR-1)
 	var speed: float = Dungeon.ENEMY_SPEEDS[index]*enemy.get("speed_multiplier",1.0)
 	if enemy.get("kind","") in ["brute","boss","miniboss"]: speed *= 0.65
 	_move(enemy,enemy["pos"].direction_to(destination)*speed*delta)
@@ -39,12 +39,12 @@ func _move(enemy: Dictionary,motion: Vector2) -> bool:
 func shoot(enemy: Dictionary,delta: float,player: Vector2) -> void:
 	# Retained entry point for encounter tests and the controller.
 	if enemy.get("kind","") in ["boss","miniboss"]: _heavy(enemy,delta,player); return
-	var index := clampi(int(enemy.get("tier",c.floor_number))-1,0,4)
+	var index := clampi(int(enemy.get("tier",c.floor_number))-1,0,Dungeon.MAX_FLOOR-1)
 	enemy["attack"] -= delta
 	if enemy.get("telegraph",0.0)>0:
 		enemy["telegraph"] -= delta
 		if enemy["telegraph"]<=0:
-			enemy["burst_left"] = [1,2,3,3,4][index]
+			enemy["burst_left"] = [1,2,3,3,4,4,4,4,4,4][index]
 			enemy["burst_time"] = 0.0
 	if enemy.get("burst_left",0)>0:
 		enemy["burst_time"] -= delta
@@ -61,7 +61,7 @@ func shoot(enemy: Dictionary,delta: float,player: Vector2) -> void:
 		enemy["attack"] = Dungeon.SHOT_INTERVALS[index]
 
 func _heavy(enemy: Dictionary,delta: float,player: Vector2) -> void:
-	var index := clampi(int(enemy.get("tier",1))-1,0,4)
+	var index := clampi(int(enemy.get("tier",1))-1,0,Dungeon.MAX_FLOOR-1)
 	var phase: String = enemy.get("phase","idle")
 	var boss: bool = enemy.get("kind","") in ["boss","miniboss"]
 	if phase == "recover":
@@ -91,7 +91,7 @@ func _heavy(enemy: Dictionary,delta: float,player: Vector2) -> void:
 	enemy["action"] = action
 	enemy["aim"] = enemy["pos"].direction_to(player)
 	enemy["telegraph"] = Dungeon.CHARGE_WARNINGS[index] if action=="charge" else 0.65
-	enemy["attack"] = [2.4,2.2,2.0,1.9,1.8][index] if boss else 2.3
+	enemy["attack"] = [2.4,2.2,2.0,1.9,1.8,1.75,1.7,1.65,1.6,1.55][index] if boss else 2.3
 	if boss and index>=2 and enemy["hp"]<enemy["max_hp"]*0.5: enemy["attack"] *= 0.75
 	# Ground locations lock at warning start, giving a real window to dodge.
 	if action in ["ground","combo"]: _ground(player,index)
@@ -100,7 +100,7 @@ func _release(enemy: Dictionary,index: int,_player: Vector2) -> void:
 	match enemy["action"]:
 		"charge": enemy["phase"] = "charge"; enemy["phase_time"] = 0.45
 		"spread", "combo":
-			var count: int = [3,5,7,7,9][index]
+			var count: int = [3,5,7,7,9,9,9,9,9,9][index]
 			if enemy.get("kind","")=="miniboss": count = 3
 			var angles: Array = []
 			for i in range(count): angles.append((i-(count-1)*0.5)*0.18)

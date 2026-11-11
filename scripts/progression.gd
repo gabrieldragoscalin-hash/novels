@@ -17,10 +17,26 @@ const UPGRADES := {
 	"explosive":["Explosive arrows","Impact +45% splash, once per cycle.\nReplaces Arrow split."],
 	"perpetuum":["Perpetuum","Continuous laser.\nReplaces Magic Meteor."],
 	"meteor":["Magic Meteor","Falling area damage.\nReplaces Perpetuum."],
-
+	"vitality":["Vitality","+10% starting max HP; heal HP gained"],
+	"medicine":["Field medicine","Restore 15% max HP now"],
+	"gatherer":["Gatherer","+25% XP pickup radius"],
+	"reach":["Long reach","+10% shot speed / +5% melee reach"],
+	"last_enemy":["Last enemy","+15% damage against the final enemy"],
+	"momentum":["Momentum","Clear combat: +10% speed next room"],
+	"barrier":["Emergency barrier","Block one hit for 4s on room entry"],
+	"salvage":["Salvage","+3 coins per combat room cleared"],
+	"second_chance":["Second Chance • RARE","Revive once at 25% HP this run"]
 }
-const ACTIVE := ["damage","attack_speed","movement","experience","piercing","multishot","multiple_shots","ricochet","follow","see_all","arrow_split","stop_aim","explosive","perpetuum","meteor"]
-const CAPS := {"damage":12,"attack_speed":8,"movement":5,"experience":3,"piercing":5,"multishot":5,"multiple_shots":5,"ricochet":5,"follow":1,"see_all":1,"arrow_split":1,"stop_aim":1,"explosive":1,"perpetuum":1,"meteor":1}
+const ACTIVE := ["damage","attack_speed","movement","experience","piercing","multishot","multiple_shots","ricochet","follow","see_all","arrow_split","stop_aim","explosive","perpetuum","meteor","vitality","medicine","gatherer","reach","last_enemy","momentum","barrier","salvage","second_chance"]
+const CAPS := {"vitality":5,"gatherer":3,"reach":3,"last_enemy":2,"momentum":1,"barrier":1,"salvage":3,"second_chance":1,"damage":12,"attack_speed":8,"movement":5,"experience":3,"piercing":5,"multishot":5,"multiple_shots":5,"ricochet":5,"follow":1,"see_all":1,"arrow_split":1,"stop_aim":1,"explosive":1,"perpetuum":1,"meteor":1}
+var perk_ranks: Dictionary = {}
+var current_health := 6.0
+var last_enemy_active := false
+var momentum_pending := false
+var momentum_active := false
+var revive_used := false
+var coin_fraction := 0.0
+var declined: Dictionary = {}
 var weapon := "bow"
 var weapon_level := 1
 var base_damage := 1.0
@@ -71,13 +87,7 @@ func add_xp(amount: int) -> void:
 	if pending > 0 and offers.is_empty(): _roll_offers()
 
 func _roll_offers() -> void:
-	var pool := available_upgrades()
-	offers.clear()
-	for i in range(mini(2,pool.size())):
-		var index := rng.randi_range(0, pool.size() - 1)
-		offers.append(pool[index])
-		pool.remove_at(index)
-	offers.append("coins")
+	_make_choices(2,true)
 
 func coin_reward() -> int:
 	return 20
@@ -85,6 +95,8 @@ func coin_reward() -> int:
 func choose(index: int) -> String:
 	if pending <= 0 or index < 0 or index >= offers.size(): return ""
 	var id := offers[index]
+	for other in offers:
+		if other!=id and other in ["explosive","arrow_split","perpetuum","meteor"]: declined[other] = true
 	if id == "coins": coins += coin_reward()
 	else: grant_upgrade(id)
 	pending -= 1
@@ -93,22 +105,24 @@ func choose(index: int) -> String:
 	return id
 
 func damage() -> float:
-	return base_damage*(1.0+Balance.DAMAGE_PER_RANK*ranks["damage"])
+	return base_damage*(1.0+Balance.DAMAGE_PER_RANK*ranks["damage"])*(1.0+0.15*ranks["last_enemy"] if last_enemy_active else 1.0)
 
 func fire_interval() -> float:
 	return maxf(Balance.MIN_INTERVAL,base_interval/(1.0+Balance.HASTE_PER_RANK*ranks["attack_speed"]))
 
 func movement_multiplier() -> float:
-	return (1.0 + gear_movement + ranks["movement"] * 0.1) * (0.65 if slow_time > 0 else 1.0)
+	return (1.0 + gear_movement + ranks["movement"] * 0.1+(0.1 if momentum_active and ranks["momentum"]>0 else 0.0)) * (0.65 if slow_time > 0 else 1.0)
 
-func max_health() -> int:
-	return base_health
+func max_health() -> float:
+	return base_health*(1.0+0.1*ranks["vitality"])
 
 func available_upgrades() -> Array[String]:
 	var pool: Array[String] = []
 	for id in ACTIVE:
 		if id in ["arrow_split","stop_aim","explosive"] and weapon not in ["bow","crossbow"]: continue
 		if id in ["perpetuum","meteor"] and weapon != "wand": continue
+		if id=="medicine" and current_health>=max_health(): continue
+		if id=="second_chance" and seen_once.has(id): continue
 		if id == "see_all" and (weapon == "wand" or seen_once.has(id)): continue
 		if id in ["piercing","ricochet","follow"] and weapon in ["sword","hammer"]: continue
 		if CAPS.has(id) and ranks[id] >= CAPS[id]: continue
@@ -117,13 +131,44 @@ func available_upgrades() -> Array[String]:
 
 func reward_choices(count: int = 2, with_coins: bool = true) -> void:
 	pending += 1
+	_make_choices(count,with_coins)
+
+func _make_choices(count: int,with_coins: bool) -> void:
 	offers.clear()
 	var pool := available_upgrades()
-	for i in range(mini(count, pool.size())):
-		var index := rng.randi_range(0, pool.size() - 1)
-		offers.append(pool[index])
-		pool.remove_at(index)
+	if count>=2:
+		var offense: Array[String] = []; var utility: Array[String] = []
+		for id in pool:
+			if id in ["movement","experience","vitality","medicine","gatherer","momentum","barrier","salvage","second_chance"]: utility.append(id)
+			else: offense.append(id)
+		for group in [offense,utility]:
+			if not group.is_empty():
+				var id := weighted_pick(group); offers.append(id); pool.erase(id)
+	while offers.size()<count and not pool.is_empty():
+		var id := weighted_pick(pool); offers.append(id); pool.erase(id)
 	if with_coins: offers.append("coins")
+
+func weight(id: String) -> float:
+	var value := 0.08 if id=="second_chance" else (0.35 if id in ["explosive","arrow_split","perpetuum","meteor","stop_aim"] else 1.0)
+	if declined.has(id): value *= 0.35
+	return value
+
+func weighted_pick(pool: Array[String]) -> String:
+	var total := 0.0
+	for id in pool: total += weight(id)
+	var roll := rng.randf()*total
+	for id in pool:
+		roll -= weight(id)
+		if roll<=0: return id
+	return pool.back()
+
+func perk(id: String) -> int: return int(perk_ranks.get(id,0))
+func award_coins(amount: float,loot: bool = false) -> void:
+	var value := amount*(1.0+0.01*perk("scavenger")+(0.01*perk("loot_gold") if loot else 0.0))+coin_fraction
+	var whole := int(floor(value+0.000001)); coin_fraction = value-whole; coins += whole
+func healing_multiplier() -> float: return 1.0+perk("recovery")*0.01
+func shot_speed() -> float: return projectile_speed*(1.0+0.1*ranks["reach"])
+func pickup_radius() -> float: return 110*(1.0+0.02*perk("collector")+0.25*ranks["gatherer"])
 
 func xp_multiplier() -> float:
 	return 1.0 + gear_xp + ranks["experience"] * 0.2
@@ -150,9 +195,11 @@ func grant_upgrade(id: String) -> void:
 	var opposite: String = {"arrow_split":"explosive","explosive":"arrow_split","perpetuum":"meteor","meteor":"perpetuum"}.get(id,"")
 	if not opposite.is_empty(): ranks[opposite] = 0
 	ranks[id] += 1
-	if id == "see_all" and not seen_once.has(id): seen_once.append(id)
+	if id in ["see_all","second_chance"] and not seen_once.has(id): seen_once.append(id)
 
 func upgrade_info(id: String) -> Array:
+	if id=="reach" and weapon=="wand" and ranks["perpetuum"]>0: return ["Long reach","+5% beam width per rank"]
+	if id=="reach" and weapon=="wand" and ranks["meteor"]>0: return ["Long reach","Faster falling and rolling meteors"]
 	if id == "multishot" and weapon == "sword": return ["Extra projectile","+1 slash; +35% total output"]
 	if id == "multishot" and weapon == "hammer": return ["Extra projectile","Wider cone; unchanged reach"]
 	if weapon == "wand" and ranks["meteor"] > 0:

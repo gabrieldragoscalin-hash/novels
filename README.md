@@ -1,11 +1,11 @@
-# Dungeon — five-floor prototype
+# Dungeon — ten-floor prototype
 
 A Godot **4.6.3 / GDScript** roguelite prototype for browser, desktop development,
 and mobile browser testing. [Play on GitHub Pages](https://gabrieldragoscalin-hash.github.io/novels/).
 
 [GAME_DESIGN.md](GAME_DESIGN.md) records the intended design.
 [BALANCING.md](BALANCING.md) describes the implemented rules, defaults, controls,
-seed reproduction, and what remains outside this five-floor build.
+seed reproduction, and what remains outside this ten-floor build.
 
 ## Play
 
@@ -13,10 +13,10 @@ Use the hub's **Play** tab and tap the central dungeon icon to enter. On iPhone,
 under your finger. On desktop use WASD/arrows. Attacks aim and fire while moving.
 Walk through doors; tap the action button or press **E** for services/chests/exits.
 
-A fresh 5×5 map is generated per expedition. Its identities persist through five
+A fresh 5×5 map is generated per expedition. Its identities persist through ten
 floors, with moving starts/bosses, tougher encounters, and rotating services.
 Loot is unguarded on floor 1; defenders arrive on floor 2. Initially empty rooms
-awaken with weaker enemies on floor 3. Floor 5 loot rooms have miniboss guardians. Defeating the fifth boss ends the expedition.
+awaken with weaker enemies on floor 3. Floor 5 loot rooms have miniboss guardians. Defeating the tenth boss ends the expedition.
 
 Core features: three enemy archetypes and a telegraphed boss; XP pickups and upgrade
 choices; coins/flares; loot, three trap effects, shop, trader, free upgrade, wheel,
@@ -33,11 +33,11 @@ state cannot be farmed by revisiting.
 Use [`?seed=9`](https://gabrieldragoscalin-hash.github.io/novels/?seed=9) to repeat a
 layout for balance testing. These numbers are defaults, not a claim of fair balance.
 Art is original procedural placeholder graphics. Advanced room adjacency
-constraints, floors 6+, final art/audio, and cloud accounts are not implemented.
+constraints, floors 11+, final art/audio, and cloud accounts are not implemented.
 
 The shop has six daily coin offers and copper/silver/gold item chests with saved
 35-open guarantees. Each floor pays typed keys for its first three daily clears.
-Four perks are active; eight remain reserved. Gems and tasks are reserved until
+All twelve permanent perks are active. Gems and tasks are reserved until
 defined. [ECONOMY_SPEC.md](ECONOMY_SPEC.md) records recipes, rewards, odds and
 prototype prices. Progress is saved locally; old equipment levels are preserved.
 
@@ -61,7 +61,7 @@ godot --headless --path . --script tests/cheats_smoke.gd
 godot --headless --path . --script tests/balance_smoke.gd
 ```
 
-Floor tests cover 80 seeds through all five floors and actual projectile boss
+Floor tests cover 80 seeds through all ten floors and actual projectile boss
 kills. Service tests cover wheel outcomes, traps, finite rewards, and local saves. Equipment tests check legacy saves, loadouts and parts upgrade
 costs; economy tests cover daily rewards, chest pity, migration, and perk unlocks;
 synthesis tests cover all eight recipes and ingredient protection. Upgrade tests exercise combat effects.
@@ -97,7 +97,7 @@ hub/equipment persistence, and the room/interface controller under `scripts/`.
 Open **Miscellaneous → Cheat menu** in the hub, or **Cheats** during a run.
 Combat pauses while the menu is open. Grant coins/gems/typed keys/parts, set chest
 pity, reset daily allowances, create 1–20 copies of a selected item/rarity/stage,
-unlock or max the four perks, or start a fresh test expedition on floor 1–3.
+unlock or max the four perks, or start a fresh test expedition on floor 1–10.
 During runs: toggle god mode, heal, add flares/level choices, defeat the current
 room with normal rewards, or teleport to any room/boss. Skipping floors grants
 no clear rewards. God mode resets on a new run; equipment/perks apply on the next
@@ -110,7 +110,7 @@ Common requires identical copies too. **Quick synthesis** combines matching copi
 through Rare bases (Rare→Epic), protecting equipped ingredients. In Cheats, use
 **Add selected run upgrade** to test specific weapon combinations.
 
-Combat balance now scales across five floors. Rooms use mixed, swarm, crossfire,
+Combat balance now scales across ten floors. Rooms use mixed, swarm, crossfire,
 heavy and two-wave ambush encounters. Shooters burst/fire fans, brutes charge and
 recover, and bosses add ground attacks and a half-health phase from floor 3.
 Boss access stays open. The run HUD shows active play time for balance testing;
@@ -124,3 +124,9 @@ recorded in BALANCING.md. Floor10/20 checkpoint starts are planned for later.
 The latest combat stacking rules and repeatable weapon damage scenarios are in
 [POWER_BALANCE.md](POWER_BALANCE.md). Run `tests/power_budget_smoke.gd` to check
 weapon output, explosive/meteor overlap and charge-cooldown regressions.
+
+New run cards: Vitality, Field medicine, Gatherer, Long reach, Last enemy, Momentum,
+Emergency barrier, Salvage and rare Second Chance. Second Chance instantly revives
+once at25% maxHP and never appears again in that run. Offers generally pair offense
+with utility/defense. Brute HP is15% lower, boss/guardian HP20% lower, and play now
+continues through floor10. Permanent perk cards can be tapped for their effects.

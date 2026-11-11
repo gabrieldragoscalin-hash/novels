@@ -12,7 +12,7 @@ func arena(kind: String,tier: int,pillars: Array[Rect2] = []):
 	c.floor_number = tier; c.fire_time = 999
 	return c
 func run() -> void:
-	assert(Dungeon.MAX_FLOOR==5)
+	assert(Dungeon.MAX_FLOOR==10)
 	for floor_number in range(1,6):
 		var c = arena("shooter",floor_number)
 		var enemy: Dictionary = c.enemies[0]; enemy["attack"] = 0.0
@@ -74,7 +74,7 @@ func run() -> void:
 	for f in range(1,6):
 		for room in d.rooms.values():
 			if room["role"]=="combat":
-				styles[room["encounter"]] = true; assert(room["enemies"].size()==f+3)
+				styles[room["encounter"]] = true; assert(room["enemies"].size()==mini(8,f+3))
 		if f<5: d.advance()
 	assert(styles.size()==5)
 	# Floor-5 treasure guardians gate chest access and pay bigger-enemy rewards.
@@ -86,6 +86,6 @@ func run() -> void:
 	c._damage_enemy(c.enemies[0],1000); assert(c.progression.flares==2 and not d.rooms[d.current]["boss_paid"])
 	assert(services.loot() and c.progression.flares==22 and not services.loot())
 	assert(h.claim_floor(5,"floor-five")["kind"]=="gold" and h.keys["gold"]==1)
-	assert(not d.advance() and d.floor_number==5 and d.completed)
+	assert(d.advance() and d.floor_number==6 and not d.completed)
 	print("PASS: five floors, encounter variants/waves, dormant protection/revisit, shooter bursts/warnings, brute charge/recovery/collision, boss patterns/enrage/ground damage, treasure guardian and gold key")
 	quit(0)

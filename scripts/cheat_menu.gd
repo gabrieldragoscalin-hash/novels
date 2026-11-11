@@ -58,8 +58,8 @@ func setup(controller) -> void:
 	copies = SpinBox.new(); copies.min_value = 1; copies.max_value = 20; copies.value = 4; body.add_child(copies)
 	_action("Give selected item copies",give_items)
 	_note("PERKS • apply to the NEXT run")
-	_action("Unlock all four perks at level 1",grant.bind("unlock_perks"))
-	_action("Max all four perks",grant.bind("max_perks"))
+	_action("Unlock all twelve perks at level 1",grant.bind("unlock_perks"))
+	_action("Max all twelve perks",grant.bind("max_perks"))
 	_note("NEW TEST EXPEDITION • replaces current run")
 	floor_picker = OptionButton.new()
 	for floor_number in range(1,game.DungeonState.MAX_FLOOR+1): floor_picker.add_item("Start on floor %d" % floor_number)
@@ -208,6 +208,6 @@ func _refresh_upgrades() -> void:
 func give_upgrade() -> void:
 	if game.in_hub or not game.active or upgrade_picker.selected < 0: return
 	var id: String = upgrade_ids[upgrade_picker.selected]
-	game.combat.progression.grant_upgrade(id)
+	game.combat.give_upgrade(id)
 	status.text = "Added: " + game.combat.progression.upgrade_info(id)[0]
 	_refresh_upgrades()

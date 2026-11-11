@@ -35,8 +35,11 @@ func run() -> void:
 	menu.queue_free()
 	var room = load("res://scenes/room.tscn").instantiate(); root.add_child(room)
 	room.hub = Hub.new(false)
-	room.hub.perks = {"starting_upgrade":1,"starting_hp":3,"dodge":4,"boss_damage":5}
-	room._refresh_hub(); room.start_game()
+	room.hub.perks.merge({"starting_upgrade":1,"starting_hp":3,"dodge":4,"boss_damage":5},true)
+	room._refresh_hub()
+	room.hub_menu.perk_info_requested.emit("resourceful")
+	assert(room.service_panel.visible and room.service_title.text=="Resourcefulness")
+	room._close_service(); room.start_game()
 	assert(room.combat.progression.base_health == 9)
 	assert(is_equal_approx(room.combat.progression.dodge_chance,0.04))
 	assert(is_equal_approx(room.combat.progression.boss_damage_bonus,0.1))

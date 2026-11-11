@@ -3,6 +3,7 @@ extends Control
 signal tab_changed(index: int)
 signal dungeon_requested
 signal item_requested(id: String)
+signal perk_info_requested(id: String)
 signal perk_requested
 signal cheat_requested
 signal synthesis_requested
@@ -214,7 +215,7 @@ func _build_shop() -> void:
 func _build_perks() -> void:
 	var page := pages[3]
 	_label(page,"PERKS",Vector2(24,108),22)
-	_label(page,"Unlock all four available perks before leveling",Vector2(24,143),12,Color("8cb6ba"))
+	_label(page,"Unlock all twelve perks before leveling",Vector2(24,143),12,Color("8cb6ba"))
 	perk_grid = GridContainer.new()
 	perk_grid.position = Vector2(24,184)
 	perk_grid.columns = 4
@@ -270,7 +271,9 @@ func refresh() -> void:
 		button.add_theme_stylebox_override("normal",_style(Color("203741") if not uid.is_empty() else Color("152734"),color))
 		button.tooltip_text = slot.capitalize()+": "+hub.item_name(uid)
 	for button in future_buttons.values(): button.visible = not synthesis_mode
-	future_buttons["pet"].tooltip_text = "First reach floor 10."
+	future_buttons["pet"].tooltip_text = "Milestone reached; pet content is coming later." if hub.pet_slot_unlocked() else "First reach floor 10."
+	for child in future_buttons["pet"].get_children():
+		if child is Label: child.text = "Pet\nComing soon" if hub.pet_slot_unlocked() else "Pet\nFloor 10"
 	future_buttons["spirit"].tooltip_text = "Unlocks later."
 	synthesis_top.visible = synthesis_mode
 	synthesis_toggle.text = "Equipment" if synthesis_mode else "Synthesis"
@@ -291,15 +294,18 @@ func refresh() -> void:
 		var caption := "Reserved\nLocked"
 		if index < ids.size():
 			var id: String = ids[index]
-			caption = "%s\n%s" % [hub.PERK_NAMES[id],"Locked" if hub.perks[id] == 0 else "Lv.%d/%d" % [hub.perks[id],hub.PERK_CAPS[id]]]
+			caption = "%s\n%s" % [hub.PERK_NAMES[id].replace(" ","\n"),"Locked" if hub.perks[id] == 0 else "Lv.%d/%d" % [hub.perks[id],hub.PERK_CAPS[id]]]
 		var card := _button(perk_grid,caption,Vector2.ZERO,Vector2.ZERO,func(): pass)
 		card.custom_minimum_size = Vector2(100,88)
 		card.add_theme_font_size_override("font_size",11)
-		card.disabled = true
-	perk_label.text = "%s\nArmor %d • Accessory %d • Weapon %d parts\n%s" % [perk_message,hub.parts["armor"],hub.parts["accessory"],hub.parts["weapon"],"Eight perk effects are reserved; leveling remains locked." if hub.Economy.REQUIRE_RESERVED_PERKS else "Leveling begins after the four defined perks unlock."]
+		card.disabled = index>=ids.size()
+		if index<ids.size():
+			card.tooltip_text = hub.PERK_EFFECTS[ids[index]]
+			card.pressed.connect(func(): perk_info_requested.emit(ids[index]))
+	perk_label.text = "%s\nArmor %d • Accessory %d • Weapon %d parts\n%s" % [perk_message,hub.parts["armor"],hub.parts["accessory"],hub.parts["weapon"],"Unlock all twelve perks before leveling." if hub.Economy.REQUIRE_RESERVED_PERKS else "Leveling begins after all twelve perks unlock."]
 	train_button.text = "Buy random perk • %d coins" % hub.perk_price()
 	train_button.disabled = not hub.can_buy_perk()
-	misc_label.text = "Best floor %d • local-device save\nEach floor pays keys for its first 3 daily clears.\nPet: first reach floor 10. Spirit: later.\nCurrent expedition cap: floor 5." % hub.highest_floor
+	misc_label.text = "Best floor %d • local-device save\nEach floor pays keys for its first 3 daily clears.\nPet: first reach floor 10. Spirit: later.\nCurrent expedition cap: floor 10." % hub.highest_floor
 	queue_redraw()
 
 func _add_item(grid: GridContainer, uid: String) -> void:

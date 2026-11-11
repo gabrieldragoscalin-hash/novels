@@ -49,10 +49,10 @@ Later milestone starting floors remain the plan for strong accounts.
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Normal |5|9|28|46|72|
 | Shooter |4|7|21|34|52|
-| Brute |12|23|62|102|156|
-| Boss |66|121|330|560|900|
+| Brute |10.2|19.55|52.7|86.7|132.6|
+| Boss |52.8|96.8|264|448|720|
 
-Floor5 loot guardian:230HP. Patterns, warnings, one-damage enemy hits and open
+Floor5 loot guardian:184HP. Patterns, warnings, one-damage enemy hits and open
 boss access remain. We avoid hiding extra difficulty in unavoidable damage or
 scaling every early floor upward to counter permanent progression.
 
@@ -74,20 +74,20 @@ or card counts on any floor.
 
 | Weapon/form | Profile | DPS | Floor5 boss HP/DPS estimate |
 | --- | --- | ---: | ---: |
-| bow | mid | 8.42 | 106.9s |
-| bow | late | 25.59 | 35.2s |
-| crossbow | mid | 10.60 | 84.9s |
-| crossbow | late | 32.65 | 27.6s |
-| wand | mid | 8.50 | 105.8s |
-| wand | late | 30.39 | 29.6s |
-| sword | mid | 13.93 | 64.6s |
-| sword | late | 49.40 | 18.2s |
-| hammer | mid | 7.25 | 124.1s |
-| hammer | late | 21.30 | 42.3s |
-| chakram | mid | 8.63 | 104.3s |
-| chakram | late | 29.97 | 30.0s |
-| wand_beam | late | 30.90 | 29.1s |
-| wand_meteor | late | 31.08 | 29.0s |
+| bow | mid | 8.42 | 85.5s |
+| bow | late | 25.59 | 28.2s |
+| crossbow | mid | 10.60 | 67.9s |
+| crossbow | late | 32.65 | 22.1s |
+| wand | mid | 8.50 | 84.6s |
+| wand | late | 30.39 | 23.7s |
+| sword | mid | 13.93 | 51.7s |
+| sword | late | 49.40 | 14.6s |
+| hammer | mid | 7.25 | 99.3s |
+| hammer | late | 21.30 | 33.8s |
+| chakram | mid | 8.63 | 83.4s |
+| chakram | late | 29.97 | 24.0s |
+| wand_beam | late | 30.90 | 23.3s |
+| wand_meteor | late | 31.08 | 23.2s |
 
 The reported middle bow setup deals about3.12 direct+splash damage in one complete
 three-arrow volley (no crits), versus20.4 under the old flat damage/full-shot/
@@ -107,3 +107,12 @@ three-arrow volley (no crits), versus20.4 under the old flat damage/full-shot/
   six-weapon profiles must improve on baseline while staying under15× baseline.
 - Measure live room/boss times on mobile too. A test passing does not establish
   whether movement, enemy pressure, rewards or a new perk feels fair.
+
+## Ten-floor/perk expansion
+
+The shared output-budget formulas remain. Brute HP is reduced15% and boss/guardian
+HP20%; floor5 boss is now720. The table above reflects that reduction and the test
+reads current HP dynamically. Last enemy adds up to30% damage only
+when one enemy remains; its ranks are not included in the existing benchmark
+profiles. New survival/utility cards and all12 perks are in GAME_DESIGN.md.
+Floors6–10 and their tuning are documented in BALANCING.md.

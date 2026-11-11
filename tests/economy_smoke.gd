@@ -60,12 +60,12 @@ func run() -> void:
 	h = Hub.new(false); h.coins = 100000
 	assert(h.perk_price() == 250 and h.buy_perk() == "starting_upgrade")
 	assert(h.perks["starting_upgrade"] == 1 and h.perk_price() == 300)
-	for i in range(3): assert(not h.buy_perk().is_empty())
+	for i in range(11): assert(not h.buy_perk().is_empty())
 	for value in h.perks.values(): assert(value == 1)
 	if Rules.REQUIRE_RESERVED_PERKS: assert(not h.can_buy_perk())
 	else:
 		h.coins = 10000000
-		for i in range(72): assert(not h.buy_perk().is_empty())
+		for i in range(249): assert(not h.buy_perk().is_empty())
 		assert(not h.can_buy_perk())
 		assert(h.perks["starting_upgrade"] == 1 and h.perks["starting_hp"] == 25)
 	# Undefined tasks cannot grant gems.

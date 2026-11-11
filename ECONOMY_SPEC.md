@@ -61,16 +61,11 @@ additional ingredients. Preview the result and consumed copies before committing
 
 ## Perks
 
-Twelve slots, initially locked. First purchase ALWAYS unlocks Starting upgrade at
-level 1 (its only level). Other unlocks are random and arrive at level 1. No perk can level until all four defined perks are unlocked. The other eight slots
-remain reserved and do not block leveling (confirmed user clarification).
-
-Defined: Starting upgrade (1 level), Starting HP (25), Dodge chance (25), Boss
-damage (25). Eight slots are undecided and remain reserved; they neither grant invented effects
-nor block leveling of the four defined perks.
-
-Purchases start at 250 coins and increase each purchase. Exact increment and
-per-level effects were not specified. No undefined perk effects should be invented.
+All twelve slots are active; exact effects/caps are listed in GAME_DESIGN.md.
+First purchase always unlocks Starting upgrade at level1. Other locked perks
+unlock randomly at level1; no further levels are bought until all12 are unlocked.
+Existing saved levels are retained when the eight new perks arrive. Prices start
+250 coins, +50 per purchase. Second Chance is a rare run card, not a permanent perk.
 
 ## Migration
 
@@ -80,7 +75,7 @@ seals and key-training data should be archived in the save, not silently exchang
 for arbitrary new currencies. Save the new wallet, daily counters, pity counters,
 individual copies, parts, perk purchases and progress together atomically.
 
-The dungeon is now playable through floor 5; floor 6+ remains disabled.
+The dungeon is now playable through floor 10; floor 11+ remains disabled.
 Daily floor rewards include floor 4: two silver keys, floor 5: one gold key.
 
 ## Current tuning defaults (not specified by the user)
@@ -123,3 +118,13 @@ Loot-room equipment is now conditional:35/40/45/50/65% on floors1–5. Chest rar
 weights apply only after that item roll succeeds. Existing non-equipment rewards
 remain. Full account reset is available in Cheats with a confirmation; it clears
 all currencies, copies, levels, perks, counters and progress on this device.
+
+## Active twelve-perk expansion
+
+All12 slots are now active as specified in GAME_DESIGN.md, superseding the earlier
+four-defined/eight-reserved rule. Existing levels are retained; the missing perks
+unlock before further leveling. Loot gold replaces the proposed permanent Second
+chance perk. Second Chance exists only as a rare once-per-run upgrade.
+Dungeon shop prices can receive Resourcefulness; hub prices remain unchanged.
+Scavenger and Loot gold add coin bonuses on eligible dungeon rewards, excluding
+coin-card choices and shop payouts. Floor10 pays2 gold keys on each eligible clear.

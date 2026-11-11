@@ -1,17 +1,17 @@
 extends RefCounted
-## Generate once per run; base identities persist through five floors.
+## Generate once per run; base identities persist through ten floors.
 const SIZE := Vector2i(5, 5)
 const SERVICES := ["shop", "trader", "upgrade", "wheel", "healer"]
-const MAX_FLOOR := 5
+const MAX_FLOOR := 10
 const Balance = preload("res://scripts/combat_balance.gd")
 const NORMAL_HP = Balance.NORMAL_HP
 const SHOOTER_HP = Balance.SHOOTER_HP
 const BRUTE_HP = Balance.BRUTE_HP
 const BOSS_HP = Balance.BOSS_HP
-const ENEMY_SPEEDS := [75.0,90.0,105.0,112.0,120.0]
-const SHOT_SPEEDS := [160.0,190.0,220.0,240.0,260.0]
-const SHOT_INTERVALS := [2.4,2.1,1.8,1.65,1.5]
-const CHARGE_WARNINGS := [0.9,0.8,0.7,0.65,0.6]
+const ENEMY_SPEEDS := [75.0,90.0,105.0,112.0,120.0,125.0,130.0,135.0,140.0,145.0]
+const SHOT_SPEEDS := [160.0,190.0,220.0,240.0,260.0,270.0,280.0,290.0,300.0,310.0]
+const SHOT_INTERVALS := [2.4,2.1,1.8,1.65,1.5,1.45,1.4,1.35,1.3,1.25]
+const CHARGE_WARNINGS := [0.9,0.8,0.7,0.65,0.6,0.6,0.6,0.6,0.6,0.6]
 const ENCOUNTERS := ["mixed","swarm","crossfire","heavy","ambush"]
 var current := Vector2i.ZERO
 var start := Vector2i.ZERO
@@ -95,13 +95,13 @@ func _prepare_floor() -> void:
 		elif role == "combat":
 			_spawn_encounter(state,cell)
 		elif role == "loot" and floor_number >= 2:
-			if floor_number == 5:
+			if floor_number%5==0:
 				state["encounter"] = "treasure guardian"
-				state["enemies"].append(make_enemy(Vector2(240,270),"miniboss",5))
+				state["enemies"].append(make_enemy(Vector2(240,270),"miniboss",floor_number))
 			else:
-				for i in range(floor_number): state["enemies"].append(make_enemy(_spawn_points()[i],"shooter" if i==1 else "normal",floor_number))
+				for i in range(mini(4,floor_number)): state["enemies"].append(make_enemy(_spawn_points()[i],"shooter" if i==1 else "normal",floor_number))
 		elif role == "empty" and floor_number >= 3:
-			for i in range(2): state["enemies"].append(make_enemy(_spawn_points()[i],"normal",2 if floor_number<=4 else 3))
+			for i in range(2): state["enemies"].append(make_enemy(_spawn_points()[i],"normal",2 if floor_number<=4 else floor_number-2))
 	current = start
 	enter(current)
 
@@ -112,7 +112,7 @@ func _spawn_encounter(state: Dictionary, _cell: Vector2i) -> void:
 	# Deterministic per location: room identity and encounter style persist each floor.
 	var style: String = ENCOUNTERS[state["encounter_index"]]
 	state["encounter"] = style
-	var count := floor_number+3
+	var count := mini(8,floor_number+3)
 	var spawns := _spawn_points()
 	for i in range(count):
 		var kind := "normal"
@@ -132,11 +132,11 @@ func _spawn_encounter(state: Dictionary, _cell: Vector2i) -> void:
 
 static func make_enemy(pos: Vector2, kind: String, tier: int) -> Dictionary:
 	var index := clampi(tier-1,0,MAX_FLOOR-1)
-	var hp: int = NORMAL_HP[index]
+	var hp: float = NORMAL_HP[index]
 	if kind == "shooter": hp = SHOOTER_HP[index]
 	if kind == "brute": hp = BRUTE_HP[index]
 	if kind == "boss": hp = BOSS_HP[index]
-	if kind == "miniboss": hp = Balance.GUARDIAN_HP
+	if kind == "miniboss": hp = Balance.GUARDIAN_HP if tier<10 else 400.0
 	return {"pos":pos,"hp":hp,"max_hp":hp,"kind":kind,"tier":tier,"flash":0.0,"repath":0.0,"path":PackedVector2Array(),"attack":1.5,"telegraph":0.0,"aim":Vector2.DOWN,"action":"","phase":"idle","phase_time":0.0,"sequence":0,"burst_left":0,"burst_time":0.0,"dormant":false}
 
 func enter(cell: Vector2i) -> bool:

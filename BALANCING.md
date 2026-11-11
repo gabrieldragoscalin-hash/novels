@@ -1,6 +1,6 @@
 # Prototype tuning and testing
 
-The expedition still ends after floor 5. These values are implementation defaults,
+The expedition still ends after floor 10. These values are implementation defaults,
 not claims that balance is finished. The user's economic rules and all synthesis
 recipes are in [ECONOMY_SPEC.md](ECONOMY_SPEC.md).
 
@@ -25,11 +25,11 @@ have teal outlines. All identities are shown in this prototype.
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Normal HP | 5 | 9 | 28 | 46 | 72 |
 | Shooter HP | 4 | 7 | 21 | 34 | 52 |
-| Brute HP | 12 | 23 | 62 | 102 | 156 |
+| Brute HP | 10.2 | 19.55 | 52.7 | 86.7 | 132.6 |
 | Combat enemy count (total across waves) | 4 | 5 | 6 | 7 | 8 |
-| Loot defenders | 0 | 2 | 3 | 4 | 1 treasure guardian (230 HP) |
+| Loot defenders | 0 | 2 | 3 | 4 | 1 treasure guardian (184 HP) |
 | Empty room enemies | 0 | 0 | 2 tier-2 (9 HP) | 2 tier-2 | 2 tier-3 (28 HP) |
-| Boss HP | 66 | 121 | 330 | 560 | 900 |
+| Boss HP | 52.8 | 96.8 | 264 | 448 | 720 |
 | Normal speed | 75 | 90 | 105 | 112 | 120 |
 | Hostile projectile speed | 160 | 190 | 220 | 240 | 260 |
 | Shooter attack cycle | 2.4s | 2.1s | 1.8s | 1.65s | 1.5s |
@@ -62,7 +62,7 @@ Boss floor 1 alternates spread/charge; floor 2 adds ground zones; floors 3–5
 combine spreads and ground zones, with 25% shorter pursuit cooldowns
 below half HP (shown with an orange ring). Ground attacks lock 2/3/4/5 locations
 on floors 2–5, warn for 0.9s and strike once. Bosses still start alone. Treasure
-guardians alternate charge and a three-shot spread, have 230 HP, give 4 XP/2
+guardians alternate charge and a three-shot spread, have 184 HP, give 4 XP/2
 flares, and never pay boss/floor rewards. Their chest remains blocked until defeat.
 
 Boss access remains immediate. Exploration provides XP choices, healing, services
@@ -73,7 +73,7 @@ plausible build; roughly 5–8 minutes through floor 3 with some exploration. Fl
 claims. Test with a common level-1 weapon, no other gear/perks and god mode off.
 Record the build as weapons, cards and persistent perks can greatly change DPS.
 The HUD now shows active expedition time, excluding hub/cards/services/cheats,
-transitions and focus loss. The floor-5 boss ends the run; floor 6 is disabled.
+transitions and focus loss. The floor-10 boss ends the run; floor 11 is disabled.
 
 Starter Common bow level1: 1 damage, 0.45s firing interval, movement185, HP6.
 Equipment and perks modify these values. Contact/projectiles deal 1 damage;
@@ -217,3 +217,35 @@ cycle-level splash/meteor limits, floor3+ health step, and measured stationary
 weapon scenarios. Current settings live in `scripts/combat_balance.gd`.
 Floors1–2 health is unchanged. Empty-room enemies remain lower-tier: tier2 on
 floors3–4, tier3 on floor5 (now28HP). This intentional easier room type remains.
+
+## Twelve perks and utility-card revision
+
+All12 perks and the9 new utility/survival cards are specified in GAME_DESIGN.md.
+The former eight reserved slots are now active; all12 must unlock before leveling.
+Existing perk levels remain. Second Chance is run-only, relative weight0.08, once
+per run,25% HP revive,1.5s grace, no trader reuse. Recovery applies to normal heals,
+not Vitality's max-HP gain or the exact25% revive. Last enemy's damage bonus is
+bounded at30%; all shared attack-delivery budgets remain unchanged.
+
+HP before floor6 is the previous brute HP×0.85 and boss HP×0.8, with fractions
+preserved rather than rounding the reductions away. Guardians receive the boss
+reduction too. Normal/shooter HP and early-floor attack patterns are unchanged.
+
+| Setting | Floor6 | Floor7 | Floor8 | Floor9 | Floor10 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Normal HP |95|120|150|185|225|
+| Shooter HP |68|86|108|134|162|
+| Brute HP |176.8|224.4|280.5|348.5|425|
+| Boss HP |900|1120|1380|1680|2000|
+| Combat enemies |8|8|8|8|8|
+| Normal speed |125|130|135|140|145|
+| Projectile speed |270|280|290|300|310|
+| Shooter cycle |1.45s|1.4s|1.35s|1.3s|1.25s|
+
+Later brutes use a pre-reduction curve208/264/330/410/500; bosses use
+1125/1400/1725/2100/2500, then the same requested15%/20% reductions. These new
+curves are tuning defaults. Charge warnings stop decreasing at0.6s. Loot rooms
+on6–9 have4 defenders; floor10 has one400HP guardian. Empty rooms on5–10 use
+floor-2 enemy tiers, while floors3–4 keep tier2. Loot equipment/drop odds retain
+the floor5 baseline beyond5, with Treasure sense added (+5 percentage points max).
+The hub remains capped at floor10; native runtime tests traverse all ten floors.

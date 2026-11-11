@@ -1,9 +1,10 @@
 extends RefCounted
 const Equipment = preload("res://scripts/equipment.gd")
 const Economy = preload("res://scripts/economy.gd")
+const PERK_EFFECTS := {"starting_upgrade":"Start each run with an upgrade choice.","starting_hp":"+1 starting HP per level.","dodge":"+1% dodge chance per level.","boss_damage":"+2% boss damage per level.","recovery":"Healing restores 1% more HP per level.","resourceful":"Dungeon shop prices -0.5% per level.","scavenger":"Dungeon-earned coins +1% per level. Excludes coin cards and purchases.","collector":"XP pickup radius +2% per level.","trap_resist":"Trap damage -1% per level.","elite_hunter":"Brute/guardian damage +0.5% per level.","treasure_sense":"Equipment chance in loot rooms +0.2pp per level.","loot_gold":"Loot-room coins +1% per level."}
 const PATH := "user://hub.json"
-const PERK_NAMES := {"starting_upgrade":"Starting upgrade", "starting_hp":"Starting HP", "dodge":"Dodge chance", "boss_damage":"Damage to bosses"}
-const PERK_CAPS := {"starting_upgrade":1,"starting_hp":25,"dodge":25,"boss_damage":25}
+const PERK_NAMES := {"starting_upgrade":"Starting upgrade", "starting_hp":"Starting HP", "dodge":"Dodge chance", "boss_damage":"Damage to bosses","recovery":"Recovery","resourceful":"Resourcefulness","scavenger":"Scavenger","collector":"Collector","trap_resist":"Trap resistance","elite_hunter":"Elite hunter","treasure_sense":"Treasure sense","loot_gold":"Loot gold"}
+const PERK_CAPS := {"starting_upgrade":1,"starting_hp":25,"dodge":25,"boss_damage":25,"recovery":25,"resourceful":20,"scavenger":25,"collector":25,"trap_resist":20,"elite_hunter":20,"treasure_sense":25,"loot_gold":25}
 var storage_path := PATH
 var coins := 0
 var gems := 0
@@ -32,6 +33,7 @@ func _init(persist: bool = true, save_path: String = PATH) -> void:
 	enabled = persist
 	storage_path = save_path
 	rng.randomize()
+	for id in PERK_NAMES: perks[id] = 0
 	if enabled and FileAccess.file_exists(storage_path):
 		var data = JSON.parse_string(FileAccess.get_file_as_string(storage_path))
 		if data is Dictionary: _load(data)
@@ -87,8 +89,8 @@ func _load(data: Dictionary) -> void:
 	for field in ["daily_clears","task_progress","task_claimed","legacy_data"]:
 		var value = data.get(field,{})
 		if value is Dictionary: set(field,value.duplicate(true))
-	if data.get("claimed_clears",[]) is Array: claimed_clears = data["claimed_clears"].slice(0,200)
-	if data.get("offers",[]) is Array: offers = data["offers"].duplicate(true)
+	if data.get("claimed_clears",[]) is Array: claimed_clears = data.get("claimed_clears",[]).slice(0,200)
+	if data.get("offers",[]) is Array: offers = data.get("offers",[]).duplicate(true)
 
 func save() -> bool:
 	if not enabled: return true

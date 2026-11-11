@@ -37,14 +37,14 @@ func run() -> void:
 			var c = make_arena(weapon); configure(c,stage)
 			var dps := measure(c)
 			assert(dps>baseline and dps<baseline*15,"Shared run multipliers must remain bounded")
-			report.append({"weapon":weapon,"build":"mid" if stage==1 else "late","dps":snappedf(dps,0.01),"floor3_boss_seconds_stationary":snappedf(330/dps,0.1),"floor5_boss_seconds_stationary":snappedf(900/dps,0.1)})
+			report.append({"weapon":weapon,"build":"mid" if stage==1 else "late","dps":snappedf(dps,0.01),"floor3_boss_seconds_stationary":snappedf(Dungeon.BOSS_HP[2]/dps,0.1),"floor5_boss_seconds_stationary":snappedf(Dungeon.BOSS_HP[4]/dps,0.1)})
 	for form in ["beam","meteor"]:
 		var wand = make_arena("wand"); configure(wand,2)
 		wand.progression.ranks["perpetuum"] = 0
 		if form=="meteor": wand.progression.ranks["meteor"] = 1
 		var output := measure(wand)
 		assert(output>0 and output<70)
-		report.append({"weapon":"wand_"+form,"build":"late","dps":snappedf(output,0.01),"floor5_boss_seconds_stationary":snappedf(900/output,0.1)})
+		report.append({"weapon":"wand_"+form,"build":"late","dps":snappedf(output,0.01),"floor5_boss_seconds_stationary":snappedf(Dungeon.BOSS_HP[4]/output,0.1)})
 	# Rain/parallel meteors cannot multiply damage by overlapping the same victim.
 	var meteors = make_arena("wand")
 	for i in range(6): meteors.arsenal.meteors.append({"pos":Vector2(240,330),"radius":50.0,"damage":10.0,"delay":0.01,"roll":false,"cycle":10})
