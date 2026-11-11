@@ -89,11 +89,11 @@ Daily floor rewards include floor 4: two silver keys, floor 5: one gold key.
   Each of the six offers can be bought once per UTC day, refreshing at midnight UTC.
 - Chests cost one matching key OR 60/200/500 gems for copper/silver/gold. Gem
   acquisition is reserved; gem transactions are tested using isolated fixtures.
-- Copper odds: common 55%, uncommon 35%, rare 9%, epic 1%.
-- Silver: common 38%, uncommon 32%, rare 26%, epic 3.5%, legendary 0.5%.
-- Gold: common 15%, uncommon 20%, rare 45%, epic 16%, legendary 4%.
-  On a non-pity legendary gold drop, 10% are +1 (0.4% of ordinary gold opens).
-- Floor-1 dungeon loot gives an item copy (80% common / 20% uncommon); later
+- Copper odds: common 55.5%, uncommon 35%, rare 9%, epic 0.5%.
+- Silver: common 39.2%, uncommon 32%, rare 26%, epic 2.5%, legendary 0.3%.
+- Gold: common 17.5%, uncommon 22%, rare 45%, epic 13%, legendary 2.5%.
+  On a non-pity legendary gold drop, 10% are +1 (0.25% of ordinary gold opens).
+- When equipment drops, floor-1 rarity odds are80% common /20% uncommon; later
   floors improve rarity odds as listed in BALANCING.md. All loot chests have a
   5% key chance; conditional key odds are 70% copper / 25% silver / 5% gold.
   Normal enemies have a 2% chance to leave a common item pickup on the floor.
@@ -118,3 +118,8 @@ Quick synthesis cascades Common→Uncommon→Rare→Epic until no eligible group
 Rare bases are included; Epic bases and higher are never consumed automatically.
 Equipped copies are protected as ingredients, and equipped/highest-level bases are
 preferred. Lowest-level ingredients are used first. No coins or parts are charged.
+
+Loot-room equipment is now conditional:35/40/45/50/65% on floors1–5. Chest rarity
+weights apply only after that item roll succeeds. Existing non-equipment rewards
+remain. Full account reset is available in Cheats with a confirmation; it clears
+all currencies, copies, levels, perks, counters and progress on this device.

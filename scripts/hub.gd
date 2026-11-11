@@ -327,7 +327,7 @@ func loadout_stats() -> Dictionary:
 	for slot in Equipment.SLOTS:
 		if slot == "weapon" or equipped[slot].is_empty(): continue
 		var extra := Equipment.instance_stats(inventory[equipped[slot]])
-		for stat in ["health","movement","xp","critical"]: result[stat] += extra[stat]
+		for stat in ["health","movement","xp","critical","damage","critical_damage","reduction"]: result[stat] += extra[stat]
 		result["interval"] /= 1.0 + extra["haste"]
 	return result
 

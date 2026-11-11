@@ -14,7 +14,7 @@ func encounter(weapon: String = "bow", positions: Array = [Vector2(240,330)], pi
 		enemy["hp"] = 100.0; enemy["max_hp"] = 100.0; enemies.append(enemy)
 	c.enter({"enemies":enemies,"pickups":[],"role":"combat"},PLAYER)
 	var stats := Gear.stats(weapon,1); stats["weapon"] = weapon; stats["level"] = 1
-	c.progression.apply_loadout(stats); c.fire_time = 0
+	c.progression.apply_loadout(stats); c.progression.base_critical = 0; c.fire_time = 0
 	return c
 func run() -> void:
 	var c = encounter()

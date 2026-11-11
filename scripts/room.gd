@@ -8,7 +8,7 @@ const CombatState = preload("res://scripts/combat.gd")
 const DungeonState = preload("res://scripts/dungeon.gd")
 const SPEED := 185.0
 const RADIUS := 12.0
-const FLOOR := Rect2(32, 174, 416, 422)
+const FLOOR := Rect2(8, 166, 464, 438)
 const PILLARS: Array[Rect2] = [Rect2(108, 290, 38, 40), Rect2(334, 290, 38, 40), Rect2(108, 456, 38, 40), Rect2(334, 456, 38, 40)]
 var dungeon = DungeonState.new()
 var combat = CombatState.new(FLOOR, PILLARS)
@@ -237,7 +237,7 @@ func restart_run() -> void:
 	start_panel.hide()
 	if combat.progression.pending > 0: _show_level_up("STARTING UPGRADE")
 
-func _new_run() -> void:
+func _new_run(mark_floor: bool = true) -> void:
 	run_time = 0.0
 	dungeon = DungeonState.new(seed_override)
 	combat = CombatState.new(FLOOR, PILLARS)
@@ -249,7 +249,7 @@ func _new_run() -> void:
 	combat.progression.boss_damage_bonus = hub.perks["boss_damage"] * 0.02
 	combat.progression.apply_loadout(hub.loadout_stats())
 	combat.health = combat.progression.max_health()
-	hub.record_floor(1)
+	if mark_floor: hub.record_floor(1)
 	services = Services.new(dungeon, combat, hub)
 	reset_player()
 	_enter_current()
@@ -369,11 +369,11 @@ func _check_door(motion: Vector2) -> void:
 	if not active or interacting or combat.progression.pending > 0: return
 	var direction := Vector2i.ZERO
 	if absf(player.x - 240) <= 28:
-		if player.y <= 186.1 and motion.y < 0: direction = Vector2i.UP
-		elif player.y >= 583.9 and motion.y > 0: direction = Vector2i.DOWN
+		if player.y <= FLOOR.position.y+RADIUS+0.1 and motion.y < 0: direction = Vector2i.UP
+		elif player.y >= FLOOR.end.y-RADIUS-0.1 and motion.y > 0: direction = Vector2i.DOWN
 	if absf(player.y - 385) <= 28:
-		if player.x <= 44.1 and motion.x < 0: direction = Vector2i.LEFT
-		elif player.x >= 435.9 and motion.x > 0: direction = Vector2i.RIGHT
+		if player.x <= FLOOR.position.x+RADIUS+0.1 and motion.x < 0: direction = Vector2i.LEFT
+		elif player.x >= FLOOR.end.x-RADIUS-0.1 and motion.x > 0: direction = Vector2i.RIGHT
 	if direction != Vector2i.ZERO and dungeon.contains(dungeon.current + direction):
 		_transition_to(direction)
 
@@ -401,7 +401,7 @@ func _update_room_label() -> void:
 	status_label.text = "%s • %s • FLOOR %d/%d" % [dungeon.room_name(), dungeon.rooms[dungeon.current]["role"].to_upper(), dungeon.floor_number,DungeonState.MAX_FLOOR]
 
 func _update_combat_labels() -> void:
-	health_label.text = "HP  %d / %d" % [combat.health, combat.progression.max_health()]
+	health_label.text = "HP  %.1f / %d" % [combat.health, combat.progression.max_health()]
 	health_label.modulate = Color("ff8b83") if combat.hurt_time > 0.7 else Color.WHITE
 	xp_label.text = "L%d XP %d/%d • %d C • %d F" % [combat.progression.level, combat.progression.xp, combat.progression.required_xp(), combat.progression.coins, combat.progression.flares]
 	build_label.text = "DMG %d  •  RATE %.1f/s  •  SPEED +%d%%  •  PIERCE %d" % [combat.progression.damage(), 1.0 / combat.progression.fire_interval(), roundi((combat.progression.gear_movement + combat.progression.ranks["movement"] * 0.1) * 100), combat.progression.base_pierce + combat.progression.ranks["piercing"]]
@@ -419,19 +419,19 @@ func _blocked(pos: Vector2) -> bool:
 
 func _draw() -> void:
 	# Layered wall faces and tile seams give the room a three-quarter appearance.
-	draw_rect(Rect2(22, 149, 436, 459), Color("080e18"))
-	draw_rect(Rect2(32, 150, 416, 44), Color("263348"))
+	draw_rect(FLOOR.grow(8), Color("080e18"))
+	draw_rect(Rect2(8,150,464,30), Color("263348"))
 	draw_rect(FLOOR, Color("192539"))
 	for y in range(8):
-		for x in range(8):
-			var tile := Rect2(33 + x * 52, 175 + y * 52, 50, 50)
+		for x in range(9):
+			var tile := Rect2(9+x*51.3,167+y*54.5,49.3,52.5)
 			var palette: Array[Color] = [Color("202f43"), Color("253a40"), Color("343047"), Color("3b3434"), Color("303b36")]
 			var color := palette[(dungeon.current.x + dungeon.current.y) % palette.size()]
 			if (x + y) % 2 != 0: color = color.lightened(0.045)
 			draw_rect(tile, color)
-	draw_rect(Rect2(22, 174, 10, 434), Color("344157"))
-	draw_rect(Rect2(448, 174, 10, 434), Color("344157"))
-	draw_rect(Rect2(22, 596, 436, 12), Color("101a2a"))
+	draw_rect(Rect2(0,166,8,446), Color("344157"))
+	draw_rect(Rect2(472,166,8,446), Color("344157"))
+	draw_rect(Rect2(0,604,480,8), Color("101a2a"))
 	# Only draw open passages where another grid room exists.
 	for direction in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
 		if dungeon.contains(dungeon.current + direction):
@@ -559,10 +559,10 @@ func _draw_player() -> void:
 
 func _draw_door(direction: Vector2i) -> void:
 	var door: Rect2
-	if direction == Vector2i.UP: door = Rect2(208, 149, 64, 45)
-	elif direction == Vector2i.DOWN: door = Rect2(208, 578, 64, 30)
-	elif direction == Vector2i.LEFT: door = Rect2(22, 353, 30, 64)
-	else: door = Rect2(428, 353, 30, 64)
+	if direction == Vector2i.UP: door = Rect2(208,150,64,36)
+	elif direction == Vector2i.DOWN: door = Rect2(208,586,64,26)
+	elif direction == Vector2i.LEFT: door = Rect2(0,353,28,64)
+	else: door = Rect2(452,353,28,64)
 	draw_rect(door.grow(3), Color("8e7247"))
 	draw_rect(door, Color("0a1420"))
 	var center := door.get_center()
@@ -815,7 +815,7 @@ func _spin_wheel() -> void:
 		interacting = false
 		match result:
 			0:
-				combat.health = mini(combat.progression.max_health(), combat.health + 3)
+				combat.health = minf(combat.progression.max_health(), combat.health + 3)
 				_menu("Wheel: healing", "Recovered up to 3 HP.", [])
 			1:
 				combat.progression.coins += 20

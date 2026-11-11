@@ -202,3 +202,19 @@ inventing an exchange rate. Current-run state is not saved.
 Future: defined gem tasks/earning, the remaining eight perk effects, higher floors,
 melee-specific upgrades, further rarities, pets/spirit content, more item templates/affixes, adjacency
 constraints, final art/audio, richer combat and an authoritative account backend.
+
+## Current item roles, reset and future checkpoints
+
+Necklace, armor, headgear, pants and boots grant HP. Armor also reduces incoming
+damage. Ring increases critical DAMAGE rather than chance. Bracelet adds damage
+alongside its attack-speed bonus. Exact level/rarity values and modest enemy HP
+increases are in BALANCING.md. Rooms have about16% more playable area.
+Shop Epic/Legendary odds are reduced while35-open guarantees remain. Loot-room
+item drops are no longer guaranteed; non-equipment chest rewards remain.
+Reset everything in Cheats asks for confirmation, then starts a fresh local
+profile with its starter bow and no currencies, perks, counters or progress.
+
+Planned checkpoint starts: floors10,20,etc, once their milestone is unlocked.
+This will let stronger accounts begin deeper without inflating early-floor HP to
+match late-game damage. Unlock details/starting bonuses remain to define; the
+current five-floor cap means checkpoint selection is not implemented yet.

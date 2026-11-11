@@ -27,6 +27,8 @@ var base_interval := 0.45
 var projectile_speed := 390.0
 var base_pierce := 0
 var base_critical := 0.0
+var critical_damage := 0.0
+var damage_reduction := 0.0
 var gear_movement := 0.0
 var gear_xp := 0.0
 var base_health := 6
@@ -136,6 +138,8 @@ func apply_loadout(stats: Dictionary) -> void:
 	projectile_speed = stats["projectile_speed"]
 	base_pierce = stats["pierce"]
 	base_critical = stats["critical"]
+	critical_damage = stats.get("critical_damage",0.0)
+	damage_reduction = clampf(stats.get("reduction",0.0),0.0,0.4)
 	gear_movement = stats["movement"]
 	gear_xp = stats["xp"]
 	base_health += stats["health"]
@@ -158,3 +162,6 @@ func upgrade_info(id: String) -> Array:
 
 func through_obstacles() -> bool:
 	return weapon == "wand" or ranks["see_all"] > 0
+
+func critical_multiplier() -> float: return 2.0+critical_damage
+func roll_damage() -> float: return damage()*(critical_multiplier() if rng.randf()<critical_chance() else 1.0)

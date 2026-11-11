@@ -36,8 +36,10 @@ func loot() -> bool:
 	for i in range(odds.size()):
 		total += odds[i]
 		if roll_rarity<total: rarity = i; break
-	var uid: String = hub.find_equipment(kind,rarity)
-	room["reward"] = "Stored " + hub.item_name(uid)
+	room["reward"] = "No equipment this time."
+	if dungeon.rng.randf() < [0.35,0.40,0.45,0.50,0.65][clampi(dungeon.floor_number-1,0,4)]:
+		var uid: String = hub.find_equipment(kind,rarity)
+		room["reward"] = "Stored " + hub.item_name(uid)
 	if dungeon.rng.randf() < 0.05:
 		var roll: float = dungeon.rng.randf()
 		var key_kind := "copper" if roll < 0.7 else ("silver" if roll < 0.95 else "gold")
@@ -88,7 +90,7 @@ func buy(id: String) -> String:
 		"weapon_item": hub.find_equipment("bow")
 		"armor_item": hub.find_equipment("vest")
 		"upgrade": p.reward_choices()
-		"heal": combat.health = mini(p.max_health(), combat.health + 3)
+		"heal": combat.health = minf(p.max_health(), combat.health + 3)
 		"coins": p.coins += 20
 	return "Purchased."
 
@@ -113,7 +115,7 @@ func trade(old: String, replacement: String, offered: Array[String]) -> bool:
 	if state().get("trade_used", false) or not combat.progression.available_upgrades().has(replacement) or not offered.has(replacement) or not owned().has(old) or old == replacement: return false
 	combat.progression.ranks[old] -= 1
 	combat.progression.grant_upgrade(replacement)
-	combat.health = mini(combat.health, combat.progression.max_health())
+	combat.health = minf(combat.health, combat.progression.max_health())
 	state()["used"] = true
 	state()["trade_used"] = true
 	return true

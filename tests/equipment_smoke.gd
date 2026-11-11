@@ -15,7 +15,7 @@ func run() -> void:
 		assert(h.equip_item(uid))
 	assert(h.equipped.size() == 8)
 	var stats: Dictionary = h.loadout_stats()
-	assert(stats["health"] > 0 and stats["movement"] > 0 and stats["xp"] > 0 and stats["critical"] > 0)
+	assert(stats["health"] > 0 and stats["movement"] == 0 and stats["xp"] == 0 and stats["critical_damage"] > 0 and stats["reduction"] > 0 and stats["damage"] > 1)
 	var p = Progression.new(); p.apply_loadout(stats)
 	assert(p.max_health() > 6 and p.damage() > 1)
 	assert(h.unequip("armor") and not h.unequip("weapon"))

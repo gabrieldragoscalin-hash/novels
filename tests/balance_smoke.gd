@@ -62,7 +62,7 @@ func run() -> void:
 	var first := Dungeon.make_enemy(Vector2(240,270),"normal",1)
 	var second := Dungeon.make_enemy(Vector2(192,385),"normal",1); second["dormant"] = true
 	var state := {"role":"combat","enemies":[first,second],"encounter":"ambush"}
-	c.enter(state,PLAYER); c._damage_enemy(second,999); assert(second["hp"]==4)
+	c.enter(state,PLAYER); c._damage_enemy(second,999); assert(second["hp"]==5)
 	c._damage_enemy(first,999); assert(c.alive_count()==1 and c.arsenal.nearest(PLAYER)==-1)
 	c._tick_waves(0.3); assert(second["dormant"] and state["wave_timer"]>0)
 	c.enter(state,PLAYER); c._tick_waves(0.61); assert(not second["dormant"])

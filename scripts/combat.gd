@@ -14,7 +14,7 @@ var hazards: Array = []
 var pickups: Array = []
 var item_drops: Array = []
 var collected_items: Array = []
-var health := MAX_HEALTH
+var health := float(MAX_HEALTH)
 var hurt_time := 0.0
 var grace_time := 0.0
 var fire_time := 0.0
@@ -36,13 +36,13 @@ func _init(room_bounds: Rect2, pillars: Array[Rect2]) -> void:
 	arsenal = preload("res://scripts/weapons.gd").new(self)
 	bounds = room_bounds
 	obstacles = pillars
-	nav.region = Rect2i(0, 0, 25, 25)
+	nav.region = Rect2i(0,0,maxi(1,int(ceil((bounds.size.x-32)/16))),maxi(1,int(ceil((bounds.size.y-32)/16))))
 	nav.cell_size = Vector2(16, 16)
-	nav.offset = Vector2(48, 190)
+	nav.offset = bounds.position+Vector2(16,16)
 	nav.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
 	nav.update()
-	for y in range(25):
-		for x in range(25):
+	for y in range(nav.region.size.y):
+		for x in range(nav.region.size.x):
 			var cell := Vector2i(x, y)
 			nav.set_point_solid(cell, blocked(nav.get_point_position(cell), 15))
 
@@ -97,13 +97,13 @@ func wall_between(a: Vector2, b: Vector2) -> bool:
 
 func _cell(point: Vector2) -> Vector2i:
 	var cell := Vector2i(((point - nav.offset) / 16.0).round())
-	cell.x = clampi(cell.x, 0, 24)
-	cell.y = clampi(cell.y, 0, 24)
+	cell.x = clampi(cell.x,0,nav.region.size.x-1)
+	cell.y = clampi(cell.y,0,nav.region.size.y-1)
 	if nav.is_point_solid(cell):
 		var nearest := INF
 		var best := cell
-		for y in range(maxi(0, cell.y - 3), mini(25, cell.y + 4)):
-			for x in range(maxi(0, cell.x - 3), mini(25, cell.x + 4)):
+		for y in range(maxi(0, cell.y - 3), mini(nav.region.size.y,cell.y+4)):
+			for x in range(maxi(0, cell.x - 3), mini(nav.region.size.x,cell.x+4)):
 				var candidate := Vector2i(x, y)
 				var distance := nav.get_point_position(candidate).distance_squared_to(point)
 				if not nav.is_point_solid(candidate) and distance < nearest:
@@ -173,7 +173,7 @@ func hurt(amount: int) -> void:
 	if progression.rng.randf() < progression.dodge_chance:
 		hurt_time = 1.0
 		return
-	health = maxi(0, health - amount)
+	health = maxf(0.0,health-amount*(1.0-progression.damage_reduction))
 	hurt_time = 1.0
 
 func _enemy_shoot(enemy: Dictionary,delta: float,player: Vector2) -> void:

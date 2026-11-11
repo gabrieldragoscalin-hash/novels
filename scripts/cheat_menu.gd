@@ -13,6 +13,7 @@ var run_buttons: Array[Button] = []
 var item_ids: Array = []
 var upgrade_picker: OptionButton
 var upgrade_ids: Array[String] = []
+var reset_dialog: ConfirmationDialog
 var god_button: Button
 
 func setup(controller) -> void:
@@ -78,6 +79,28 @@ func setup(controller) -> void:
 	body.add_child(room_picker)
 	_action("Teleport to selected room",teleport,true)
 	_action("Teleport to boss",teleport_boss,true)
+	_note("RESET • permanently deletes local progress")
+	_action("Reset everything…",func(): reset_dialog.popup_centered(Vector2i(350,180)))
+	reset_dialog = ConfirmationDialog.new()
+	reset_dialog.title = "Start anew?"
+	reset_dialog.dialog_text = "Delete all equipment, currencies, keys, perks,\ndaily counters, pity and dungeon progress?"
+	reset_dialog.ok_button_text = "Delete and start anew"
+	reset_dialog.confirmed.connect(reset_everything)
+	add_child(reset_dialog)
+	hide()
+
+func reset_everything() -> void:
+	var old = game.hub
+	var fresh = game.HubState.new(false,old.storage_path)
+	fresh.enabled = old.enabled
+	if not fresh.save(): status.text = "Reset could not be saved. Try again."; return
+	game.hub = fresh
+	game.hub_menu.synthesis_base = ""; game.hub_menu.synthesis_fodder.clear()
+	game.hub_menu.synthesis_mode = false
+	game.hub_menu.perk_message = ""; game.hub_menu.message = ""; game.hub_menu.filter_slot = ""
+	game._new_run(false)
+	game._return_to_hub()
+	game._refresh_hub()
 	hide()
 
 func _note(text: String) -> void:

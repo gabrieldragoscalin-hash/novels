@@ -23,13 +23,13 @@ have teal outlines. All identities are shown in this prototype.
 
 | Setting | Floor 1 | Floor 2 | Floor 3 | Floor 4 | Floor 5 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Normal HP | 4 | 8 | 14 | 20 | 28 |
-| Shooter HP | 3 | 6 | 10 | 15 | 21 |
-| Brute HP | 10 | 20 | 32 | 46 | 64 |
+| Normal HP | 5 | 9 | 16 | 23 | 32 |
+| Shooter HP | 4 | 7 | 12 | 17 | 24 |
+| Brute HP | 12 | 23 | 37 | 53 | 74 |
 | Combat enemy count (total across waves) | 4 | 5 | 6 | 7 | 8 |
-| Loot defenders | 0 | 2 | 3 | 4 | 1 treasure guardian (100 HP) |
-| Empty room enemies | 0 | 0 | 2 tier-2 (8 HP) | 2 tier-2 | 2 tier-3 (14 HP) |
-| Boss HP | 60 | 110 | 180 | 260 | 360 |
+| Loot defenders | 0 | 2 | 3 | 4 | 1 treasure guardian (115 HP) |
+| Empty room enemies | 0 | 0 | 2 tier-2 (9 HP) | 2 tier-2 | 2 tier-3 (16 HP) |
+| Boss HP | 66 | 121 | 198 | 286 | 396 |
 | Normal speed | 75 | 90 | 105 | 112 | 120 |
 | Hostile projectile speed | 160 | 190 | 220 | 240 | 260 |
 | Shooter attack cycle | 2.4s | 2.1s | 1.8s | 1.65s | 1.5s |
@@ -62,7 +62,7 @@ Boss floor 1 alternates spread/charge; floor 2 adds ground zones; floors 3–5
 combine spreads and ground zones, with 25% shorter pursuit cooldowns
 below half HP (shown with an orange ring). Ground attacks lock 2/3/4/5 locations
 on floors 2–5, warn for 0.9s and strike once. Bosses still start alone. Treasure
-guardians alternate charge and a three-shot spread, have 100 HP, give 4 XP/2
+guardians alternate charge and a three-shot spread, have 115 HP, give 4 XP/2
 flares, and never pay boss/floor rewards. Their chest remains blocked until defeat.
 
 Boss access remains immediate. Exploration provides XP choices, healing, services
@@ -94,7 +94,7 @@ cannot hit the same enemy twice. Wands/See All bypass pillars; other attacks do 
 ## Economy defaults
 
 - Coins persist across runs. Flares reset on a new run, carrying across floors.
-- Dungeon loot coins:20/25/30/35/40 across floors 1–5. Every chest gives one item.
+- Dungeon loot coins:20/25/30/35/40 across floors 1–5. Equipment is now a chance, not guaranteed.
   Common/Uncommon/Rare/Epic odds: floor1 80/20/0/0%; floor2 70/28/2/0%;
   floor3 55/40/5/0%; floor4 40/50/10/0%; floor5 0/70/28/2%.
   Floors2–5 also offer a run-upgrade/coin choice. Loot flares are10 normally,
@@ -110,7 +110,7 @@ cannot hit the same enemy twice. Wands/See All bypass pillars; other attacks do 
   clears per day PER FLOOR, saved across reloads. No third key source was invented.
 - Chest prices: one matching key OR60/200/500 gems for Copper/Silver/Gold.
   Gem earning/tasks/purchases are reserved, so normal new profiles have0 gems.
-- Copper odds55/35/9/1/0%; Silver38/32/26/3.5/0.5%; Gold15/20/45/16/4%, ordered
+- Copper odds55.5/35/9/0.5/0%; Silver39.2/32/26/2.5/0.3%; Gold17.5/22/45/13/2.5%, ordered
   Common/Uncommon/Rare/Epic/Legendary. On ordinary Gold legendary drops,10% are+1.
 - Pity: Copper Epic, Silver Legendary, Gold Legendary+1 at35 after34 misses.
   Normal Gold legendary ALSO resets pity. Counters are saved separately by chest
@@ -174,3 +174,37 @@ wallet spending, perk unlock order/caps, room rules, and actual boss combat.
 The floor-4/5 numbers and improved loot odds extend the accepted floor-1/2/3
 balance proposal and remain tuning defaults. All ordinary enemy and boss hits
 still deal 1 damage; increased difficulty comes from patterns and pressure.
+
+## Equipment/drop/reset revision
+
+Playable area grows from416×422 to464×438 units (about16% more floor area), with
+matching doors, collision and navigation. Grid/map room counts do not change.
+
+- Armor: level1 +2HP and5% damage reduction; +1HP/+1 percentage point per level.
+- Headgear, pants, boots, necklace: level1 +1HP, +1HP per level. They replace the
+  old movement/XP bonuses. The repeated pants slot in the request is interpreted
+  as including boots, the fourth clothing slot.
+- Bracelet: +1 damage at levels1–2, +2 at3–4, +3 at5; retains its attack-speed bonus.
+- Ring: +25 percentage points of critical damage at level1, +5 per subsequent
+  level; does not grant critical chance. Normal critical hits are2×, so the common
+  level1 ring makes them2.25×. Weapons have5% base crit chance, wand10%.
+- Rarity/enhancement scaling applies to these stats. Armor reduction is capped40%.
+  Incoming damage retains fractions, e.g.1 damage becomes0.95 at5% reduction.
+  Melee, arrows, beams and meteors all use critical damage; lasers average crits
+  into sustained damage instead of random flickering ticks.
+- Loot-chest equipment chances by floor:35/40/45/50/65%. Coins, flares, low-chance
+  keys and existing floor2+ card choices still pay even when equipment does not.
+  The rarity table above applies CONDITIONALLY when an item drops. A floor5 item
+  is at least uncommon, but the chest can now contain no equipment. Enemy item
+  pickups remain2%; these are separate from the chest roll.
+- Ordinary chest Epic/Legendary odds are lower; saved35-open pity is unchanged.
+  Gold ordinary Legendary+1 chance is now0.25% (10% of2.5% Legendary drops).
+- Cheat menu: Reset everything opens an explicit confirmation. Confirming erases
+  inventory, wallet, parts, typed keys, perks, highest floor, daily/pity counters,
+  legacy data and active run, then returns to the fresh starter-bow profile.
+  Cancel does nothing. This overwrites the local save; no backup is retained.
+
+Enemy HP rose roughly10–20% from the previous pass, rather than trying to cancel
+all future equipment power. Milestone starting floors10/20/etc are planned; only
+floors1–5 are currently enabled. Unlock conditions/starting bonuses will be defined
+when checkpoints are implemented. Skipped floors must not grant clear rewards.

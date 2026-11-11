@@ -17,7 +17,7 @@ func run() -> void:
 	assert(room.player.x <= 96, "Pillars must block the player")
 	room.player = Vector2(65, 530)
 	room.move_player(Vector2(0, 1000))
-	assert(room.player.y <= 584, "Player must stay within room walls")
+	assert(room.player.y <= room.FLOOR.end.y-room.RADIUS, "Player must stay within room walls")
 	var touch := InputEventScreenTouch.new()
 	touch.index = 0
 	touch.position = Vector2(220, 380)
@@ -65,7 +65,7 @@ func run() -> void:
 		await cross_door(room, -direction)
 	assert(room.dungeon.current == Vector2i.ZERO)
 	assert(room.dungeon.rooms[Vector2i.ZERO]["visits"] == 2, "Visits must survive room changes")
-	room.player = Vector2(240, 186)
+	room.player = Vector2(240,room.FLOOR.position.y+room.RADIUS)
 	room.move_player(Vector2(0, -10))
 	assert(not room.transitioning and room.dungeon.current == Vector2i.ZERO, "Outer wall cannot leave grid")
 	print("PASS: 25 rooms, bidirectional doors, transitions, outer boundaries, persistent visits")
@@ -75,10 +75,10 @@ func run() -> void:
 
 func cross_door(room: Node, direction: Vector2i) -> void:
 	var previous: Vector2i = room.dungeon.current
-	if direction == Vector2i.RIGHT: room.player = Vector2(436, 385)
-	elif direction == Vector2i.LEFT: room.player = Vector2(44, 385)
-	elif direction == Vector2i.DOWN: room.player = Vector2(240, 584)
-	else: room.player = Vector2(240, 186)
+	if direction == Vector2i.RIGHT: room.player = Vector2(room.FLOOR.end.x-room.RADIUS,385)
+	elif direction == Vector2i.LEFT: room.player = Vector2(room.FLOOR.position.x+room.RADIUS,385)
+	elif direction == Vector2i.DOWN: room.player = Vector2(240,room.FLOOR.end.y-room.RADIUS)
+	else: room.player = Vector2(240,room.FLOOR.position.y+room.RADIUS)
 	room.move_player(Vector2(direction) * 2)
 	assert(room.transitioning, "Walking into an open door starts a transition")
 	room.move_player(Vector2(direction) * 1000)

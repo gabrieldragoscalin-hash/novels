@@ -115,3 +115,8 @@ heavy and two-wave ambush encounters. Shooters burst/fire fans, brutes charge an
 recover, and bosses add ground attacks and a half-health phase from floor 3.
 Boss access stays open. The run HUD shows active play time for balance testing;
 menus and transitions do not count. See BALANCING.md for the current numbers.
+
+Cheats now includes **Reset everything…**, with confirmation, to erase the local
+profile and return to the starter bow. Rooms have about16% more playable area.
+Equipment roles, lower chest/item odds and the latest modest HP increases are
+recorded in BALANCING.md. Floor10/20 checkpoint starts are planned for later.

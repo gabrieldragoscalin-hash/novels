@@ -40,7 +40,8 @@ range/cone checks, with obstacles blocking hits unless See All is selected.
 Punchthrough, Ricochet and Follow are offered for projectile weapons, not sword
 or hammer. No additional melee-specific upgrade cards are introduced yet.
 Old Vitality/critical/status/XP-attraction/regeneration cards are removed from
-the card pool. Equipment critical chance and baseline XP attraction still exist.
+the card pool. Weapon base critical chance and baseline XP attraction still exist; rings now
+  increase critical damage.
 
 ## Bow and crossbow cards
 
@@ -111,7 +112,7 @@ These values are implementation choices for balance testing, not fixed design:
   0.45 radians, +0.14 per Extra projectile rank. Visual slash direction alternates.
 - Chakram retains 75% damage on each bounce; Ricochet adds beyond its native three.
 - Laser ticks every 0.1s; per-tick damage is base damage × 0.1 / current weapon
-  interval × 1.1 × (1 + critical chance), making expected sustained DPS 10% higher.
+  interval × 1.1 × (1 + critical chance × (critical multiplier − 1)), making expected sustained DPS 10% higher.
   The critical multiplier is averaged for smooth continuous laser damage. Laser chain hits retain
   75% of the preceding hit's damage. Fractional damage is preserved.
 - Arrow splash radius 64 units (128 with Stop and Aim). Charge size multiplier 1.8.

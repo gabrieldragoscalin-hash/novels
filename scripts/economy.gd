@@ -2,7 +2,7 @@ extends RefCounted
 ## Explicit prototype prices/odds; structural rules live in ECONOMY_SPEC.md.
 const RARITIES := ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic"]
 const COLORS := [Color("aab1ba"),Color("72c586"),Color("76aeeb"),Color("ba87df"),Color("efcf69"),Color("ff8b3d")]
-const ODDS := {"copper":[55.0,35.0,9.0,1.0,0.0], "silver":[38.0,32.0,26.0,3.5,0.5], "gold":[15.0,20.0,45.0,16.0,4.0]}
+const ODDS := {"copper":[55.5,35.0,9.0,0.5,0.0], "silver":[39.2,32.0,26.0,2.5,0.3], "gold":[17.5,22.0,45.0,13.0,2.5]}
 const GEM_COST := {"copper":60,"silver":200,"gold":500}
 const PART_COST := 50
 const PART_QUANTITY := 5

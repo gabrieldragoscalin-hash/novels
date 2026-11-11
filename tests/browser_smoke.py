@@ -85,7 +85,7 @@ with sync_playwright() as p:
     go(1,0);go(0,1);tap(240,682);tap(240,575) # C2 chest.
     go(0,1);go(0,1);tap(240,682);tap(240,575) # C4 chest.
     tap(240,755)
-    natural=saved_when(lambda d:d.get('coins',0)>=60 and len(d.get('inventory',{}))>=4)
+    natural=saved_when(lambda d:d.get('coins',0)>=60 and len(d.get('inventory',{}))>=1)
     assert 'materials' not in {k:v for k,v in natural.items() if k!='legacy_data'}
     # Put a controlled duplicate/coin/key fixture into a separate page of this fresh test origin.
     page.route('**/__economy_fixture.html',lambda route:route.fulfill(status=200,body='<html><body>test fixture</body></html>',content_type='text/html'))

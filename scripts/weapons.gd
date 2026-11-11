@@ -76,14 +76,14 @@ func _fire(player: Vector2, target: int, charged: bool, slash: int) -> void:
 			if next < 0: break
 			targets.append(next)
 			for extra in range(count):
-				meteors.append({"pos":c.enemies[next]["pos"]+direction.orthogonal()*(extra-(count-1)*0.5)*14,"delay":0.45,"radius":(27.0 if c.enemies[next].get("kind","")=="boss" else 17.0)*(1.0+p.ranks["piercing"]*0.2),"damage":float(p.damage()),"roll":p.ranks["follow"]>0})
+				meteors.append({"pos":c.enemies[next]["pos"]+direction.orthogonal()*(extra-(count-1)*0.5)*14,"delay":0.45,"radius":(27.0 if c.enemies[next].get("kind","")=="boss" else 17.0)*(1.0+p.ranks["piercing"]*0.2),"damage":p.roll_damage(),"roll":p.ranks["follow"]>0})
 		return
 	for shot in range(count):
 		var origin: Vector2 = player+direction.orthogonal()*(shot-(count-1)*0.5)*12
 		if p.weapon == "wand" and p.ranks["perpetuum"] > 0:
 			_laser(origin,direction,target); continue
 		var critical: bool = p.rng.randf() < p.critical_chance()
-		var bullet := {"pos":origin,"velocity":direction*p.projectile_speed,"damage":float(p.damage()*(2 if critical else 1)*(2 if charged else 1)),"critical":critical,"life":2.0,"hits":[],"remaining":999 if charged else 1+p.base_pierce+p.ranks["piercing"],"bounces":0 if charged else p.ranks["ricochet"]+(3 if p.weapon=="chakram" else 0),"charged":charged,"follow":p.ranks["follow"]>0 and not charged,"through":p.through_obstacles(),"kind":p.weapon,"radius":8.0 if p.weapon=="crossbow" else 4.0,"split":p.ranks["arrow_split"]>0,"explosive":p.ranks["explosive"]>0,"splash":64.0*(2 if p.ranks["stop_aim"]>0 else 1)}
+		var bullet := {"pos":origin,"velocity":direction*p.projectile_speed,"damage":float(p.damage()*(p.critical_multiplier() if critical else 1.0)*(2 if charged else 1)),"critical":critical,"life":2.0,"hits":[],"remaining":999 if charged else 1+p.base_pierce+p.ranks["piercing"],"bounces":0 if charged else p.ranks["ricochet"]+(3 if p.weapon=="chakram" else 0),"charged":charged,"follow":p.ranks["follow"]>0 and not charged,"through":p.through_obstacles(),"kind":p.weapon,"radius":8.0 if p.weapon=="crossbow" else 4.0,"split":p.ranks["arrow_split"]>0,"explosive":p.ranks["explosive"]>0,"splash":64.0*(2 if p.ranks["stop_aim"]>0 else 1)}
 		if charged: bullet["radius"] *= 1.8
 		c.bullets.append(bullet)
 
@@ -98,11 +98,11 @@ func _melee(origin: Vector2, direction: Vector2, slash: int) -> void:
 		var offset: Vector2 = enemy["pos"]-origin
 		if offset.length() > radius+12 or absf(direction.angle_to(offset)) > angle: continue
 		if not p.through_obstacles() and c.wall_between(origin,enemy["pos"]): continue
-		c._damage_enemy(enemy,p.damage())
+		c._damage_enemy(enemy,p.roll_damage())
 
 func _laser(origin: Vector2, direction: Vector2, target: int) -> void:
 	var p = c.progression
-	var amount: float = p.damage()*0.1/p.fire_interval()*1.1*(1.0+p.critical_chance())
+	var amount: float = p.damage()*0.1/p.fire_interval()*1.1*(1.0+p.critical_chance()*(p.critical_multiplier()-1.0))
 	var distance := 900.0
 	if absf(direction.x)>0.0001: distance = minf(distance,((c.bounds.end.x if direction.x>0 else c.bounds.position.x)-origin.x)/direction.x)
 	if absf(direction.y)>0.0001: distance = minf(distance,((c.bounds.end.y if direction.y>0 else c.bounds.position.y)-origin.y)/direction.y)
