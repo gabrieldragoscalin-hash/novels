@@ -88,6 +88,7 @@ func _ready() -> void:
 	combat.enter(dungeon.rooms[dungeon.current], player)
 	get_viewport().focus_exited.connect(_release_stick)
 	queue_redraw()
+	if OS.has_feature("web"): JavaScriptBridge.eval("window.__dungeonReady = 'hub'")
 
 func _build_ui() -> void:
 	var ui := CanvasLayer.new()

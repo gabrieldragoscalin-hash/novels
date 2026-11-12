@@ -58,6 +58,7 @@ func _ready() -> void:
 		if direction_buttons.has(facing): direction=facing
 		reconfigure()
 		if not phase.is_empty(): paused=true; sync_flags(); phase_slider.value=float(phase)*1000
+		JavaScriptBridge.eval("window.__dungeonReady = 'lab'")
 func label(text: String,pos: Vector2,size_value: int,color := Color("eee0bd")) -> Label:
 	var node := Label.new(); node.text=text; node.position=pos
 	node.add_theme_font_size_override("font_size",size_value); node.add_theme_color_override("font_color",color)
