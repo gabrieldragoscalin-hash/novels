@@ -44,8 +44,18 @@ html = html.replace('"executable":"index"', f'"executable":"{stem}"')
 config = json.loads(re.search(r'const GODOT_CONFIG = (.*);', html)[1])
 for name, size in config['fileSizes'].items():
     assert (root / name).stat().st_size == size, f'Wrong size: {name}'
+# Serve the pack as small files: some clients repeatedly receive truncated
+# large responses even though the same release works on the CI network.
+chunks = []
+chunk_size = 512 * 1024
+for offset in range(0, len(pack), chunk_size):
+    data = pack[offset:offset + chunk_size]
+    name = f'{stem}.pck.part{len(chunks):04d}'
+    (root / name).write_bytes(data)
+    chunks.append(dict(file=name, offset=offset, size=len(data), sha256=hashlib.sha256(data).hexdigest()))
+(root / f'{stem}.pck').unlink()
 loader = Path(__file__).resolve().parents[1] / 'web/verified_startup.js'
-code = loader.read_text().replace('__PACK_SHA256__', hashlib.sha256(pack).hexdigest())
+code = loader.read_text().replace('__PACK_SHA256__', hashlib.sha256(pack).hexdigest()).replace('__PACK_CHUNKS__', json.dumps(chunks, separators=(',', ':')))
 html = html.replace('const engine = new Engine(GODOT_CONFIG);', 'const engine = new Engine(GODOT_CONFIG);\n' + code)
 assert 'engine.startGame({' in html, 'Godot HTML template changed'
 html = html.replace('engine.startGame({', 'startVerifiedGame({')

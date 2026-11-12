@@ -30,6 +30,15 @@ try:
         for name, query in [('hub', ''), ('lab', '?animation_lab=1')]:
             context = browser.new_context(viewport={'width': 390, 'height': 844})
             page = context.new_page()
+            # Fail the first chunk once, then require automatic recovery.
+            attempts = []
+            def interrupted(route):
+                attempts.append(route.request.url)
+                if len(attempts) == 1:
+                    route.fulfill(status=200, body=b'GDPC')
+                else:
+                    route.continue_()
+            page.route('**/*.pck.part0000*', interrupted)
             errors = []
             page.on('pageerror', lambda error: errors.append(str(error)))
             def dialog(message):
@@ -41,6 +50,7 @@ try:
                 page.wait_for_function('(name) => window.__dungeonReady === name', arg=name, timeout=120000)
                 page.wait_for_timeout(1000)
                 assert not errors, errors
+                assert len(attempts) == 2, attempts
                 print(f'{name}: application ready, no browser errors', flush=True)
             finally:
                 page.screenshot(path=str(output / f'{name}.png'))
@@ -53,9 +63,9 @@ try:
             dialogs.append(dialog.message)
             dialog.dismiss()
         page.on('dialog', failed_dialog)
-        page.route('**/*.pck', lambda route: route.fulfill(status=200, body=b'GDPC'))
+        page.route('**/*.pck.part*', lambda route: route.fulfill(status=200, body=b'GDPC'))
         page.goto(url + '?release-check=partial', wait_until='domcontentloaded', timeout=120000)
-        page.wait_for_function("document.getElementById('status-notice').textContent.includes('incomplete')", timeout=120000)
+        page.wait_for_function("document.getElementById('status-notice').textContent.includes('received 4 of')", timeout=120000)
         assert not dialogs, dialogs
         assert not page.evaluate('Boolean(window.__dungeonReady)')
         print('partial download: safely rejected before engine startup', flush=True)
