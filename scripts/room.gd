@@ -466,7 +466,7 @@ func _draw() -> void:
 		draw_circle(pos, 10, Color(0.4, 0.7, 1, 0.12))
 		draw_colored_polygon(PackedVector2Array([pos + Vector2(0, -7), pos + Vector2(5, 0), pos + Vector2(0, 7), pos + Vector2(-5, 0)]), Color("96c9ff"))
 	var actors: Array = []
-	if raised_content: actors.append({"y":408,"content":true})
+	if raised_content: actors.append({"y":_content_feet().y,"content":true})
 	actors.append({"y": player.y, "player": true})
 	for enemy in combat.enemies:
 		if enemy["hp"] > 0 and not enemy.get("dormant",false): actors.append({"y": enemy["pos"].y, "enemy": enemy})
@@ -810,6 +810,11 @@ func _spin_wheel() -> void:
 				_open_shop("A shopkeeper answered the wheel.")
 	)
 
+func _content_feet() -> Vector2:
+	var state: Dictionary = dungeon.rooms[dungeon.current]
+	if state["role"]=="bonus" and state["service"]=="trader" and not state.get("summoned_shop",false): return Vector2(120,385)
+	return Vector2(240,408)
+
 func _draw_room_content() -> void:
 	var state: Dictionary = dungeon.rooms[dungeon.current]
 	var role: String = state["role"]
@@ -819,6 +824,13 @@ func _draw_room_content() -> void:
 		_sprite("chest_open" if state["used"] else "chest_closed",center+Vector2(0,13),57 if state["used"] else 49)
 	elif role=="bonus":
 		var service: String = "shop" if state.get("summoned_shop",false) else state["service"]
+		if service=="upgrade": return # No altar until bonus rooms are redesigned.
+		if service=="trader":
+			center = _content_feet()
+			_draw_shadow(center,Vector2(13,4),Color(0,0,0,0.25))
+			_sprite("trader_merchant",center,55)
+			draw_string(font,center+Vector2(-25,22),"TRADER",HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color("dfbd78"))
+			return
 		if service=="wheel":
 			_sprite("wheel",center+Vector2(0,24),68)
 			var colors := [Color("69d4b8"),Color("dfbd78"),Color("96c9ff"),Color("be8be8"),Color("e88a81")]
@@ -830,9 +842,9 @@ func _draw_room_content() -> void:
 				draw_colored_polygon(points,colors[i])
 			draw_colored_polygon(PackedVector2Array([center+Vector2(-4,-46),center+Vector2(4,-46),center+Vector2(0,-37)]),Color("fff0cb"))
 		else:
-			var prop: String = {"shop":"shop","trader":"upgrade","healer":"healer","upgrade":"upgrade"}.get(service,"upgrade")
+			var prop: String = {"shop":"shop","healer":"healer"}.get(service,"upgrade")
 			_sprite(prop,center+Vector2(0,21),74 if service=="shop" else 62)
-			if service in ["shop","trader"]: _sprite("merchant",center+Vector2(38,23),47)
+			if service=="shop": _sprite("trader_merchant",center+Vector2(38,23),55)
 		draw_string(font,center+Vector2(-48,61),service.to_upper(),HORIZONTAL_ALIGNMENT_LEFT,-1,12,Color("dfbd78"))
 	elif role == "trap":
 		var trap: int = state["trap"]

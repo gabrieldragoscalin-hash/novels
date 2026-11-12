@@ -9,6 +9,7 @@ func run() -> void:
 	for layout in range(Plans.THEMES.size()):
 		var c = Combat.new(BOUNDS,Plans.obstacles(layout))
 		c.set_obstacles(Plans.obstacles(layout),Plans.terrain(layout))
+		assert(not c.blocked(Vector2(120,385),18),"Merchant standing spot intersects terrain")
 		for a in ANCHORS:
 			assert(not c.blocked(a,18),"Blocked entrance/service in "+Plans.THEMES[layout])
 			for b in ANCHORS: assert(not c.nav.get_point_path(c._cell(a),c._cell(b)).is_empty(),"Disconnected anchors")

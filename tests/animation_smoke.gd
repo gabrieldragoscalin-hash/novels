@@ -11,7 +11,7 @@ func run() -> void:
 	for weapon in ["bow","crossbow","wand","sword","hammer","chakram"]:
 		c.progression.weapon = weapon
 		assert(Art.frame("inventory_"+weapon).atlas==Art.INVENTORY)
-		for aim in [Vector2.UP,Vector2.RIGHT,Vector2.DOWN,Vector2.LEFT]:
+		for aim in [Vector2.UP,Vector2.RIGHT,Vector2.DOWN,Vector2.LEFT,Vector2(1,1).normalized(),Vector2(-1,-1).normalized()]:
 			for frame in range(90):
 				if frame%5==0: c.arsenal.release_serial += 1
 				var previous_phase: float = animation.phase
@@ -20,10 +20,19 @@ func run() -> void:
 				assert(animation.phase>previous_phase)
 				assert(animation.primary.distance_to(previous_hand)<=110.0/60+0.001,"Release teleported wrist")
 				var joints: Dictionary = animation.joints()
+				if weapon in ["bow","crossbow","hammer"]:
+					var distance: float = {"bow":6+animation.windup*4-exp(-animation.release_age*18),"crossbow":6.0,"hammer":5.0}[weapon]
+					var offset: Vector2 = Vector2.from_angle(animation.weapon_angle)*distance*(-1 if weapon=="bow" else 1)
+					assert((joints["off_hand"]-joints["main_hand"]).distance_to(offset)<0.001,"Support hand detached from weapon")
+				assert(animation.hand_side==1.0 or animation.hand_side== -1.0)
 				for side in ["main","off"]:
 					assert(joints[side+"_hand"].distance_to(joints[side+"_shoulder"])<HeroAnimator.ARM_LENGTH*2)
 					assert(is_equal_approx(joints[side+"_elbow"].distance_to(joints[side+"_shoulder"]),HeroAnimator.ARM_LENGTH))
 					assert(is_equal_approx(joints[side+"_elbow"].distance_to(joints[side+"_hand"]),HeroAnimator.ARM_LENGTH))
+	var resting = HeroAnimator.new(); resting.weapon = "wand"
+	var resting_joints: Dictionary = resting.joints()
+	assert(resting_joints["main_elbow"].x>resting_joints["main_shoulder"].x)
+	assert(resting_joints["off_elbow"].x<resting_joints["off_shoulder"].x)
 	var phase: float = animation.phase
 	for i in range(40): animation.tick(1.0/60,Vector2.ZERO,Vector2.RIGHT,c.arsenal,c.progression,1,false)
 	assert(animation.phase==phase and animation.move_blend<0.001)

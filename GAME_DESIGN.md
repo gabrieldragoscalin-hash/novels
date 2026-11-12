@@ -391,3 +391,20 @@ Future champions will reference gods from different mythologies: Hades, Zeus,
 Hou Yi, Chang’e, Baron Samedi, Ullr, Thor, Tsukuyomi and Amaterasu. These are future
 roster directions, not implemented characters or selectable powers yet.
 Room artwork remains provisional pending the designer's laptop sketches.
+
+## Weapon-grip and bonus-room cleanup
+
+The human rig uses shorter outward-bending arms, wrist-aligned mirrored hands,
+leading-shoulder selection when turning, and a single facing body at a time.
+Shoulder roots render beneath the cuirass; held weapons and gripping fingers
+remain visible above it. Bow/crossbow/hammer contacts are solved together inside
+both arm reach circles. Weapon UV grips now use both axes: chakrams are held at
+the rim, crossbows at the stock grip, and heavy weapons along their handles.
+Continuous walking/release timing and gameplay damage remain unchanged.
+
+Trader and free-upgrade rooms have no crystal pedestal. The upgrade room stays
+clear pending the bonus-room redesign; its existing upgrade interaction remains.
+The trader is a distinct unarmed travelling merchant with a visible face, cap,
+ledger, purse and pack, standing at (120,385), away from the room center. Shop
+NPCs use this merchant art too; their existing stall remains. The position is
+checked against all ten room collision plans. Services/rewards are unchanged.

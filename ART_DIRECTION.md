@@ -71,7 +71,7 @@ forearm, gripping hand, thigh, boot/shin and cape pieces in front/back views.
 arm/weapon targets. Body-part sizes and attachment origins stay fixed throughout
 walking, aiming and attacking. Two-link IK joins the shoulders, elbows and hands;
 hands overlap the actual weapon grip instead of a weapon being pasted over an
-idle full-body image. Facing uses hysteresis and an opaque orientation blend.
+idle full-body image. Facing uses hysteresis and a single opaque body view.
 Pausing, extra shots, attacks and turns do not reset the walking phase.
 
 Bow draw/string release, crossbow recoil, wand casting/continuous laser, sword
@@ -256,3 +256,20 @@ three-size browser menu captures, profile/modal interactions, six-weapon invento
 review, and walking/attacking captures. See `tests/home_smoke.gd`,
 `tests/browser_home.py`, `tests/browser_hub_layout.py` and
 `tests/browser_animation_motion.py`.
+
+## Weapon-grip and bonus-room cleanup
+
+The human rig uses shorter outward-bending arms, wrist-aligned mirrored hands,
+leading-shoulder selection when turning, and a single facing body at a time.
+Shoulder roots render beneath the cuirass; held weapons and gripping fingers
+remain visible above it. Bow/crossbow/hammer contacts are solved together inside
+both arm reach circles. Weapon UV grips now use both axes: chakrams are held at
+the rim, crossbows at the stock grip, and heavy weapons along their handles.
+Continuous walking/release timing and gameplay damage remain unchanged.
+
+Trader and free-upgrade rooms have no crystal pedestal. The upgrade room stays
+clear pending the bonus-room redesign; its existing upgrade interaction remains.
+The trader is a distinct unarmed travelling merchant with a visible face, cap,
+ledger, purse and pack, standing at (120,385), away from the room center. Shop
+NPCs use this merchant art too; their existing stall remains. The position is
+checked against all ten room collision plans. Services/rewards are unchanged.

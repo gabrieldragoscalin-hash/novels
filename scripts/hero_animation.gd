@@ -3,12 +3,11 @@ extends RefCounted
 const Art = preload("res://scripts/game_art.gd")
 const WeaponArt = preload("res://scripts/weapon_art.gd")
 const STRIDE := 104.0
-const ARM_LENGTH := 11.5
+const ARM_LENGTH := 9.0
 var phase := 0.0
 var move_blend := 0.0
 var motion_direction := Vector2.DOWN
 var aim_angle := -PI/2
-var back_blend := 1.0
 var facing_back := true
 var hand_side := 1.0
 var primary := Vector2(12,-24)
@@ -28,7 +27,7 @@ var muzzle := Vector2.ZERO
 func reset() -> void:
 	phase = 0; move_blend = 0; release_age = 10; last_release = 0; time = 0
 	primary = Vector2(12,-24); support = Vector2(-12,-24)
-	aim_angle = -PI/2; weapon_angle = aim_angle; back_blend = 1; facing_back = true
+	aim_angle = -PI/2; weapon_angle = aim_angle; facing_back = true; hand_side = 1.0
 
 func sync_room(serial: int) -> void:
 	last_release = serial; release_age = 10; windup = 0
@@ -44,8 +43,9 @@ func tick(delta: float, motion: Vector2, aim: Vector2, arsenal, progression, fir
 	var direction := Vector2.from_angle(aim_angle)
 	if direction.y < -0.25: facing_back = true
 	elif direction.y > 0.25: facing_back = false
-	back_blend = move_toward(back_blend,1.0 if facing_back else 0.0,delta*7)
-	# Keep the same gripping arm when targets cross the aim axis.
+	# Use the visible leading shoulder when the character turns sideways.
+	if direction.x>0.35: hand_side = 1.0
+	elif direction.x< -0.35: hand_side = -1.0
 	weapon = progression.weapon
 	laser = weapon=="wand" and progression.ranks["perpetuum"]>0
 	meteor = weapon=="wand" and progression.ranks["meteor"]>0
@@ -63,7 +63,7 @@ func tick(delta: float, motion: Vector2, aim: Vector2, arsenal, progression, fir
 
 func targets(direction: Vector2) -> Dictionary:
 	var side := Vector2(-direction.y,direction.x)
-	var center := Vector2(0,-34)
+	var center := Vector2(0,-28)
 	var recoil := exp(-release_age*18)
 	var swing := 0.0
 	var hand := center+direction*12+side*2
@@ -71,10 +71,10 @@ func targets(direction: Vector2) -> Dictionary:
 	match weapon:
 		"bow":
 			hand = center+direction*(13-recoil*2)
-			other = center-direction*(3+windup*8-recoil*3)+side*2
+			other = hand-direction*(6+windup*4-recoil)
 		"crossbow":
 			hand = center+direction*(7-recoil*4)+side*2
-			other = center+direction*(14-recoil*4)-side*2
+			other = hand+direction*6
 		"wand":
 			var cast := 0.5+sin(time*10)*0.12 if laser else recoil
 			hand = center+direction*(13+cast*6)+side*4
@@ -87,7 +87,7 @@ func targets(direction: Vector2) -> Dictionary:
 		"hammer":
 			swing = -windup*1.2+recoil*0.7
 			hand = center+direction*(10+recoil*6)+Vector2(0,-windup*10)
-			other = hand-direction.rotated(swing)*6
+			other = hand+direction.rotated(swing)*5
 		"chakram":
 			hand = center+direction*(10+recoil*11)-side*windup*7
 	return {"primary":hand,"support":other,"angle":direction.angle()+swing}
@@ -105,16 +105,26 @@ func joints() -> Dictionary:
 	var off_shoulder := torso+Vector2(-hand_side*8,-38)
 	var main_hand := main_shoulder+(primary-main_shoulder).limit_length(ARM_LENGTH*2-0.1)
 	var off_hand := off_shoulder+(support-off_shoulder).limit_length(ARM_LENGTH*2-0.1)
-	return {"torso":torso,"main_shoulder":main_shoulder,"off_shoulder":off_shoulder,"main_hand":main_hand,"off_hand":off_hand,"main_elbow":elbow(main_shoulder,main_hand,hand_side),"off_elbow":elbow(off_shoulder,off_hand,-hand_side)}
+	# Project the complete grip into BOTH reach circles, keeping the second hand
+	# attached to the same weapon instead of independently clamping its wrist.
+	if weapon in ["bow","crossbow","hammer"]:
+		var forward := Vector2.from_angle(weapon_angle)
+		var offset: Vector2 = forward*({"crossbow":6.0,"hammer":5.0}.get(weapon,0.0))
+		if weapon=="bow": offset = -forward*(6+windup*4-exp(-release_age*18))
+		for i in range(12):
+			main_hand = off_shoulder-offset+(main_hand-(off_shoulder-offset)).limit_length(ARM_LENGTH*2-0.15)
+			main_hand = main_shoulder+(main_hand-main_shoulder).limit_length(ARM_LENGTH*2-0.15)
+		off_hand = main_hand+offset
+	return {"torso":torso,"main_shoulder":main_shoulder,"off_shoulder":off_shoulder,"main_hand":main_hand,"off_hand":off_hand,"main_elbow":elbow(main_shoulder,main_hand,-hand_side),"off_elbow":elbow(off_shoulder,off_hand,hand_side)}
 
 func draw(canvas: CanvasItem, feet: Vector2) -> void:
 	var pose := joints()
 	grip = feet+pose["main_hand"]
-	var barrel: float = {"bow":5.0,"crossbow":23.0,"wand":21.0,"chakram":0.0}.get(weapon,16.0)
+	var barrel: float = {"bow":5.0,"crossbow":18.5,"wand":20.3,"chakram":7.0}.get(weapon,16.0)
 	muzzle = grip+Vector2.from_angle(weapon_angle)*barrel
-	# Cross-fade orientation on the SAME skeleton; turning cannot restart locomotion.
-	if back_blend<0.999: _draw_facing(canvas,feet,pose,"front",1.0)
-	if back_blend>0.001: _draw_facing(canvas,feet,pose,"back",back_blend)
+	# A single body/arm set avoids ghost limbs during a turn. Hysteresis prevents
+	# facing flicker; the underlying stride and wrist interpolation stay continuous.
+	_draw_facing(canvas,feet,pose,"back" if facing_back else "front",1.0)
 	canvas.draw_set_transform(Vector2.ZERO)
 
 func _draw_facing(c: CanvasItem, feet: Vector2, pose: Dictionary, view: String, alpha: float) -> void:
@@ -131,18 +141,22 @@ func _draw_facing(c: CanvasItem, feet: Vector2, pose: Dictionary, view: String, 
 		var knee := elbow(hip,foot,float(leg),11.0)
 		_segment(c,"rig_"+view+"_thigh",hip,knee,7.5,tint)
 		_segment(c,"rig_"+view+"_shin",knee,foot,7.0,tint)
-	if view=="back": _arms(c,feet,pose,view,tint)
+	# Shoulder roots sit UNDER the cuirass, not on top of the neck/armor.
+	_arms(c,feet,pose,view,tint,"upper")
+	if view=="back": _arms(c,feet,pose,view,tint,"forearm")
 	c.draw_texture_rect(Art.frame("rig_"+view+"_torso"),Rect2(feet+torso+Vector2(-10,-43),Vector2(20,24)),false,tint)
+	if view=="front": _arms(c,feet,pose,view,tint,"forearm")
+	_arms(c,feet,pose,view,tint,"held")
 	c.draw_texture_rect(Art.frame("rig_"+view+"_head"),Rect2(feet+torso+Vector2(-7,-55),Vector2(14,15)),false,tint)
-	if view=="front": _arms(c,feet,pose,view,tint)
 
-func _arms(c: CanvasItem, feet: Vector2, pose: Dictionary, view: String, tint: Color) -> void:
-	for name in ["off","main"]:
+func _arms(c: CanvasItem, feet: Vector2, pose: Dictionary, view: String, tint: Color, layer: String) -> void:
+	for name in (["off","main"] if layer!="held" else []):
 		var shoulder: Vector2 = feet+pose[name+"_shoulder"]
 		var joint: Vector2 = feet+pose[name+"_elbow"]
 		var hand: Vector2 = feet+pose[name+"_hand"]
-		_segment(c,"rig_"+view+"_upperarm",shoulder,joint,6.8,tint)
-		_segment(c,"rig_"+view+"_forearm",joint,hand,5.0,tint)
+		if layer=="upper": _segment(c,"rig_"+view+"_upperarm",shoulder,joint,5.2,tint)
+		else: _segment(c,"rig_"+view+"_forearm",joint,hand,4.1,tint)
+	if layer!="held": return
 	var hand: Vector2 = feet+pose["main_hand"]
 	var weapon_tint := tint
 	if weapon=="chakram": weapon_tint.a *= clampf((release_age-0.10)/0.12,0,1)
@@ -155,7 +169,10 @@ func _arms(c: CanvasItem, feet: Vector2, pose: Dictionary, view: String, tint: C
 	# Hands are painted gripping fists, layered AFTER the shaft/string they hold.
 	for name in ["off","main"]:
 		var point: Vector2 = feet+pose[name+"_hand"]
-		c.draw_texture_rect(Art.frame("rig_"+view+"_hand"),Rect2(point+Vector2(-2.5,-3.5),Vector2(5,6)),false,tint)
+		var wrist_angle: float = (point-feet-pose[name+"_elbow"]).angle()-PI/2
+		c.draw_set_transform(point,wrist_angle,Vector2(-hand_side if name=="off" else hand_side,1))
+		c.draw_texture_rect(Art.frame("rig_"+view+"_hand"),Rect2(-1.9,-2.0,3.8,4.8),false,tint)
+		c.draw_set_transform(Vector2.ZERO)
 
 static func _segment(c: CanvasItem, key: String, start: Vector2, end: Vector2, width: float, tint: Color) -> void:
 	var length := start.distance_to(end)

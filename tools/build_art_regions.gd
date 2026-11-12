@@ -2,6 +2,7 @@ extends SceneTree
 ## Analyze alpha to generate atlas UV metadata; never modifies source artwork.
 func _initialize() -> void:
 	var groups := {
+		"merchant":["trader_merchant"],
 		"masonry":["masonry_h","masonry_v","cover_long","cover_block","gate_front","gate_side","steps","sluice_mouth"],
 		"inventory":["inventory_bow","inventory_crossbow","inventory_wand","inventory_sword","inventory_hammer","inventory_chakram"],
 		"hero_rig":["rig_front_head","rig_front_torso","rig_front_upperarm","rig_front_forearm","rig_front_hand","rig_front_thigh","rig_front_shin","rig_front_cape","rig_back_head","rig_back_torso","rig_back_upperarm","rig_back_forearm","rig_back_hand","rig_back_thigh","rig_back_shin","rig_back_cape"],
@@ -16,12 +17,13 @@ func _initialize() -> void:
 	var pivots := {}
 	for group in groups:
 		var path := "res://art/champions/aster_%s.png" % ("rig" if group=="hero_rig" else "inventory") if group in ["hero_rig","inventory"] else "res://art/sanctuary/%s.png" % group
+		if group=="merchant": path = "res://art/characters/merchant.png"
 		var source := Image.load_from_file(path)
 		assert(source!=null)
 		source.convert(Image.FORMAT_RGBA8)
 		var data := source.get_data()
-		var columns: int = 3 if group=="inventory" else (5 if group=="bosses" else 4)
-		var rows: int = 4 if group in ["hero","enemies","hero_rig"] else (3 if group=="objects" else 2)
+		var columns: int = 1 if group=="merchant" else 3 if group=="inventory" else (5 if group=="bosses" else 4)
+		var rows: int = 1 if group=="merchant" else 4 if group in ["hero","enemies","hero_rig"] else (3 if group=="objects" else 2)
 		for index in range(groups[group].size()):
 			var x0 := int(floor((index%columns)*source.get_width()/float(columns)))
 			var y0 := int(floor(int(index/columns)*source.get_height()/float(rows)))

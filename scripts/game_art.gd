@@ -14,6 +14,7 @@ const INVENTORY: Texture2D = preload("res://art/champions/aster_inventory.png")
 const RIG: Texture2D = preload("res://art/champions/aster_rig.png")
 const HERO: Texture2D = preload("res://art/sanctuary/hero.png")
 const BOSSES: Texture2D = preload("res://art/sanctuary/bosses.png")
+const MERCHANT: Texture2D = preload("res://art/characters/merchant.png")
 const OBJECTS: Texture2D = preload("res://art/sanctuary/objects.png")
 const PROP_KEYS := ["pillar","chest_closed","chest_open","shop","healer","upgrade","wheel","exit"]
 const REGIONS := [
@@ -32,7 +33,8 @@ static func frame(key: String) -> AtlasTexture:
 	var keys: Array = ACTOR_KEYS if actor else PROP_KEYS
 	assert(Layout.FRAMES.has(key),"Unknown art frame: "+key)
 	var source: Texture2D = ACTORS if actor else PROPS
-	if MASONRY_KEYS.has(key): source = MASONRY
+	if key=="trader_merchant": source = MERCHANT
+	elif MASONRY_KEYS.has(key): source = MASONRY
 	elif key.begins_with("inventory_"): source = INVENTORY
 	elif key.begins_with("rig_"): source = RIG
 	elif key.begins_with("boss_"): source = BOSSES
