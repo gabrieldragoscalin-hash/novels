@@ -167,6 +167,17 @@ random common copies. Armor parts level armor/headgear/pants/boots; accessory pa
 level bracelet/necklace/ring; weapon parts level weapons. Item levels and rarity
 synthesis are separate operations.
 
+The shop keeps its six daily offers above a dedicated Gold chest panel. Gold has
+chest art on the left and illustrative legendary item placeholders on the right.
+Below it, Copper (left) and Silver (right) have smaller side-by-side panels, with
+chest art on the left and opening buttons on the right. Sanctuary jade/gold styling
+and swipe scrolling match Inventory; the shop has its own currency readout.
+
+Each chest has Open 1 / Open 10. Spend 1 / 10 matching keys when available;
+otherwise spend the full gem amount, keeping any keys below the threshold.
+Gem prices: Copper 80 / 720, Silver 150 / 1350, Gold 300 / 2700.
+Batches are all-or-nothing and apply pity independently to each roll. All rewards
+are shown together within Shop and added to Inventory; opening does not change tabs.
 Copper/silver/gold shop chests use matching keys or gems. Exact odds are tuning
 values but preserve the requested distribution. Each has a saved, separate
 35-open pity mechanic. Gold guarantees Legendary +1 after 34 non-legendary opens;

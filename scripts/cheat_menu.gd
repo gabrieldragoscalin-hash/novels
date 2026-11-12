@@ -98,6 +98,7 @@ func reset_everything() -> void:
 	game.hub_menu.synthesis_base = ""; game.hub_menu.synthesis_fodder.clear()
 	game.hub_menu.synthesis_mode = false
 	game.hub_menu.perk_message = ""; game.hub_menu.message = ""; game.hub_menu.filter_slot = ""
+	game.hub_menu.last_chest_rewards.clear(); game.hub_menu.item_preview.hide()
 	game._new_run(false)
 	game._return_to_hub()
 	game._refresh_hub()

@@ -82,7 +82,12 @@ Daily floor rewards include floor 4: two silver keys, floor 5: one gold key.
 
 - Daily shop: 5 parts for 50 coins per category; each common copy costs 150 coins.
   Each of the six offers can be bought once per UTC day, refreshing at midnight UTC.
-- Chests cost one matching key OR 60/200/500 gems for copper/silver/gold. Gem
+- Chests cost one matching key OR 80/150/300 gems for copper/silver/gold.
+  Open 10 costs ten matching keys OR 720/1350/2700 gems (10% gem discount).
+  Use keys only when there are enough for the whole selected batch; otherwise
+  charge the full gem price and retain all keys. Insufficient funds grant no items
+  and spend nothing. Every opening in a batch updates pity in sequence; the batch
+  is saved once with all ten individually identified rewards. Gem
   acquisition is reserved; gem transactions are tested using isolated fixtures.
 - Copper odds: common 55.5%, uncommon 35%, rare 9%, epic 0.5%.
 - Silver: common 39.2%, uncommon 32%, rare 26%, epic 2.5%, legendary 0.3%.

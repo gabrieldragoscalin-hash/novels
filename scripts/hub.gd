@@ -250,6 +250,27 @@ func open_chest(kind: String, payment: String = "key") -> Dictionary:
 		if gems < Economy.GEM_COST[kind]: return {}
 	if payment == "key": keys[kind] -= 1
 	else: gems -= Economy.GEM_COST[kind]
+	var result := _roll_chest(kind)
+	save(); return result
+
+func chest_offer(kind: String, count: int) -> Dictionary:
+	if not Economy.ODDS.has(kind) or count not in [1,10]: return {}
+	var payment := "key" if keys[kind] >= count else "gems"
+	var cost: int = count if payment == "key" else (Economy.GEM_COST[kind] if count == 1 else Economy.GEM_TEN_COST[kind])
+	return {"payment":payment,"cost":cost,"affordable":keys[kind] >= cost if payment == "key" else gems >= cost}
+
+func open_chests(kind: String, count: int) -> Array:
+	# Quote again at activation: never partially spend keys or mix payment types.
+	var offer := chest_offer(kind,count)
+	if offer.is_empty() or not offer["affordable"]: return []
+	if offer["payment"] == "key": keys[kind] -= offer["cost"]
+	else: gems -= offer["cost"]
+	var rewards: Array = []
+	for index in range(count): rewards.append(_roll_chest(kind))
+	save()
+	return rewards
+
+func _roll_chest(kind: String) -> Dictionary:
 	var guaranteed: bool = pity[kind] >= 34
 	var rarity := 0
 	var plus := 0
@@ -267,7 +288,7 @@ func open_chest(kind: String, payment: String = "key") -> Dictionary:
 	pity[kind] = 0 if highest else pity[kind] + 1
 	var catalog: Array = Equipment.ITEMS.keys()
 	var uid := _add_item(catalog[rng.randi_range(0,catalog.size()-1)],rarity,plus)
-	save(); return {"uid":uid,"guaranteed":guaranteed,"rarity":rarity,"plus":plus}
+	return {"uid":uid,"guaranteed":guaranteed,"rarity":rarity,"plus":plus}
 
 func claim_floor(floor_number: int, token: String, now: int = -1) -> Dictionary:
 	refresh_day(now)

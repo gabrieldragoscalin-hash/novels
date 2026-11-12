@@ -3,7 +3,8 @@ extends RefCounted
 const RARITIES := ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic"]
 const COLORS := [Color("aab1ba"),Color("72c586"),Color("76aeeb"),Color("ba87df"),Color("efcf69"),Color("ff8b3d")]
 const ODDS := {"copper":[55.5,35.0,9.0,0.5,0.0], "silver":[39.2,32.0,26.0,2.5,0.3], "gold":[17.5,22.0,45.0,13.0,2.5]}
-const GEM_COST := {"copper":60,"silver":200,"gold":500}
+const GEM_COST := {"copper":80,"silver":150,"gold":300}
+const GEM_TEN_COST := {"copper":720,"silver":1350,"gold":2700}
 const PART_COST := 50
 const PART_QUANTITY := 5
 const ITEM_COST := 150

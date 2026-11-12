@@ -11,6 +11,7 @@ const Art = preload("res://scripts/game_art.gd")
 const HomeArt = preload("res://scripts/hub_art.gd")
 const Windows = preload("res://scripts/hub_windows.gd")
 const Icons = preload("res://scripts/ui_icons.gd")
+const Chests = preload("res://scripts/shop_chests.gd")
 const SwipeScroll = preload("res://scripts/swipe_scroll.gd")
 const ItemPreview = preload("res://scripts/item_preview.gd")
 const SEALED_SLOT = preload("res://art/ui/sealed_slot.svg")
@@ -29,6 +30,10 @@ var future_buttons: Dictionary = {}
 var resource_label: Label
 var best_label: Label
 var inventory_grid: GridContainer
+var shop_wallet: Label
+var chest_panels: Dictionary = {}
+var chest_buttons: Dictionary = {}
+var last_chest_rewards: Array[String] = []
 var shop_grid: VBoxContainer
 var perk_grid: GridContainer
 var task_buttons: Array[Button] = []
@@ -156,6 +161,7 @@ func _build() -> void:
 	item_preview = ItemPreview.new(); add_child(item_preview); item_preview.setup(hub)
 	item_preview.changed.connect(func(): refresh())
 	inventory_scroll.swipe_started.connect(func(): hold_uid = ""; item_preview.hide())
+	shop_scroll.swipe_started.connect(func(): item_preview.hide())
 	select_tab(2)
 
 func _build_header() -> void:
@@ -297,8 +303,9 @@ func _build_inventory() -> void:
 
 func _build_shop() -> void:
 	var page := pages[0]
-	_label(page,"SHOP",Vector2(24,108),22)
-	_label(page,"Daily coin offers • keys or gems open chests",Vector2(24,143),12,Color("8cb6ba"))
+	var title := _label(page,"SHOP",Vector2(24,108),24)
+	title.add_theme_font_override("font",HomeArt.SERIF)
+	shop_wallet = _label(page,"",Vector2(24,143),11,Color("dfbd78"))
 	shop_scroll = SwipeScroll.new()
 	shop_scroll.position = Vector2(24,183)
 	shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -436,7 +443,8 @@ func _add_item(grid: GridContainer, uid: String) -> void:
 
 func _refresh_shop() -> void:
 	_clear_grid(shop_grid)
-	var heading := Label.new(); heading.text = "DAILY OFFERS • refresh at 00:00 UTC"; heading.add_theme_font_size_override("font_size",13); shop_grid.add_child(heading)
+	shop_wallet.text = "%s coins · %s gems · Keys C %d / S %d / G %d" % [_amount(hub.coins),_amount(hub.gems),hub.keys["copper"],hub.keys["silver"],hub.keys["gold"]]
+	var heading := Label.new(); heading.text = "DAILY OFFERS • refresh at 00:00 UTC"; heading.add_theme_font_size_override("font_size",13); heading.add_theme_font_override("font",HomeArt.SERIF); shop_grid.add_child(heading)
 	var daily := GridContainer.new(); daily.columns = 2
 	daily.add_theme_constant_override("h_separation",10); daily.add_theme_constant_override("v_separation",8); shop_grid.add_child(daily)
 	for index in range(6):
@@ -444,24 +452,54 @@ func _refresh_shop() -> void:
 		var title: String = "%d %s parts" % [offer["quantity"],offer["type"]] if offer["kind"] == "parts" else "Common "+Gear.ITEMS[offer["type"]]["name"]
 		var button := _button(daily,"%s\n%s" % [title,"SOLD" if offer["sold"] else "%d coins" % offer["price"]],Vector2.ZERO,Vector2.ZERO,_buy_offer.bind(index))
 		button.custom_minimum_size = Vector2(204,80); button.add_theme_font_size_override("font_size",11)
+		button.mouse_filter = Control.MOUSE_FILTER_PASS
+		button.add_theme_stylebox_override("normal",_style(Color("1a302d"),Color("81744d")))
 		button.disabled = offer["sold"] or hub.coins < offer["price"]
-	var chest_heading := Label.new(); chest_heading.text = "ITEM CHESTS • duplicates are kept"; chest_heading.add_theme_font_size_override("font_size",13); shop_grid.add_child(chest_heading)
-	for kind in ["copper","silver","gold"]:
-		var card := Panel.new(); card.custom_minimum_size = Vector2(418,170); card.add_theme_stylebox_override("panel",_style(Color("172c38"),Color("50616c"))); shop_grid.add_child(card)
-		_label(card,kind.capitalize()+" chest",Vector2(12,9),18)
-		var highest := "Epic" if kind == "copper" else ("Legendary" if kind == "silver" else "Legendary +1")
-		_label(card,"Guaranteed %s in ≤%d misses" % [highest,35-hub.pity[kind]],Vector2(12,39),11,Color("dfbd78"))
-		var odds: Array = hub.Economy.ODDS[kind]
-		_label(card,"Grey %s%% • Green %s%% • Blue %s%%\nPurple %s%% • Yellow %s%%%s" % [odds[0],odds[1],odds[2],odds[3],odds[4]," (10% of yellow is +1)" if kind == "gold" else ""],Vector2(12,60),10,Color("bad2d0"))
-		if kind == "gold": _label(card,"Any yellow resets the gold guarantee.",Vector2(12,94),10,Color("bad2d0"))
-		var key := _button(card,"Use 1 key (%d)" % hub.keys[kind],Vector2(12,122),Vector2(190,36),_open_chest.bind(kind,"key")); key.disabled = hub.keys[kind] <= 0
-		var gem := _button(card,"%d gems" % hub.Economy.GEM_COST[kind],Vector2(216,122),Vector2(190,36),_open_chest.bind(kind,"gems")); gem.disabled = hub.gems < hub.Economy.GEM_COST[kind]
-	var notice := Label.new(); notice.text = message; notice.add_theme_font_size_override("font_size",12); shop_grid.add_child(notice)
+	var chest_heading := Label.new(); chest_heading.text = "RELIQUARIES"; chest_heading.add_theme_font_override("font",HomeArt.SERIF); chest_heading.add_theme_font_size_override("font_size",17); shop_grid.add_child(chest_heading)
+	Chests.build(self,shop_grid)
+	var notice := Label.new(); notice.text = message; notice.add_theme_font_size_override("font_size",12); notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; notice.custom_minimum_size.x = 418; shop_grid.add_child(notice)
+	if not last_chest_rewards.is_empty():
+		var rewards := GridContainer.new(); rewards.columns = 4; rewards.add_theme_constant_override("h_separation",8); rewards.add_theme_constant_override("v_separation",8); shop_grid.add_child(rewards)
+		for uid in last_chest_rewards:
+			if hub.inventory.has(uid): _add_reward(rewards,uid)
+
+func _add_reward(grid: GridContainer, uid: String) -> void:
+	var item: Dictionary = hub.inventory[uid]
+	var button := _button(grid,"",Vector2.ZERO,Vector2.ZERO,func():
+		if not shop_scroll.suppress_click(): item_preview.open(uid,button_bounds(grid,uid),true))
+	button.set_meta("reward_uid",uid); button.custom_minimum_size = Vector2(98,104); button.mouse_filter = Control.MOUSE_FILTER_PASS
+	button.add_theme_stylebox_override("normal",_style(Color("1a302d"),hub.Economy.COLORS[item["rarity"]],2))
+	_icon(button,item["type"],Vector2(29,5),Vector2(40,40))
+	var title := _label(button,"",Vector2(4,48),10,hub.Economy.COLORS[item["rarity"]])
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; title.size = Vector2(90,48); title.clip_text = true
+	title.text = hub.item_name(uid)
+
+func button_bounds(grid: GridContainer, uid: String) -> Rect2:
+	for child in grid.get_children():
+		if child.get_meta("reward_uid","") == uid: return child.get_global_rect()
+	return Rect2(Vector2(24,200),Vector2(98,104))
+
+func _open_chest_offer(kind: String, count: int) -> void:
+	if shop_scroll.suppress_click(): return
+	var rewards: Array = hub.open_chests(kind,count)
+	if rewards.is_empty(): message = "Not enough currency."; refresh(); return
+	last_chest_rewards.clear()
+	for reward in rewards: last_chest_rewards.append(reward["uid"])
+	message = "Opened %d %s chest%s · rewards added to Inventory" % [count,kind,"" if count==1 else "s"]
+	item_preview.hide(); refresh()
+	# Reveal all rewards without moving the player into another menu.
+	_scroll_to_rewards.call_deferred()
+
+func _scroll_to_rewards() -> void:
+	await get_tree().process_frame
+	shop_scroll.scroll_vertical = roundi(shop_scroll.get_v_scroll_bar().max_value)
 
 func _buy_offer(index: int) -> void:
+	if shop_scroll.suppress_click(): return
 	message = hub.buy_offer(index); refresh()
 
 func _open_chest(kind: String,payment: String) -> void:
+	if shop_scroll.suppress_click(): return
 	var result: Dictionary = hub.open_chest(kind,payment)
 	message = "Not enough currency." if result.is_empty() else ("Guaranteed: " if result["guaranteed"] else "Opened: ")+hub.item_name(result["uid"])
 	refresh()
