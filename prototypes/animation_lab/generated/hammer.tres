@@ -1,0 +1,19 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://prototypes/animation_lab/weapon_profile.gd" id="1_4ynem"]
+[ext_resource type="Texture2D" path="res://prototypes/animation_lab/art/weapons.png" id="2_ic01x"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ka4rj"]
+atlas = ExtResource("2_ic01x")
+region = Rect2(1613, 7, 421, 709)
+filter_clip = true
+
+[resource]
+script = ExtResource("1_4ynem")
+display_name = "War hammer"
+family = "hammer"
+texture = SubResource("AtlasTexture_ka4rj")
+size = Vector2(38, 76)
+grip_y = 0.8
+string_x = -32.0
+tips = Vector2(-32, 33)

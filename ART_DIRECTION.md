@@ -273,3 +273,14 @@ The trader is a distinct unarmed travelling merchant with a visible face, cap,
 ledger, purse and pack, standing at (120,385), away from the room center. Shop
 NPCs use this merchant art too; their existing stall remains. The position is
 checked against all ten room collision plans. Services/rewards are unchanged.
+
+## Shared-rig experiment
+
+`prototypes/animation_lab/` contains a separately accessible visual proof with
+new front/back/side skin parts, closed gripping hands, unstrung weapon sprites,
+editable Bone2D/Skeleton2D scene, weighted arm polygons and external animation
+libraries. Two skins and both bow designs reuse the same family clips. It stays
+outside the dungeon renderer while its visual quality is evaluated. Mechanical
+contact tests do not replace art/pose review; directional weapon illustrations
+and additional weapon-family clips remain future work. The adjacent README
+explains manual Godot editing and which generation tools overwrite templates.

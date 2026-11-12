@@ -70,6 +70,7 @@ jobs:
           godot --headless --path . --script tests/visuals_smoke.gd
           godot --headless --path . --script tests/architecture_smoke.gd
           godot --headless --path . --script tests/animation_smoke.gd
+          godot --headless --path . --script tests/animation_lab_smoke.gd
           godot --headless --path . --script tests/attack_vfx_smoke.gd
           godot --headless --path . --script tests/attack_stress.gd
           godot --headless --path . --script tests/arena_style_smoke.gd

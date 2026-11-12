@@ -1,0 +1,17 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://prototypes/animation_lab/weapon_profile.gd" id="1_bavne"]
+[ext_resource type="Texture2D" path="res://prototypes/animation_lab/art/weapons.png" id="2_qky52"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_g8g8w"]
+atlas = ExtResource("2_qky52")
+region = Rect2(188, 17, 373, 682)
+filter_clip = true
+
+[resource]
+script = ExtResource("1_bavne")
+display_name = "Sun bow"
+texture = SubResource("AtlasTexture_g8g8w")
+grip_x = 0.837
+string_x = -35.0
+tips = Vector2(-35, 33)

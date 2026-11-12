@@ -1,0 +1,18 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://prototypes/animation_lab/weapon_profile.gd" id="1_4d28n"]
+[ext_resource type="Texture2D" path="res://prototypes/animation_lab/art/weapons.png" id="2_3hghi"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_kuuj6"]
+atlas = ExtResource("2_3hghi")
+region = Rect2(899, 17, 369, 682)
+filter_clip = true
+
+[resource]
+script = ExtResource("1_4d28n")
+display_name = "Moon bow"
+texture = SubResource("AtlasTexture_kuuj6")
+size = Vector2(40, 72)
+grip_x = 0.828
+string_x = -32.0
+tips = Vector2(-32, 33)

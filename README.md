@@ -203,3 +203,12 @@ with matching profile, six weapon-holding inventory poses and animated dungeon
 rig. Additional mythology-inspired champions remain future work.
 `python3 tests/browser_home.py` checks the new home interactions and captures
 phone, short-phone and desktop views for clipping review.
+
+### Experimental animation lab
+
+Use **Miscellaneous → Animation lab**, or append `?animation_lab=1` to the game URL.
+Compare two skins sharing bow/hammer clips, swap bow designs, walk, pause, scrub,
+and inspect at gameplay size. This is a separate proof; the dungeon keeps its
+current renderer. Side view is the reference and front/back art remains provisional.
+Editable Godot files and fitting instructions are in
+[prototypes/animation_lab/README.md](prototypes/animation_lab/README.md).

@@ -408,3 +408,14 @@ The trader is a distinct unarmed travelling merchant with a visible face, cap,
 ledger, purse and pack, standing at (120,385), away from the room center. Shop
 NPCs use this merchant art too; their existing stall remains. The position is
 checked against all ten room collision plans. Services/rewards are unchanged.
+
+## Experimental shared animation lab
+
+An isolated lab under Miscellaneous tests one editable Skeleton2D rig, weighted
+arm meshes, shared AnimationPlayer clips, two compatible humanoid skins, two bow
+designs and a hammer. Equipment uses editable attachment profiles and moving bow
+strings. Walking and upper-body actions are independent; inspection, pause and
+scrubbing controls are available. Side view is the reference. Front/back fitting
+and weapon perspective remain provisional. This experiment does not replace the
+dungeon renderer or unlock a second champion. See prototypes/animation_lab/README.md
+for source scenes, resource editing and the artwork contract.

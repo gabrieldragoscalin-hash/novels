@@ -71,6 +71,11 @@ var movement_blockers: Array[Control] = []
 var font := ThemeDB.fallback_font
 
 func _ready() -> void:
+	var lab_requested := false
+	if OS.has_feature("web"): lab_requested = JavaScriptBridge.eval("new URLSearchParams(location.search).get('animation_lab') === '1'")
+	if lab_requested:
+		get_tree().change_scene_to_file.call_deferred("res://prototypes/animation_lab/lab.tscn")
+		return
 	Art.prepare()
 	AttackRenderer.Vfx.prepare()
 	room_backdrop = RoomBackdrop.new(); room_backdrop.z_index = -20; add_child(room_backdrop)
