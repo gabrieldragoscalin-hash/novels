@@ -138,11 +138,19 @@ Inventory has eight active slots around the central character:
 left Weapon/Armor/Headgear/Pants; right Boots/Necklace/Ring/Bracelet.
 The owned-item grid is underneath. Each copy has its own identity, level, rarity
 and enhancement. Duplicate finds remain separate items, never scrap.
+Inventory uses Sanctuary jade, tarnished gold, serif headings and a framed champion
+alcove. Swipe directly over items to scroll on mobile, with momentum and no item
+activation after a drag. Hover reveals non-modal item details on desktop; tap or
+hold reveals them on touch. Equip/level/unequip actions remain in that preview,
+which dismisses on pointer departure, an outside tap, scrolling, or tab change.
 
 Two extra squares below the character are reserved and locked. Pet's milestone is
 first reaching floor 10 (saved permanently); Spirit unlocks later with its threshold
 still undefined. The Pet milestone is tracked, but pet gameplay remains reserved.
-The top battlepass banner and left journal open development placeholders.
+Locked squares have no captions: stone covers, crimson metal chains and a lock.
+The battlepass banner, player portrait/name, home resource strip and left journal
+belong only to Play. Other bottom-tab screens have their own content from the top,
+without carrying home controls across. The banner and journal open development placeholders.
 Right-side features are reserved. Gems and task rewards await their definitions.
 
 Equipment stats are copied into a new run. Equipping, leveling or synthesizing in

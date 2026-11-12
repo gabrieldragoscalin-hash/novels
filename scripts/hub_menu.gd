@@ -11,6 +11,9 @@ const Art = preload("res://scripts/game_art.gd")
 const HomeArt = preload("res://scripts/hub_art.gd")
 const Windows = preload("res://scripts/hub_windows.gd")
 const Icons = preload("res://scripts/ui_icons.gd")
+const SwipeScroll = preload("res://scripts/swipe_scroll.gd")
+const ItemPreview = preload("res://scripts/item_preview.gd")
+const SEALED_SLOT = preload("res://art/ui/sealed_slot.svg")
 const Gear = preload("res://scripts/equipment.gd")
 const TABS := ["Shop", "Inventory", "Play", "Perks", "Miscellaneous"]
 const LEFT_SLOTS := ["weapon", "armor", "headgear", "pants"]
@@ -65,6 +68,10 @@ var sidebar_buttons: Dictionary = {}
 var windows
 var enter_button: Button
 var profile_name: Label
+var item_preview
+var hold_uid := ""
+var hold_button: Button
+var hold_age := 0.0
 
 func setup(model) -> void:
 	Art.prepare()
@@ -146,6 +153,9 @@ func _build() -> void:
 	_build_misc()
 	_build_profile_menu()
 	windows = Windows.new(); add_child(windows); windows.setup(hub)
+	item_preview = ItemPreview.new(); add_child(item_preview); item_preview.setup(hub)
+	item_preview.changed.connect(func(): refresh())
+	inventory_scroll.swipe_started.connect(func(): hold_uid = ""; item_preview.hide())
 	select_tab(2)
 
 func _build_header() -> void:
@@ -228,8 +238,9 @@ func _build_play() -> void:
 
 func _build_inventory() -> void:
 	var page := pages[1]
-	_label(page, "INVENTORY", Vector2(24, 108), 22)
-	_label(page, "Equip items, level with parts, or synthesize duplicates", Vector2(24, 139), 11, Color("8cb6ba"))
+	var title := _label(page, "INVENTORY", Vector2(24, 108), 24)
+	title.add_theme_font_override("font",HomeArt.SERIF)
+	_label(page, "The relics you carry into the depths", Vector2(24, 139), 11, Color("8cb6ba"))
 	synthesis_toggle = _button(page,"Synthesis",Vector2(300,106),Vector2(156,30),_toggle_synthesis)
 	synthesis_top = Control.new()
 	synthesis_top.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -240,8 +251,10 @@ func _build_inventory() -> void:
 		var ingredient := _button(synthesis_top,"",Vector2(42+index*130,285),Vector2(116,78),_remove_ingredient.bind(index))
 		synthesis_ingredients.append(ingredient)
 	synthesis_label = _label(synthesis_top,"",Vector2(42,378),12,Color("bad2d0"))
+	synthesis_label.size = Vector2(396,64); synthesis_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_button(synthesis_top,"Quick synthesis",Vector2(42,510),Vector2(364,38),_quick_synthesis)
 	synthesis_commit = _button(synthesis_top,"Synthesize",Vector2(42,450),Vector2(396,44),_commit_synthesis)
+	for child in synthesis_top.get_children(): child.set_meta("layout_y",child.position.y)
 	synthesis_top.hide()
 	for side in range(2):
 		var slots: Array = LEFT_SLOTS if side == 0 else RIGHT_SLOTS
@@ -254,14 +267,16 @@ func _build_inventory() -> void:
 			caption.size.x = 78
 			caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			slot_buttons[slot] = button
+			button.mouse_entered.connect(func():
+				var uid: String = hub.equipped[slot]
+				if not uid.is_empty() and Time.get_ticks_msec() - item_preview.last_touch > 1000: _preview_item(uid,button,false))
 	for index in range(2):
 		var kind := "pet" if index == 0 else "spirit"
 		var button := _button(page, "", Vector2(165 + index * 86, 476), Vector2(64, 64), func(): pass)
 		button.disabled = true
-		_icon(button, "lock", Vector2(18, 3), Vector2(28, 28))
-		var caption := _label(button, "Pet\nFloor 10" if index == 0 else "Spirit\nLater", Vector2(0, 32), 10, Color("8c9ba8"))
-		caption.size.x = 64
-		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var seal := TextureRect.new(); seal.texture = SEALED_SLOT
+		seal.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; seal.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		seal.size = Vector2(64,64); seal.mouse_filter = Control.MOUSE_FILTER_IGNORE; button.add_child(seal)
 		future_buttons[kind] = button
 	inventory_heading = _label(page, "STORED ITEMS", Vector2(24, 563), 15)
 	inventory_show_all = _button(page, "Show all", Vector2(350, 555), Vector2(106, 31), func():
@@ -269,7 +284,8 @@ func _build_inventory() -> void:
 		refresh()
 	)
 	inventory_note = _label(page, "", Vector2(24, 587), 11, Color("8cb6ba"))
-	inventory_scroll = ScrollContainer.new()
+	inventory_scroll = SwipeScroll.new()
+	inventory_scroll.name = "InventoryScroll"
 	inventory_scroll.position = Vector2(24, 608)
 	inventory_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	page.add_child(inventory_scroll)
@@ -283,7 +299,7 @@ func _build_shop() -> void:
 	var page := pages[0]
 	_label(page,"SHOP",Vector2(24,108),22)
 	_label(page,"Daily coin offers • keys or gems open chests",Vector2(24,143),12,Color("8cb6ba"))
-	shop_scroll = ScrollContainer.new()
+	shop_scroll = SwipeScroll.new()
 	shop_scroll.position = Vector2(24,183)
 	shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	page.add_child(shop_scroll)
@@ -316,6 +332,12 @@ func _build_misc() -> void:
 func select_tab(index: int) -> void:
 	if index < 0 or index >= TABS.size(): return
 	selected = index
+	hold_uid = ""
+	if is_instance_valid(item_preview): item_preview.hide()
+	player_button.visible = index == 2
+	profile_name.visible = index == 2
+	battlepass_button.visible = index == 2
+	resource_label.visible = index == 2
 	if is_instance_valid(profile_layer): profile_layer.hide()
 	if is_instance_valid(windows): windows.close()
 	tab_changed.emit(index)
@@ -326,7 +348,7 @@ func select_tab(index: int) -> void:
 
 func _slot_selected(slot: String) -> void:
 	var id: String = hub.equipped[slot]
-	if not id.is_empty(): item_requested.emit(id)
+	if not id.is_empty(): _preview_item(id,slot_buttons[slot])
 	else:
 		filter_slot = slot
 		refresh()
@@ -342,6 +364,7 @@ func refresh() -> void:
 	hub.refresh_day()
 	hub.apply_audio_settings()
 	if is_instance_valid(windows): windows.hub = hub
+	if is_instance_valid(item_preview): item_preview.hub = hub
 	resource_label.text = "%s COINS  •  %s GEMS  •  %sC / %sS / %sG" % [_amount(hub.coins),_amount(hub.gems),_amount(hub.keys["copper"]),_amount(hub.keys["silver"]),_amount(hub.keys["gold"])]
 	resource_label.tooltip_text = "%d coins • %d gems • Keys: %d copper / %d silver / %d gold" % [hub.coins,hub.gems,hub.keys["copper"],hub.keys["silver"],hub.keys["gold"]]
 	for slot in slot_buttons:
@@ -353,11 +376,9 @@ func refresh() -> void:
 		slot_icons[slot].modulate.a = 1.0 if not id.is_empty() else 0.35
 		var color: Color = hub.Economy.COLORS[hub.inventory[uid]["rarity"]] if not uid.is_empty() else Color("3b5360")
 		button.add_theme_stylebox_override("normal",_style(Color("203741") if not uid.is_empty() else Color("152734"),color))
-		button.tooltip_text = slot.capitalize()+": "+hub.item_name(uid)
+		button.tooltip_text = slot.capitalize()+": Empty" if uid.is_empty() else ""
 	for button in future_buttons.values(): button.visible = not synthesis_mode
 	future_buttons["pet"].tooltip_text = "Milestone reached; pet content is coming later." if hub.pet_slot_unlocked() else "First reach floor 10."
-	for child in future_buttons["pet"].get_children():
-		if child is Label: child.text = "Pet\nComing soon" if hub.pet_slot_unlocked() else "Pet\nFloor 10"
 	future_buttons["spirit"].tooltip_text = "Unlocks later."
 	synthesis_top.visible = synthesis_mode
 	synthesis_toggle.text = "Equipment" if synthesis_mode else "Synthesis"
@@ -369,7 +390,7 @@ func refresh() -> void:
 		if not synthesis_mode and not filter_slot.is_empty() and Gear.ITEMS[hub.item_type(uid)]["slot"] != filter_slot: continue
 		_add_item(inventory_grid,uid)
 		count += 1
-	inventory_note.text = "Choose a base, then its required duplicates" if synthesis_mode else ("Tap an item to equip or level it with parts" if count > 0 else "No items here yet. Find equipment or open shop chests.")
+	inventory_note.text = "Choose a base, then its required duplicates" if synthesis_mode else ("Swipe to browse · tap or hold to inspect" if count > 0 else "No items here yet. Find equipment or open shop chests.")
 	_refresh_synthesis()
 	_refresh_shop()
 	_clear_grid(perk_grid)
@@ -396,8 +417,12 @@ func _add_item(grid: GridContainer, uid: String) -> void:
 	var item: Dictionary = hub.inventory[uid]
 	var kind: String = item["type"]
 	var button := _button(grid,"",Vector2.ZERO,Vector2.ZERO,_item_clicked.bind(uid))
+	button.name = "Item_"+uid
+	button.set_meta("item_uid",uid)
+	button.mouse_filter = Control.MOUSE_FILTER_PASS
+	_bind_preview(button,uid)
 	button.custom_minimum_size = Vector2(98,112)
-	button.add_theme_stylebox_override("normal",_style(Color("172c38"),hub.Economy.COLORS[item["rarity"]],2))
+	button.add_theme_stylebox_override("normal",_style(Color("1a302d"),hub.Economy.COLORS[item["rarity"]].lerp(Color("c1a269"),0.25),2))
 	_icon(button,kind,Vector2(29,5),Vector2(40,40))
 	var title := _label(button,Gear.ITEMS[kind]["name"].replace(" ","\n"),Vector2(3,48),10)
 	title.size.x = 92; title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -446,13 +471,18 @@ func _claim_task(kind: String) -> void:
 	hub.claim_task(kind); refresh()
 
 func _toggle_synthesis() -> void:
+	item_preview.hide(); hold_uid = ""
 	synthesis_mode = not synthesis_mode; synthesis_base = ""; synthesis_fodder.clear(); filter_slot = ""; refresh()
 
 func _clear_synthesis() -> void:
 	synthesis_base = ""; synthesis_fodder.clear(); refresh()
 
 func _item_clicked(uid: String) -> void:
-	if not synthesis_mode: item_requested.emit(uid); return
+	if inventory_scroll.suppress_click(): return
+	if not synthesis_mode:
+		for button in inventory_grid.get_children():
+			if button.visible and button.get_meta("item_uid","") == uid: _preview_item(uid,button); break
+		return
 	if synthesis_base.is_empty(): synthesis_base = uid
 	elif synthesis_fodder.has(uid): synthesis_fodder.erase(uid)
 	elif uid != synthesis_base and hub.synthesis_candidates(synthesis_base).has(uid):
@@ -491,12 +521,15 @@ func _commit_synthesis() -> void:
 
 func _layout() -> void:
 	if content == null: return
+	if is_instance_valid(item_preview): item_preview.hide()
 	var view := get_viewport_rect().size
 	content.position = Vector2((view.x - 480) / 2, 0)
 	content.size = Vector2(480, view.y)
 	nav_top = view.y - 94
 	for i in range(nav.size()): nav[i].position = Vector2(4 + i * 96, nav_top)
-	for page in pages: page.size = content.size
+	for i in range(pages.size()):
+		pages[i].size = content.size
+		pages[i].position.y = 0 if i == 2 else -88
 	inventory_scale = clampf(0.9 + (view.y - 800) * 0.001, 0.9, 1.0)
 	for side in range(2):
 		var slots: Array = LEFT_SLOTS if side == 0 else RIGHT_SLOTS
@@ -504,12 +537,13 @@ func _layout() -> void:
 			slot_buttons[slots[row]].position.y = _inventory_y(170 + row * 74)
 			slot_buttons[slots[row]].size.y = 66 * inventory_scale
 	for button in future_buttons.values(): button.position.y = _inventory_y(476)
+	for child in synthesis_top.get_children(): child.position.y = _inventory_y(child.get_meta("layout_y"))
 	inventory_heading.position.y = _inventory_y(563)
 	inventory_show_all.position.y = _inventory_y(555)
 	inventory_note.position.y = _inventory_y(587)
 	inventory_scroll.position.y = _inventory_y(608)
-	inventory_scroll.size = Vector2(432, maxf(104, nav_top - inventory_scroll.position.y - 18))
-	shop_scroll.size = Vector2(432, maxf(150, nav_top - 202))
+	inventory_scroll.size = Vector2(432, maxf(104, nav_top - inventory_scroll.position.y + 88 - 18))
+	shop_scroll.size = Vector2(432, maxf(150, nav_top - 202 + 88))
 	play_title.position = Vector2(148,127)
 	play_badge.position = Vector2(148,195)
 	dungeon_button.position = Vector2(154,224); dungeon_button.size = Vector2(310,nav_top-334)
@@ -522,14 +556,17 @@ func _draw() -> void:
 	var view := get_viewport_rect().size
 	var left := (view.x-480)/2
 	draw_rect(Rect2(Vector2.ZERO,view),Color("07161b"))
-	HomeArt.cover(self,HomeArt.TOWER,Rect2(left,100,480,nav_top-100))
-	if selected!=2: draw_rect(Rect2(left,100,480,nav_top-100),Color(0.025,0.065,0.075,0.92))
+	HomeArt.cover(self,HomeArt.TOWER,Rect2(left,100,480,nav_top-100) if selected == 2 else Rect2(left,0,480,nav_top),Color.WHITE if selected == 2 else Color("687965"))
+	if selected!=2: draw_rect(Rect2(left,0,480,nav_top),Color(0.025,0.065,0.06,0.91))
 	# Header and nav use the same jade, ivory and bronze as the Sanctuary.
-	draw_rect(Rect2(left,0,480,104),Color("10262a"))
-	draw_line(Vector2(left+16,103),Vector2(left+464,103),Color("91774a"),1)
+	if selected == 2:
+		draw_rect(Rect2(left,0,480,104),Color("10262a"))
+		draw_line(Vector2(left+16,103),Vector2(left+464,103),Color("91774a"),1)
 	draw_rect(Rect2(left,nav_top-7,480,101),Color("0b1b20"))
 	draw_line(Vector2(left,nav_top-7),Vector2(left+480,nav_top-7),Color("af9156"),2)
-	if selected == 1 and not synthesis_mode: _draw_character(Vector2(view.x/2,_inventory_y(332)))
+	if selected == 1:
+		_draw_inventory_frame(left)
+		if not synthesis_mode: _draw_character(Vector2(view.x/2,_inventory_y(332)-88))
 
 func _amount(value: int) -> String:
 	if value>=1000000: return "%.1fM" % (value/1000000.0)
@@ -558,3 +595,37 @@ func _synthesis_slot_name(uid: String) -> String:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if is_instance_valid(profile_layer) and profile_layer.visible and event.is_action_pressed("ui_cancel"):
 		profile_layer.hide(); get_viewport().set_input_as_handled()
+
+func _bind_preview(button: Button, uid: String) -> void:
+	button.mouse_entered.connect(func():
+		if not synthesis_mode and not inventory_scroll.suppress_click() and Time.get_ticks_msec()-item_preview.last_touch>1000: _preview_item(uid,button,false))
+	button.button_down.connect(func():
+		if not synthesis_mode: hold_uid = uid; hold_button = button; hold_age = 0)
+	button.button_up.connect(func(): hold_uid = "")
+
+func _preview_item(uid: String, button: Button, touch := true) -> void:
+	if not is_instance_valid(item_preview) or inventory_scroll.suppress_click(): return
+	item_preview.open(uid,button.get_global_rect(),touch and Time.get_ticks_msec()-item_preview.last_touch<1000)
+
+func _process(delta: float) -> void:
+	if not is_visible_in_tree():
+		if is_instance_valid(item_preview): item_preview.hide()
+		hold_uid = ""; return
+	if not hold_uid.is_empty() and is_instance_valid(hold_button):
+		hold_age += delta
+		if hold_age >= 0.4:
+			_preview_item(hold_uid,hold_button); hold_uid = ""
+
+func _draw_inventory_frame(left: float) -> void:
+	var top := 70.0
+	var bottom := _inventory_y(548)-88
+	var rect := Rect2(left+24,top,432,bottom-top)
+	draw_style_box(_style(Color(0.08,0.16,0.14,0.72),Color("756c48"),2),rect)
+	for x in [left+36,left+444]:
+		for y in [top+12,bottom-12]:
+			draw_colored_polygon(PackedVector2Array([Vector2(x,y-5),Vector2(x+5,y),Vector2(x,y+5),Vector2(x-5,y)]),Color("c5a66a"))
+	if not synthesis_mode:
+		var center := Vector2(left+240,_inventory_y(332)-94)
+		draw_arc(center+Vector2(0,-34),90,PI,TAU,48,Color("786d43"),2)
+		draw_arc(center+Vector2(0,-34),99,PI,TAU,48,Color("3f5140"),1)
+		for side in [-1,1]: draw_line(center+Vector2(side*99,-34),center+Vector2(side*99,70),Color("3f5140"),1)

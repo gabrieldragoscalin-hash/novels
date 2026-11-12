@@ -875,17 +875,8 @@ func _open_inventory(_message: String = "") -> void:
 
 func _inventory_item(uid: String, message: String = "") -> void:
 	if not in_hub or not hub.inventory.has(uid): return
-	var item: Dictionary = hub.inventory[uid]
-	var slot: String = hub.Equipment.ITEMS[item["type"]]["slot"]
-	var category: String = hub.Economy.part_for(slot)
-	var owned_equipped: bool = hub.equipped[slot] == uid
-	var options: Array = [
-		{"text":"Equipped" if owned_equipped else "Equip for next run","disabled":owned_equipped,"action":_inventory_equip.bind(uid)},
-		{"text":"Maximum item level" if item["level"] >= hub.Equipment.MAX_LEVEL else "Level up • %d %s parts" % [hub.upgrade_cost(uid),category],"disabled":item["level"] >= hub.Equipment.MAX_LEVEL or hub.parts[category] < hub.upgrade_cost(uid),"action":_inventory_upgrade.bind(uid)}
-	]
-	if slot != "weapon" and owned_equipped: options.append({"text":"Unequip","action":_inventory_unequip.bind(uid)})
-	_menu("%s Lv.%d" % [hub.item_name(uid),item["level"]],"%s\n%d %s parts available.\n%s" % [hub.Equipment.instance_summary(item),hub.parts[category],category,message],options)
-	service_title.add_theme_font_size_override("font_size",17)
+	hub_menu.select_tab(1)
+	hub_menu.item_preview.open(uid,Rect2(Vector2(get_viewport_rect().size.x/2-40,480),Vector2(80,80)),true)
 
 func _inventory_equip(uid: String) -> void:
 	if in_hub and hub.equip_item(uid):
