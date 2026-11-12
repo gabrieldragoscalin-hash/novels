@@ -15,7 +15,8 @@ func _initialize() -> void:
 	var frames := {}
 	var pivots := {}
 	for group in groups:
-		var source := Image.load_from_file("res://art/sanctuary/%s.png" % group)
+		var path := "res://art/champions/aster_%s.png" % ("rig" if group=="hero_rig" else "inventory") if group in ["hero_rig","inventory"] else "res://art/sanctuary/%s.png" % group
+		var source := Image.load_from_file(path)
 		assert(source!=null)
 		source.convert(Image.FORMAT_RGBA8)
 		var data := source.get_data()

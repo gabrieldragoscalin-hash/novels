@@ -5,6 +5,7 @@ const PERK_EFFECTS := {"starting_upgrade":"Start each run with an upgrade choice
 const PATH := "user://hub.json"
 const PERK_NAMES := {"starting_upgrade":"Starting upgrade", "starting_hp":"Starting HP", "dodge":"Dodge chance", "boss_damage":"Damage to bosses","recovery":"Recovery","resourceful":"Resourcefulness","scavenger":"Scavenger","collector":"Collector","trap_resist":"Trap resistance","elite_hunter":"Elite hunter","treasure_sense":"Treasure sense","loot_gold":"Loot gold"}
 const PERK_CAPS := {"starting_upgrade":1,"starting_hp":25,"dodge":25,"boss_damage":25,"recovery":25,"resourceful":20,"scavenger":25,"collector":25,"trap_resist":20,"elite_hunter":20,"treasure_sense":25,"loot_gold":25}
+var audio_settings: Dictionary = {"master":100,"music":80,"effects":90,"muted":false}
 var storage_path := PATH
 var coins := 0
 var gems := 0
@@ -48,6 +49,12 @@ func _number(value, maximum: int = 100000000) -> int:
 	return clampi(int(value),0,maximum) if value is int or value is float else 0
 
 func _load(data: Dictionary) -> void:
+	var audio = data.get("audio_settings",{})
+	if audio is Dictionary:
+		for key in ["master","music","effects"]:
+			var value = audio.get(key,audio_settings[key])
+			if (value is int or value is float) and is_finite(float(value)): audio_settings[key] = clampi(int(value),0,100)
+		if audio.get("muted") is bool: audio_settings["muted"] = audio["muted"]
 	highest_floor = _number(data.get("highest_floor",0))
 	var version: int = _number(data.get("version",0))
 	var aliases := {}
@@ -94,7 +101,7 @@ func _load(data: Dictionary) -> void:
 
 func save() -> bool:
 	if not enabled: return true
-	var data := {"version":4,"coins":coins,"gems":gems,"keys":keys,"parts":parts,"inventory":inventory,"equipped":equipped,"next_item":next_item,"highest_floor":highest_floor,"pity":pity,"perks":perks,"perk_purchases":perk_purchases,"day":day,"daily_clears":daily_clears,"claimed_clears":claimed_clears,"task_progress":task_progress,"task_claimed":task_claimed,"offers":offers,"legacy_data":legacy_data}
+	var data := {"version":4,"audio_settings":audio_settings,"coins":coins,"gems":gems,"keys":keys,"parts":parts,"inventory":inventory,"equipped":equipped,"next_item":next_item,"highest_floor":highest_floor,"pity":pity,"perks":perks,"perk_purchases":perk_purchases,"day":day,"daily_clears":daily_clears,"claimed_clears":claimed_clears,"task_progress":task_progress,"task_claimed":task_claimed,"offers":offers,"legacy_data":legacy_data}
 	var temporary := storage_path + ".tmp"
 	var file := FileAccess.open(temporary,FileAccess.WRITE)
 	if file == null: persistence_ok = false; return false
@@ -360,3 +367,24 @@ func quick_synthesis() -> int:
 				var selected: Array[String] = [ingredients[0],ingredients[1],ingredients[2]]
 				if synthesize(uid,selected): merged += 1; changed = true; break
 	return merged
+
+func set_audio_setting(key: String, value) -> void:
+	if key=="muted":
+		if not value is bool: return
+	elif key in ["master","music","effects"]:
+		if not (value is int or value is float) or not is_finite(float(value)): return
+		value = clampi(int(value),0,100)
+	else: return
+	audio_settings[key] = value
+	apply_audio_settings()
+	save()
+
+func apply_audio_settings() -> void:
+	for key in ["master","music","effects"]:
+		var name: String = {"master":"Master","music":"Music","effects":"SFX"}[key]
+		var index := AudioServer.get_bus_index(name)
+		if index<0:
+			AudioServer.add_bus(); index = AudioServer.bus_count-1; AudioServer.set_bus_name(index,name)
+			AudioServer.set_bus_send(index,"Master")
+		AudioServer.set_bus_volume_linear(index,float(audio_settings[key])/100.0)
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"),audio_settings["muted"])

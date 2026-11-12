@@ -54,19 +54,18 @@ uses the production PNGs, not the full-resolution presentation sheets.
 
 ## Gameplay integration
 
-The playable footprint remains464×438 world units. Room-specific collision rectangles and pathfinding follow six authored architectural templates.
+The playable footprint remains464×438 world units. Room-specific collision rectangles and pathfinding follow ten complete painted room templates.
 Doors and hitboxes stay fixed; equipment and damage tuning are unchanged. Perspective comes from visible top faces, upright actors,
 contact shadows and depth sorting; the navigation plane remains orthographic so
 phone controls behave exactly as before. The original diamond-shaped concept
 composition was adapted to an axis-aligned playable arena.
 
-Characters are anchored at their feet. Actors, pillars and raised service/loot
-props are sorted by their ground Y position so players can walk behind objects.
-Pillar bases match existing collision footprints. Chests keep similar widths as
+Characters are anchored at their feet. Actors and raised service/loot props are
+sorted by ground Y. Fixed room scenery belongs to the complete background. Chests keep similar widths as
 their lids open. The wheel uses a rotating procedural face over its painted base.
 Outer map edges are closed visually; existing neighbor passages remain open.
 
-The hero now uses `hero_rig.png`, a4×4 sheet of isolated head, torso, upper arm,
+The hero now uses `art/champions/aster_rig.png`, a4×4 sheet of isolated head, torso, upper arm,
 forearm, gripping hand, thigh, boot/shin and cape pieces in front/back views.
 `hero_animation.gd` interpolates a continuous locomotion phase and independent
 arm/weapon targets. Body-part sizes and attachment origins stay fixed throughout
@@ -82,7 +81,7 @@ trigger recovery. Projectiles originate visually at the weapon muzzle/grip and
 converge toward the existing enemy hit plane. Gameplay trajectories and damage
 remain controlled by combat code.
 
-The inventory uses `inventory.png`, a3×2 sheet of complete front-facing portraits
+The inventory uses `art/champions/aster_inventory.png`, a3×2 sheet of complete front-facing portraits
 holding bow/crossbow/wand/sword/hammer/chakram. Arms, hands and weapon are painted
 together in a natural holding pose. Equipment cosmetics beyond weapon type remain
 future work. The previous whole-body walking sheet is retained as legacy source
@@ -149,8 +148,8 @@ unchanged; the new rotations need continued playtesting for dodge difficulty.
 ### Added atlases
 
 - `hero.png`:4×4 legacy whole-body poses, retained as source artwork.
-- `hero_rig.png`:4×4 isolated front/back body parts for continuous animation.
-- `inventory.png`:3×2 complete weapon-holding portraits.
+- `art/champions/aster_rig.png`:4×4 isolated front/back body parts for continuous animation.
+- `art/champions/aster_inventory.png`:3×2 complete weapon-holding portraits.
 - `enemies.png`:4×4 two walk poses, windup and attack per enemy archetype.
 - `bosses.png`:5×2 unique floor bosses.
 - `objects.png`:4×3 six environment props and six held weapons.
@@ -232,3 +231,28 @@ CanvasItem. Actors, loot, services and combat effects render independently.
 `tests/arena_style_smoke.gd` validates all ten backgrounds, map coverage, exit
 lighting and the cached draw lifecycle. Architecture tests check connected floor,
 bridge necessity, cover, spawns and navigation; the browser gallery checks all ten.
+
+## Tower home and mortal champion
+
+`art/hub/tower.png` is one complete portrait environment with the Sanctuary crown
+and a visible infernal transition below. It remains top-aligned inside the home
+view so the spire does not collide with the title on short screens. Header,
+journal and navigation controls are separate, functional UI elements.
+`hell_banner.png` supplies the volcanic battlepass landscape; `parchment.png`
+frames the four journal buttons. `icons.png` is a transparent 4×3 atlas of twelve
+painted menu icons. `tools/build_hub_regions.gd` generates tight clipped UVs without
+editing source pixels. Jade panels, gold borders and DejaVu Serif headings unify
+the menus; the font and its license ship under `art/fonts/`.
+
+Aster's identity sheet, modular 4×4 rig and 3×2 inventory poses are in
+`art/champions/`. Sun-bronze armor, bare warm-skinned arms, dark hair and a short
+crimson cloak separate him from the hooded cool-colored dungeon acolytes. Each
+inventory pose includes the actual held weapon and painted hand grips. Animation
+still uses the existing continuous stride and IK/release system. Previous hooded
+hero sheets remain legacy sources only.
+
+Before publishing: native home/settings/persistence tests, all gameplay suites,
+three-size browser menu captures, profile/modal interactions, six-weapon inventory
+review, and walking/attacking captures. See `tests/home_smoke.gd`,
+`tests/browser_home.py`, `tests/browser_hub_layout.py` and
+`tests/browser_animation_motion.py`.

@@ -1,5 +1,5 @@
 extends Control
-## Full-screen hub shell. Future side features are deliberately unpopulated.
+## Painted Sanctuary home, equipment pages, and account windows.
 signal tab_changed(index: int)
 signal dungeon_requested
 signal item_requested(id: String)
@@ -8,6 +8,8 @@ signal perk_requested
 signal cheat_requested
 signal synthesis_requested
 const Art = preload("res://scripts/game_art.gd")
+const HomeArt = preload("res://scripts/hub_art.gd")
+const Windows = preload("res://scripts/hub_windows.gd")
 const Icons = preload("res://scripts/ui_icons.gd")
 const Gear = preload("res://scripts/equipment.gd")
 const TABS := ["Shop", "Inventory", "Play", "Perks", "Miscellaneous"]
@@ -53,6 +55,16 @@ var play_hint: Label
 var play_badge: Label
 var nav_top := 706.0
 var filter_slot := ""
+var player_button: Button
+var battlepass_button: Button
+var profile_layer: Control
+var profile_menu: Panel
+var profile_buttons: Dictionary = {}
+var sidebar: Control
+var sidebar_buttons: Dictionary = {}
+var windows
+var enter_button: Button
+var profile_name: Label
 
 func setup(model) -> void:
 	Art.prepare()
@@ -100,7 +112,7 @@ func _icon(parent: Node, kind: String, pos: Vector2, dimensions: Vector2) -> Tex
 	var icon := TextureRect.new()
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.texture = Icons.texture(kind)
+	icon.texture = HomeArt.icon(kind) if HomeArt.Regions.FRAMES.has(kind) else Icons.texture(kind)
 	icon.position = pos
 	icon.size = dimensions
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -111,9 +123,10 @@ func _build() -> void:
 	content = Control.new()
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(content)
-	_label(content, "THE DUNGEON", Vector2(24, 22), 25)
-	resource_label = _label(content, "", Vector2(24, 65), 12, Color("dfbd78"))
-	best_label = _label(content, "", Vector2(330, 30), 11, Color("8cb6ba"))
+	_build_header()
+	resource_label = _label(content, "", Vector2(106, 84), 10, Color("dfbd78"))
+	resource_label.size = Vector2(354,20); resource_label.clip_text = true
+	best_label = _label(content, "", Vector2.ZERO, 11); best_label.hide()
 	for i in range(5):
 		var page := Control.new()
 		page.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -131,36 +144,87 @@ func _build() -> void:
 	_build_shop()
 	_build_perks()
 	_build_misc()
+	_build_profile_menu()
+	windows = Windows.new(); add_child(windows); windows.setup(hub)
 	select_tab(2)
+
+func _build_header() -> void:
+	player_button = _button(content,"",Vector2(16,12),Vector2(72,68),_toggle_profile)
+	player_button.name = "PlayerProfile"; player_button.tooltip_text = "Aster • player menu"
+	player_button.add_theme_stylebox_override("normal",_style(Color("233b38"),Color("c3a15e"),2))
+	var portrait := TextureRect.new(); portrait.texture = HomeArt.portrait()
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.position = Vector2(4,2); portrait.size = Vector2(64,64); portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	player_button.add_child(portrait)
+	profile_name = _label(content,"ASTER",Vector2(16,83),10,Color("e5c88d")); profile_name.size.x = 72; profile_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	battlepass_button = _button(content,"",Vector2(104,14),Vector2(360,64),_open_window.bind("battlepass"))
+	battlepass_button.name = "BattlepassBanner"
+	var image := TextureRect.new(); image.texture = HomeArt.BANNER; image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED; image.position = Vector2(3,3); image.size = Vector2(354,58)
+	image.mouse_filter = Control.MOUSE_FILTER_IGNORE; battlepass_button.add_child(image)
+	var shade := ColorRect.new(); shade.color = Color(0.04,0.015,0.01,0.47); shade.position = Vector2(3,3); shade.size = Vector2(354,58)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE; battlepass_button.add_child(shade)
+	var caption := _label(battlepass_button,"HELL IN DEVELOPMENT",Vector2(0,9),16,Color("fff0cc"))
+	caption.add_theme_font_override("font",HomeArt.SERIF); caption.size.x = 360; caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var sub := _label(battlepass_button,"THE INFERNAL PASS  •  COMING LATER",Vector2(0,36),9,Color("efcf99"))
+	sub.size.x = 360; sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+func _build_profile_menu() -> void:
+	profile_layer = Control.new(); profile_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	profile_layer.z_index = 15; content.add_child(profile_layer)
+	var outside := Button.new(); outside.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	for state in ["normal","hover","pressed","focus"]: outside.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	outside.pressed.connect(func(): profile_layer.hide()); profile_layer.add_child(outside)
+	profile_menu = Panel.new(); profile_menu.position = Vector2(16,99); profile_menu.size = Vector2(180,176)
+	profile_menu.add_theme_stylebox_override("panel",_style(Color("132b30"),Color("c1a46d"),2)); profile_layer.add_child(profile_menu)
+	for i in range(3):
+		var key: String = ["settings","bag","details"][i]
+		var button := _button(profile_menu,"",Vector2(8,8+i*54),Vector2(164,48),_open_window.bind(key)); profile_buttons[key] = button
+		_icon(button,key,Vector2(8,6),Vector2(36,36))
+		_label(button,key.capitalize(),Vector2(53,13),13)
+	profile_layer.hide()
+
+func _toggle_profile() -> void:
+	profile_layer.visible = not profile_layer.visible
+	if profile_layer.visible: profile_buttons["settings"].grab_focus()
+
+func _open_window(kind: String) -> void:
+	if is_instance_valid(profile_layer): profile_layer.hide()
+	windows.hub = hub; windows.open(kind)
+
+func _begin_dungeon() -> void:
+	profile_layer.hide(); windows.close(); dungeon_requested.emit()
 
 func _build_play() -> void:
 	var page := pages[2]
-	play_title = _label(page, "The Fallen Sanctuary", Vector2.ZERO, 24)
-	play_title.size.x = 480
-	play_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	play_badge = _label(page, "REGION I • FLOORS 1–10", Vector2.ZERO, 12, Color("dfbd78"))
-	play_badge.size.x = 480
-	play_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	dungeon_button = _button(page, "", Vector2.ZERO, Vector2(250, 270), func(): dungeon_requested.emit())
-	dungeon_button.name = "DungeonEntrance"
-	dungeon_button.add_theme_stylebox_override("normal", _style(Color(0,0,0,0), Color(0,0,0,0), 0))
-	var preview := TextureRect.new()
-	preview.texture = preload("res://scripts/room_backgrounds.gd").texture(0)
-	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	preview.position = Vector2(0,0); preview.size = Vector2(250,250)
-	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	dungeon_button.add_child(preview)
-	var portal := TextureRect.new()
-	portal.texture = Art.frame("exit")
-	portal.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	portal.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	portal.position = Vector2(70,50); portal.size = Vector2(110,170)
-	portal.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	dungeon_button.add_child(portal)
-	play_hint = _label(page, "Tap the dungeon to begin", Vector2.ZERO, 15, Color("bad2d0"))
-	play_hint.size.x = 480
-	play_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	play_title = _label(page,"THE FALLEN\nSANCTUARY",Vector2.ZERO,23)
+	play_title.add_theme_font_override("font",HomeArt.SERIF)
+	play_title.size = Vector2(320,66); play_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	play_title.add_theme_color_override("font_shadow_color",Color(0,0,0,0.9)); play_title.add_theme_constant_override("shadow_offset_y",2)
+	play_badge = _label(page,"REGION I  •  FLOORS 1–10",Vector2.ZERO,10,Color("e5c88d"))
+	play_badge.size.x = 320; play_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dungeon_button = _button(page,"",Vector2.ZERO,Vector2(300,400),_begin_dungeon)
+	dungeon_button.name = "DungeonEntrance"; dungeon_button.tooltip_text = "Enter the Fallen Sanctuary"
+	for state in ["normal","hover","pressed","disabled"]: dungeon_button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	enter_button = _button(page,"ENTER THE DUNGEON",Vector2.ZERO,Vector2(282,52),_begin_dungeon)
+	enter_button.add_theme_font_override("font",HomeArt.SERIF); enter_button.add_theme_font_size_override("font_size",16)
+	enter_button.add_theme_stylebox_override("normal",_style(Color("25423d"),Color("d1ae65"),2))
+	play_hint = _label(page,"The deeper you go, the closer to hell.",Vector2.ZERO,10,Color("e2caa1"))
+	play_hint.size.x = 320; play_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sidebar = Control.new(); sidebar.mouse_filter = Control.MOUSE_FILTER_IGNORE; page.add_child(sidebar)
+	var paper := TextureRect.new(); paper.texture = HomeArt.PARCHMENT; paper.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	paper.stretch_mode = TextureRect.STRETCH_SCALE; paper.size = Vector2(144,340); paper.mouse_filter = Control.MOUSE_FILTER_IGNORE; sidebar.add_child(paper)
+	var heading := _label(sidebar,"JOURNAL",Vector2(12,34),11,Color("624223")); heading.add_theme_font_override("font",HomeArt.SERIF)
+	heading.size.x = 120; heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	for i in range(4):
+		var key: String = ["tasks","login","privileges","event"][i]
+		var button := _button(sidebar,"",Vector2(19,65+i*59),Vector2(106,54),_open_window.bind(key))
+		button.name = key.capitalize(); sidebar_buttons[key] = button; task_buttons.append(button)
+		button.add_theme_stylebox_override("normal",_style(Color(0.3,0.21,0.1,0.08),Color(0.45,0.3,0.12,0.28)))
+		button.add_theme_stylebox_override("hover",_style(Color(0.42,0.3,0.15,0.15),Color("977443")))
+		_icon(button,key,Vector2(37,2),Vector2(32,29))
+		var caption := _label(button,{"tasks":"Daily tasks","login":"Daily login","privileges":"Privileges","event":"Event"}[key],Vector2(0,34),11,Color("4f321c"))
+		caption.size.x = 106; caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 func _build_inventory() -> void:
 	var page := pages[1]
@@ -243,18 +307,20 @@ func _build_perks() -> void:
 func _build_misc() -> void:
 	var page := pages[4]
 	_label(page,"MISCELLANEOUS",Vector2(24,108),22)
-	misc_label = _label(page,"",Vector2(24,154),12,Color("bad2d0"))
+	misc_label = _label(page,"Development tools",Vector2(24,154),14,Color("bad2d0"))
 	_button(page,"Cheat menu • testing",Vector2(24,410),Vector2(432,48),func(): cheat_requested.emit())
-	_label(page,"GEMS & TASKS",Vector2(24,300),18)
-	_label(page,"Reserved until tasks and rewards are defined.\nGem purchases are not available.",Vector2(24,340),13,Color("bad2d0"))
+	_label(page,"THE WORKSHOP",Vector2(24,260),18)
+	_label(page,"Testing tools for the current prototype.\nPlayer progress and build information are in\nthe profile menu under Details.",Vector2(24,300),13,Color("bad2d0"))
 
 func select_tab(index: int) -> void:
 	if index < 0 or index >= TABS.size(): return
 	selected = index
+	if is_instance_valid(profile_layer): profile_layer.hide()
+	if is_instance_valid(windows): windows.close()
 	tab_changed.emit(index)
 	for i in range(pages.size()):
 		pages[i].visible = i == index
-		nav[i].add_theme_stylebox_override("normal", _style(Color("294650") if i == index else Color("12232e"), Color("d4b974") if i == index else Color("344956"), 2 if i == index else 1))
+		nav[i].add_theme_stylebox_override("normal", _style(Color("28443e") if i == index else Color("142b2e"), Color("e3c48a") if i == index else Color("74613f"), 2 if i == index else 1))
 	queue_redraw()
 
 func _slot_selected(slot: String) -> void:
@@ -273,8 +339,10 @@ func _clear_grid(grid: Node) -> void:
 func refresh() -> void:
 	if hub == null or content == null: return
 	hub.refresh_day()
-	resource_label.text = "%d COINS  %d GEMS  •  KEYS %dC/%dS/%dG" % [hub.coins,hub.gems,hub.keys["copper"],hub.keys["silver"],hub.keys["gold"]]
-	best_label.text = "BEST FLOOR %d" % hub.highest_floor
+	hub.apply_audio_settings()
+	if is_instance_valid(windows): windows.hub = hub
+	resource_label.text = "%s COINS  •  %s GEMS  •  %sC / %sS / %sG" % [_amount(hub.coins),_amount(hub.gems),_amount(hub.keys["copper"]),_amount(hub.keys["silver"]),_amount(hub.keys["gold"])]
+	resource_label.tooltip_text = "%d coins • %d gems • Keys: %d copper / %d silver / %d gold" % [hub.coins,hub.gems,hub.keys["copper"],hub.keys["silver"],hub.keys["gold"]]
 	for slot in slot_buttons:
 		var uid: String = hub.equipped[slot]
 		var id: String = hub.item_type(uid)
@@ -320,7 +388,7 @@ func refresh() -> void:
 	perk_label.text = "%s\nArmor %d • Accessory %d • Weapon %d parts\n%s" % [perk_message,hub.parts["armor"],hub.parts["accessory"],hub.parts["weapon"],"Unlock all twelve perks before leveling." if hub.Economy.REQUIRE_RESERVED_PERKS else "Leveling begins after all twelve perks unlock."]
 	train_button.text = "Buy random perk • %d coins" % hub.perk_price()
 	train_button.disabled = not hub.can_buy_perk()
-	misc_label.text = "Best floor %d • local-device save\nEach floor pays keys for its first 3 daily clears.\nPet: first reach floor 10. Spirit: later.\nCurrent expedition cap: floor 10." % hub.highest_floor
+	misc_label.text = "Development tools"
 	queue_redraw()
 
 func _add_item(grid: GridContainer, uid: String) -> void:
@@ -441,37 +509,37 @@ func _layout() -> void:
 	inventory_scroll.position.y = _inventory_y(608)
 	inventory_scroll.size = Vector2(432, maxf(104, nav_top - inventory_scroll.position.y - 18))
 	shop_scroll.size = Vector2(432, maxf(150, nav_top - 202))
-	var center_y := clampf(view.y * 0.46, 330, view.y - 275)
-	play_title.position = Vector2(0, center_y - 186)
-	play_badge.position = Vector2(0, center_y - 146)
-	dungeon_button.position = Vector2(115, center_y - 102)
-	play_hint.position = Vector2(0, center_y + 178)
+	play_title.position = Vector2(148,127)
+	play_badge.position = Vector2(148,195)
+	dungeon_button.position = Vector2(154,224); dungeon_button.size = Vector2(310,nav_top-334)
+	enter_button.position = Vector2(172,nav_top-93)
+	play_hint.position = Vector2(148,nav_top-31)
+	sidebar.position = Vector2(9,227)
 	queue_redraw()
 
 func _draw() -> void:
 	var view := get_viewport_rect().size
-	# Original painted-style night backdrop, independent of the dungeon scene.
-	draw_rect(Rect2(Vector2.ZERO, view), Color("0b1a25"))
-	for band in range(18):
-		var y := view.y * band / 18.0
-		draw_rect(Rect2(0, y, view.x, view.y / 18.0 + 1), Color("122c38").lerp(Color("0c1d27"), band / 18.0))
-	for i in range(42):
-		var point := Vector2(fmod(i * 97.0 + 33, view.x), fmod(i * 53.0 + 44, view.y * 0.7))
-		draw_circle(point, 1.1, Color(0.7,0.83,0.82,0.17))
-	var cx := view.x / 2
-	for layer in range(3):
-		var points := PackedVector2Array([Vector2(0,view.y), Vector2(0,view.y * 0.55 + layer * 60)])
-		for x in range(0, int(view.x) + 50, 50): points.append(Vector2(x, view.y * 0.56 + sin(x * 0.015 + layer) * 48 + layer * 62))
-		points.append(Vector2(view.x,view.y))
-		draw_colored_polygon(points, Color("142f38").darkened(layer * 0.16))
-	draw_line(Vector2(cx - 210,90),Vector2(cx + 210,90),Color("38515b"),1)
-	draw_rect(Rect2(0,nav_top - 10,view.x,104),Color("0a1721"))
-	if selected == 1 and not synthesis_mode:
-		_draw_character(Vector2(cx, _inventory_y(332)))
+	var left := (view.x-480)/2
+	draw_rect(Rect2(Vector2.ZERO,view),Color("07161b"))
+	HomeArt.cover(self,HomeArt.TOWER,Rect2(left,100,480,nav_top-100))
+	if selected!=2: draw_rect(Rect2(left,100,480,nav_top-100),Color(0.025,0.065,0.075,0.92))
+	# Header and nav use the same jade, ivory and bronze as the Sanctuary.
+	draw_rect(Rect2(left,0,480,104),Color("10262a"))
+	draw_line(Vector2(left+16,103),Vector2(left+464,103),Color("91774a"),1)
+	draw_rect(Rect2(left,nav_top-7,480,101),Color("0b1b20"))
+	draw_line(Vector2(left,nav_top-7),Vector2(left+480,nav_top-7),Color("af9156"),2)
+	if selected == 1 and not synthesis_mode: _draw_character(Vector2(view.x/2,_inventory_y(332)))
+
+func _amount(value: int) -> String:
+	if value>=1000000: return "%.1fM" % (value/1000000.0)
+	if value>=10000: return "%.1fK" % (value/1000.0)
+	return str(value)
 
 func _draw_character(center: Vector2) -> void:
-	draw_circle(center+Vector2(0,73),60,Color(0.35,0.65,0.63,0.07))
-	draw_arc(center+Vector2(0,70),60,0,TAU,40,Color("496666"),2)
+	draw_set_transform(center+Vector2(0,74),0,Vector2(1,0.28))
+	draw_circle(Vector2.ZERO,60,Color(0.35,0.65,0.63,0.10))
+	draw_arc(Vector2.ZERO,60,0,TAU,40,Color("9a8658"),2)
+	draw_set_transform(Vector2.ZERO)
 	var weapon: String = hub.item_type(hub.equipped["weapon"])
 	# Weapon, hands and bent arms are painted together in a complete holding pose.
 	var hero := Art.frame("inventory_"+weapon)
@@ -485,3 +553,7 @@ func _inventory_y(y: float) -> float:
 func _synthesis_slot_name(uid: String) -> String:
 	var item: Dictionary = hub.inventory[uid]
 	return "%s%s\n%s" % [hub.Economy.RARITIES[item["rarity"]],"+%d" % item["plus"] if item["plus"] > 0 else "",Gear.ITEMS[item["type"]]["name"]]
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if is_instance_valid(profile_layer) and profile_layer.visible and event.is_action_pressed("ui_cancel"):
+		profile_layer.hide(); get_viewport().set_input_as_handled()

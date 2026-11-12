@@ -130,9 +130,9 @@ kill rewards. Boss-room adds never give flares. No revisit resets rewards.
 
 ## Hub menu and inventory
 
-Full-screen original background and central dungeon doodle. Bottom tabs, exactly:
+Full-screen painted tower background and clickable Sanctuary crown. Bottom tabs, exactly:
 **Shop → Inventory → Play → Perks → Miscellaneous**. Play selects the home page;
-clicking the dungeon icon starts the run. All menus pause gameplay.
+clicking the tower or Enter the Dungeon starts the run. All menus pause gameplay.
 
 Inventory has eight active slots around the central character:
 left Weapon/Armor/Headgear/Pants; right Boots/Necklace/Ring/Bracelet.
@@ -142,8 +142,8 @@ and enhancement. Duplicate finds remain separate items, never scrap.
 Two extra squares below the character are reserved and locked. Pet's milestone is
 first reaching floor 10 (saved permanently); Spirit unlocks later with its threshold
 still undefined. The Pet milestone is tracked, but pet gameplay remains reserved.
-Left-side events/battle pass and right-side daily/play-time rewards are deferred.
-Gems and tasks are also reserved until the user defines them.
+The top battlepass banner and left journal open development placeholders.
+Right-side features are reserved. Gems and task rewards await their definitions.
 
 Equipment stats are copied into a new run. Equipping, leveling or synthesizing in
 the hub cannot retroactively change the active run. Existing charm saves migrate
@@ -352,3 +352,42 @@ the perimeter walls. Existing neighboring rooms illuminate the painted recesses;
 no freestanding side-door object is drawn. Backgrounds are cached single quads.
 The ten paintings currently represent the Sanctuary, not future region artwork.
 See ART_DIRECTION.md and ROOM_REFERENCES.md for the room list and validation.
+
+## Tower home, player windows and champion identity
+
+The home/Play page uses a complete painted tower scene. Its crown matches the
+Fallen Sanctuary: ivory arches, jade roofing and tarnished gold. A visible lower
+stretch becomes burgundy, scorched stone and molten infernal light. The tower
+and the Enter the Dungeon button both start an expedition. The right side remains
+available for future features. The existing five bottom tabs keep their order
+and now use original painted icons and jade/bronze button styling.
+
+A volcanic banner at the top opens an overlay saying “Hell in development”.
+It reserves the battlepass; it has no purchase or reward behavior yet.
+The upper-left champion portrait opens a dropdown with Settings, Bag and Details.
+Clicking outside the dropdown/window or closing a window returns to the same page.
+
+- Settings: master, music and effects volume plus mute. Preferences persist in the
+  existing local profile and apply to the Master/Music/SFX buses. Audio tracks
+  and effects are not yet implemented. An editable Insert Code area is present;
+  redemption is explicitly unavailable and never grants currency/items.
+- Bag: a separate event-belongings window reserved for shards, event currencies
+  and special containers. It is currently empty; equipment stays in Inventory.
+- Details/Chronicle: best floor, save/progression information, game version,
+  development status, current UTC date/time, engine attribution and copyright.
+  Full engine/third-party/font license notices are available in a scrollable view.
+- A left parchment journal holds Daily Tasks, Daily Login, Privileges and Event.
+  All four open clearly marked development placeholders; rewards are undefined.
+- Miscellaneous keeps the cheat menu. Progression/build information moved to
+  Details. Existing cheats and the dungeon economy remain unchanged.
+
+Default champion (working name): **Aster, the mortal-born**. An unhooded human
+hero with short dark hair, a visible face, bronze sun cuirass, ivory sash, warm
+skin, crimson cloak and bronze greaves. He appears consistently in the profile,
+all six complete weapon-holding inventory poses, and the existing continuous
+in-game animation rig. No stats or abilities change with this visual revision.
+
+Future champions will reference gods from different mythologies: Hades, Zeus,
+Hou Yi, Chang’e, Baron Samedi, Ullr, Thor, Tsukuyomi and Amaterasu. These are future
+roster directions, not implemented characters or selectable powers yet.
+Room artwork remains provisional pending the designer's laptop sketches.

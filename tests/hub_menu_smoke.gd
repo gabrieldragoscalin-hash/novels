@@ -31,7 +31,8 @@ func run() -> void:
 	menu.dungeon_button.pressed.emit(); assert(departures == 1)
 	await process_frame
 	assert(menu.perk_grid.get_child_count() == 12)
-	for button in menu.task_buttons: assert(not button.visible)
+	assert(menu.task_buttons.size()==4)
+	for button in menu.task_buttons: assert(button.visible)
 	menu.queue_free()
 	var room = load("res://scenes/room.tscn").instantiate(); root.add_child(room)
 	room.hub = Hub.new(false)

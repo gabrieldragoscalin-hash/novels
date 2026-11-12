@@ -58,6 +58,7 @@ jobs:
           godot --headless --path . --script tests/equipment_smoke.gd
           godot --headless --path . --script tests/upgrades_smoke.gd
           godot --headless --path . --script tests/hub_menu_smoke.gd
+          godot --headless --path . --script tests/home_smoke.gd
           godot --headless --path . --script tests/economy_smoke.gd
           godot --headless --path . --script tests/synthesis_smoke.gd
           godot --headless --path . --script tests/cheats_smoke.gd

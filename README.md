@@ -9,7 +9,7 @@ seed reproduction, and what remains outside this ten-floor build.
 
 ## Play
 
-Use the hub's **Play** tab and tap the central dungeon icon to enter. On iPhone, touch and drag anywhere to move; the joystick appears
+Use the hub's **Play** tab and tap the Sanctuary tower or Enter the Dungeon to enter. On iPhone, touch and drag anywhere to move; the joystick appears
 under your finger. On desktop use WASD/arrows. Attacks aim and fire while moving.
 Walk through doors; tap the action button or press **E** for services/chests/exits.
 
@@ -56,6 +56,7 @@ godot --headless --path . --script tests/services_smoke.gd
 godot --headless --path . --script tests/equipment_smoke.gd
 godot --headless --path . --script tests/upgrades_smoke.gd
 godot --headless --path . --script tests/hub_menu_smoke.gd
+godot --headless --path . --script tests/home_smoke.gd
 godot --headless --path . --script tests/economy_smoke.gd
 godot --headless --path . --script tests/synthesis_smoke.gd
 godot --headless --path . --script tests/cheats_smoke.gd
@@ -187,3 +188,18 @@ lava canals, bridges, sunken courts and grounded ruins. Door openings are painte
 through the continuous perimeter walls. Collision follows each background, with
 connected paths and body-only terrain gaps. All ten appear in each 5×5 dungeon.
 See [ART_DIRECTION.md](ART_DIRECTION.md) and [ROOM_REFERENCES.md](ROOM_REFERENCES.md).
+
+### Tower home and champion
+
+The Play page shows the Sanctuary tower turning infernal below its crown. The
+volcanic banner reserves the battlepass. The profile portrait opens Settings,
+Bag and Details; the parchment journal holds the four upcoming daily/event links.
+Sound preferences save locally. Codes, events, login rewards and the event bag
+are clearly marked placeholders. Progression, version, live UTC time and licenses
+are under Details; Miscellaneous keeps the cheat menu.
+
+The default champion is now Aster, an unhooded bronze-and-crimson human demigod,
+with matching profile, six weapon-holding inventory poses and animated dungeon
+rig. Additional mythology-inspired champions remain future work.
+`python3 tests/browser_home.py` checks the new home interactions and captures
+phone, short-phone and desktop views for clipping review.
