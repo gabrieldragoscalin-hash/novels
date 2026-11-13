@@ -43,7 +43,7 @@ static func build(parent: Node3D) -> Array[Rect2]:
 	for x in range(-9,10,2):
 		for z in range(-8,8,2):
 			var pos:=Vector2(x,z)
-			if floor_contains(pos) and floor_contains(pos+Vector2(0.90,0.90)) and floor_contains(pos-Vector2(0.90,0.90)):
+			if [Vector2(-0.98,-0.98),Vector2(0.98,-0.98),Vector2(0.98,0.98),Vector2(-0.98,0.98)].all(func(offset): return floor_contains(pos+offset)):
 				var tile:=M.box(parent,Vector3(x,0.012,z),Vector3(1.95,0.025,1.95),["497d76","4d8077","53847b"][posmod(x*3+z,3)])
 				tile.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	for pos in [Vector2(-7,-4),Vector2(7,-4),Vector2(-7,4),Vector2(7,4),Vector2(-3,-12),Vector2(3,-12)]:
