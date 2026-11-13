@@ -96,7 +96,7 @@ func show_preview(id: String, bounds := Rect2(), touch := false) -> void:
 	touch_preview = touch; outside_age = 0
 	preview_title.text = hub.PERK_NAMES[id]; preview_effect.text = Visuals.effect(id,hub.perks[id])
 	preview_note.text = "Maximum blessing" if hub.perks[id]>=hub.PERK_CAPS[id] else "Next: "+Visuals.effect(id,hub.perks[id]+1)
-	if id=="scavenger": preview_note.text += "\nExcludes coin cards and purchases."
+	if id=="scavenger": preview_note.text += "\nExcludes purchases."
 	preview.size = Vector2(280,0); preview.show(); _place_preview.call_deferred()
 func _place_preview() -> void:
 	await get_tree().process_frame
