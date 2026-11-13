@@ -93,20 +93,14 @@ All floor-specific encounters, stock, rewards and uses refresh on descent.
   rewards, with no combat slowdown in those presentations. Selection grants once,
   clears the movement stick, and resumes with a short safety window. Glyphs and
   text reflect the current weapon, including the three Meteor alternatives.
-- Shared cards: damage, attack speed, movement, EXP gain, Punchthrough, Extra
-  projectile, Multiple Shots, enemy Ricochet, Follow and See All. Extra projectile
-  fires parallel ranged/chakram shots, alternating sword slashes, or wider hammer
-  cones. Multiple Shots adds sequential attacks within each attack cycle.
-- Bow/crossbow cards: Arrow split, Stop and Aim, Explosive arrows. Split and
-  Explosive replace one another; Stop and Aim charges while stationary, releases
-  on movement or after three seconds, doubles damage and always penetrates.
-- Wand cards: Perpetuum continuous laser or Magic Meteor, replacing one another.
-  Meteor converts Punchthrough/Ricochet/Follow into Size/Rain/Telekinesis.
-- See All passes through obstacles, is never offered to wands, and never reappears
-  after selection in that run. Wands pass through obstacles inherently.
-- All attack forms, exact interactions and test tuning are recorded in
-  [WEAPONS_SPEC.md](WEAPONS_SPEC.md). Old status/healing/critical/magnet/regen cards
-  are retired. No additional melee-specific cards are designed yet.
+- Nine weapons: ranged Bow, Crossbow, Wand, Spear and Chakram; melee Sword,
+  Dual Axe, Club and Hammer. New weapons have held art, inventory art and distinct
+  attack behavior. Each has three support upgrades and two exclusive signatures.
+- Shared upgrades and all weapon interactions follow [WEAPONS_SPEC.md](WEAPONS_SPEC.md)
+  and the editable [v2 catalog](design/weapon_upgrades_v2.json). Ranged-only cards
+  are Ricochet, Attack through obstacles, Follow and Extra Projectile. Melee-only
+  cards are Larger Area, Jump Attack and Hard Slam. Multishot adds consecutive
+  attacks for every weapon. The old system is safely archived with a Git tag.
 - Coin choices, loot and wheel coin rewards use the persistent coin wallet.
 - The permanent Starting upgrade perk gives two upgrades without a coin option,
   preventing free currency farming by repeatedly starting and abandoning runs.
@@ -293,23 +287,15 @@ live mobile testing before treating their tuning as balanced.
 
 ## Utility cards and ten-floor expansion
 
-Vitality:+10% starting maxHP per rank (cap5), healing only the HP gained.
-Field medicine:restore15% maxHP immediately, repeatable, hidden at full HP.
-Gatherer:+25% pickup radius per rank (cap3). Long reach:+10% projectile speed or
-+5% melee reach per rank (cap3); lasers gain beam width and meteors fall/roll faster.
-Last enemy:+15% damage per rank when one enemy remains (cap2).
-Momentum:clear combat for+10% movement in the next room (cap1).
-Emergency barrier:block one hit during the first4s of a hostile room (cap1).
-Salvage:+3 coins per combat clear per rank (cap3).
-Second Chance:rare, cap1, instantly revive at exactly25% maxHP once per run.
-It never reappears after selection/consumption and cannot be traded. A1.5s grace
-window prevents the same impact from immediately killing the revived player.
-
-Most choices pair offense with defense/utility, plus coins. Defining cards use
-relative weight0.35, ordinary cards1, Second Chance0.08. Declined form-switch
-cards have reduced repeat weight. These are relative weights, not fixed odds.
-Barriers never refresh on revisits; Salvage/Momentum require a first combat clear.
-Instant Field medicine cannot be traded after its healing is consumed.
+Vitality grants10% starting maxHP per rank, healing the HP gained. Full Heal
+restores all missing HP. Lifesteal is damage-based with cycle/second limits.
+Reach improves projectile speed or melee reach. Room Barrier blocks one hit per
+room with no time limit; revisiting never replenishes a spent block. Room Gold
+pays3 coins per rank once per completed non-start room, per floor.
+Second Chance is rare and revives immediately at25% maxHP once per run.
+Gatherer, Last Enemy, Momentum and Stop and Aim are retired from the offer pool.
+All caps, weapon cards and signature replacements are documented in
+[the v2 specification](design/WEAPONS_V2.md). The animated reveal remains in use.
 
 Progression now ends after floor10. Floors6–10 have stronger tiered encounters;
 combat counts cap8, loot defenders cap4 except guardians on5/10, empty enemies

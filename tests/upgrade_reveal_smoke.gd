@@ -36,6 +36,14 @@ func run() -> void:
 	room.combat.progression.weapon = "wand"; room.combat.progression.ranks["meteor"] = 1
 	assert(reveal.entry(room.combat.progression,"piercing")["title"]=="Meteor Size")
 	assert(reveal.entry(room.combat.progression,"second_chance")["badge"]=="RARE")
+	# New weapon cards must fit inside the existing mobile reel layout.
+	for kind in room.combat.progression.Catalog.RANGED+room.combat.progression.Catalog.MELEE:
+		room.combat.progression.weapon = kind
+		for id in room.combat.progression.Catalog.ACTIVE:
+			var entry = reveal.entry(room.combat.progression,id)
+			reveal.cards[0]._fill(0,entry)
+			assert(reveal.cards[0].names[0].get_minimum_size().y<=53,id+" title clips")
+			assert(reveal.cards[0].descriptions[0].get_minimum_size().y<=99,id+" description clips")
 	room.queue_free()
 	print("PASS: real slowdown, invulnerability, rolling/input gate, stable offers/RNG, paused queued choices, coins once, safe resume/reset, two choices and dynamic meteor glyphs")
 	quit()

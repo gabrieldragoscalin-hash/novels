@@ -25,8 +25,8 @@ func run() -> void:
 	assert(c.bullets[0]["radius"]>4 and c.progression.damage()==2 and c.progression.fire_interval()>0.45)
 	# Burst attacks are staggered, not an immediate spread.
 	c = encounter(); c.progression.ranks["multiple_shots"] = 2
-	c.arsenal.tick(0.01,PLAYER); assert(c.bullets.size()==1 and c.arsenal.queued.size()==2)
-	c.arsenal.tick(0.16,PLAYER); assert(c.bullets.size()==2)
+	c.arsenal.tick(0.01,PLAYER+Vector2(1,0)); assert(c.bullets.size()==1 and c.arsenal.queued.size()==2)
+	c.fire_time = 999; c.arsenal.tick(0.16,PLAYER+Vector2(1,0)); assert(c.bullets.size()==2)
 	# Obstacles block arrows, but wands and See All bypass them.
 	var pillars: Array[Rect2] = [Rect2(220,390,40,30)]
 	for weapon in ["bow","wand"]:
@@ -43,58 +43,48 @@ func run() -> void:
 	c = encounter(); c.enemies.clear()
 	c.bullets.append({"pos":Vector2(440,350),"velocity":Vector2(390,0),"life":1.0,"bounces":4})
 	c.arsenal._tick_bullets(0.1); assert(c.bullets.is_empty())
-	# Follow turns toward the target, and after punchthrough selects an unhit one.
-	c = encounter("bow",[Vector2(240,330),Vector2(310,230)])
-	c.progression.ranks["follow"] = 1; c.progression.ranks["piercing"] = 1
-	c.arsenal._fire(PLAYER,0,false,0); c.arsenal._tick_bullets(0.51)
-	assert(c.bullets[0]["hits"].has(0)); c.arsenal._tick_bullets(0.02)
-	assert(c.bullets[0]["velocity"].x>0)
-	# Split happens at final enemy hit, not at the first penetration.
-	c = encounter("bow",[Vector2(240,330),Vector2(240,260)])
-	c.progression.ranks["arrow_split"] = 1; c.progression.ranks["piercing"] = 1
-	c.arsenal._fire(PLAYER,0,false,0); c.arsenal._tick_bullets(0.51)
-	assert(c.bullets.size()==1 and c.bullets[0]["remaining"]==1)
-	c.arsenal._tick_bullets(0.2); assert(c.bullets.size()==3)
-	for bullet in c.bullets: assert(not bullet["split"] and bullet["hits"].size()==2)
+	# Ballista penetrates multiple targets; bow split children follow after a ricochet.
+	c = encounter("crossbow",[Vector2(240,330),Vector2(240,260)])
+	c.give_upgrade("ballista"); c.give_upgrade("follow")
+	c.arsenal._fire(PLAYER,0,false,0); c.arsenal._tick_bullets(0.8)
+	assert(c.enemies[0]["hp"]<100 and c.enemies[1]["hp"]<100)
 	# Explosions are direct damage plus 45% splash, ignoring ordinary pierce/ricochet.
 	c = encounter("bow",[Vector2(240,330),Vector2(275,330)])
 	c.progression.ranks["explosive"] = 1; c.progression.ranks["piercing"] = 3; c.progression.ranks["ricochet"] = 3
 	c.arsenal._fire(PLAYER,0,false,0); c.arsenal._tick_bullets(0.7)
 	assert(is_equal_approx(c.enemies[0]["hp"],98.55) and is_equal_approx(c.enemies[1]["hp"],99.55) and c.bullets.is_empty())
-	c = encounter(); c.progression.ranks["stop_aim"] = 1; c.progression.ranks["explosive"] = 1
+	c = encounter(); c.progression.ranks["explosive"] = 1
 	c.arsenal._fire(PLAYER,0,true,0)
-	assert(c.bullets[0]["splash"]==104 and c.bullets[0]["remaining"]>100)
+	assert(c.bullets[0]["splash"]==52 and c.bullets[0]["remaining"]>100)
 	# Split children inherit Follow after the parent's last ricochet hit.
 	c = encounter("bow",[Vector2(240,330),Vector2(320,330)])
 	c.progression.ranks["arrow_split"] = 1; c.progression.ranks["ricochet"] = 1; c.progression.ranks["follow"] = 1
 	c.arsenal._fire(PLAYER,0,false,0); c.arsenal._tick_bullets(0.85)
 	assert(c.bullets.size()==3)
 	for child in c.bullets: assert(child["follow"] and child["hits"].size()==2)
-	# Stop/aim waits and releases on movement; charged shots ignore Follow/Ricochet.
-	c = encounter(); c.progression.ranks["stop_aim"] = 1
-	c.progression.ranks["follow"] = 1; c.progression.ranks["ricochet"] = 2
+	# Bow naturally charges while stationary; moving fires ordinary arrows.
+	c = encounter(); c.give_upgrade("deep_draw")
 	c.arsenal.tick(0.5,PLAYER); assert(c.bullets.is_empty() and c.arsenal.charge==0.5)
 	c.arsenal.tick(0.01,PLAYER+Vector2(1,0))
-	assert(c.bullets.size()==1 and c.bullets[0]["charged"] and c.bullets[0]["damage"]==2 and c.bullets[0]["remaining"]>100 and not c.bullets[0]["follow"] and c.bullets[0]["bounces"]==0)
-	c = encounter(); c.progression.ranks["stop_aim"] = 1
-	for i in range(29): c.arsenal.tick(0.1,PLAYER)
-	assert(c.bullets.is_empty()); c.arsenal.tick(0.1,PLAYER); assert(not c.bullets.is_empty())
-	# Sword hits an arc and extra projectiles schedule alternating slashes.
+	assert(c.bullets.size()==1 and not c.bullets[0]["charged"])
+	c = encounter(); c.arsenal.tick(0.61,PLAYER)
+	assert(c.arsenal.release_serial>0)
+	# Melee Multishot schedules consecutive strikes; Extra Projectile is ranged-only.
 	c = encounter("sword",[Vector2(240,330),Vector2(270,335)])
-	c.progression.ranks["multishot"] = 1; c.arsenal._schedule(Vector2(240,390),0,false)
-	assert(c.arsenal.queued.size()==2 and c.arsenal.queued[1]["slash"]==1)
+	c.give_upgrade("multiple_shots"); c.arsenal._schedule(Vector2(240,390),0,false)
+	assert(c.arsenal.queued.size()==2 and not c.progression.available_upgrades().has("multishot"))
 	c.arsenal._fire(Vector2(240,390),0,false,0)
-	assert(is_equal_approx(c.enemies[0]["hp"],97.975) and is_equal_approx(c.enemies[1]["hp"],97.975))
-	c.arsenal._fire(Vector2(240,390),0,false,1); assert(c.arsenal.effects[-1]["reverse"])
-	# Hammer widens without extending its range.
+	assert(c.enemies[0]["hp"]<100 and c.enemies[1]["hp"]<100)
+	# Area widens hammer's cone without changing reach.
 	c = encounter("hammer"); c.arsenal._fire(Vector2(240,400),0,false,0)
 	var wave: Dictionary = c.arsenal.effects[-1].duplicate()
-	c.progression.ranks["multishot"] = 2; c.arsenal._fire(Vector2(240,400),0,false,0)
+	c.give_upgrade("area"); c.arsenal._fire(Vector2(240,400),0,false,0)
 	assert(c.arsenal.effects[-1]["radius"]==wave["radius"] and c.arsenal.effects[-1]["angle"]>wave["angle"])
-	# Chakram's native chain loses damage at each bounce.
-	c = encounter("chakram",[Vector2(240,330),Vector2(300,330),Vector2(350,330),Vector2(400,330)])
-	c.arsenal._fire(PLAYER,0,false,0); c.arsenal._tick_bullets(1.2)
-	assert(c.enemies[0]["hp"]==98 and is_equal_approx(c.enemies[1]["hp"],98.5) and c.enemies[3]["hp"]<100)
+	# Chakram has separate outward/return contacts and a bounded repeat interval.
+	c = encounter("chakram"); c.arsenal._fire(PLAYER,0,false,0)
+	assert(c.bullets[0]["v2_path"] and c.bullets[0]["return_contacts"].is_empty())
+	c.arsenal.behavior._tick_returning(0.5,PLAYER)
+	assert(c.enemies[0]["hp"]<100)
 	# Laser is continuous, ignores obstacles and has slightly greater baseline DPS.
 	c = encounter("wand"); c.progression.ranks["perpetuum"] = 1
 	for i in range(10): c.arsenal._laser(PLAYER,Vector2.UP,0)
@@ -122,5 +112,5 @@ func run() -> void:
 	p.grant_upgrade("perpetuum"); p.grant_upgrade("meteor"); assert(p.ranks["perpetuum"]==0)
 	p.grant_upgrade("perpetuum"); assert(p.ranks["meteor"]==0)
 	for id in ["health","critical","frost","burn","magnet","regeneration"]: assert(not p.available_upgrades().has(id))
-	print("PASS: six weapons, parallel shots, staggered bursts, enemy ricochet, Follow, obstacle bypass, split timing, explosions, charge release, melee arcs, chakram falloff, laser DPS/chains, meteor conversions and exclusive cards")
+	print("PASS: parallel projectiles, consecutive attacks, obstacle bypass, enemy ricochet, ballista penetration, bow charge and split, bounded explosions, melee arcs, returning chakram, laser chains, meteor conversions and exclusive signatures")
 	quit(0)

@@ -348,6 +348,10 @@ func _physics_process(delta: float) -> void:
 			var before_kills: int = combat.kills
 			var was_revived: bool = combat.progression.revive_used
 			combat.tick(delta, player, level_panel.slowing())
+			if not combat.arsenal.jump_request.is_empty():
+				var landing: Vector2 = combat.arsenal.jump_request["pos"]
+				if not _blocked(landing): hero_animation.jump_origin = player; player = landing; hero_animation.jump_age = 0
+				combat.arsenal.jump_request.clear()
 			var target: int = combat.arsenal.nearest(player)
 			var aim := Vector2(facing,facing_y*0.5).normalized()
 			if target>=0: aim = player.direction_to(combat.enemies[target]["pos"])
@@ -527,6 +531,16 @@ func _draw_player() -> void:
 	if combat.barrier_ready and combat.barrier_time>0 and combat.progression.ranks["barrier"]>0: draw_arc(player+Vector2(0,-18),25,0,TAU,32,Color("81d5ff"),3)
 	_draw_shadow(player+Vector2(0,1),Vector2(15,6),Color(0,0,0,0.38))
 	hero_animation.draw(self,player)
+	if combat.progression.weapon=="crossbow":
+		var b = combat.arsenal.behavior
+		if b.reload_left>0:
+			draw_rect(Rect2(player+Vector2(-16,8),Vector2(32,4)),Color("23332c"))
+			draw_rect(Rect2(player+Vector2(-16,8),Vector2(32*(1-b.reload_left/maxf(0.01,b.reload_total)),4)),Color("dfbd78"))
+		else:
+			for i in range(b.magazine): draw_rect(Rect2(player+Vector2(-15+i*5,8),Vector2(3,4)),Color("dfbd78"))
+	if combat.progression.weapon=="bow" and combat.arsenal.charge>0:
+		draw_arc(player+Vector2(0,-20),24,-PI/2,-PI/2+TAU*minf(1,combat.arsenal.charge/(0.6/(1+0.2*combat.progression.ranks["quick_draw"]))),24,Color("91d3b5"),1.5)
+	if combat.arsenal.behavior.guard_left>0: draw_arc(player+Vector2(0,-20),25,hero_animation.aim_angle-0.9,hero_animation.aim_angle+0.9,20,Color("e9ca7d"),3)
 
 func _draw_minimap() -> void:
 	for y in range(5):

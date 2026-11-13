@@ -1,142 +1,422 @@
-CURRENT RUN UPGRADES
+CURRENT RUN UPGRADES — V2
 
-24 upgrades, plus 3 Meteor variants.
-Rarity fields are left blank for editing. Second Chance is currently labelled Rare.
+65 catalog entries, including the meteor-only size card.
+Previous list: design/archive/upgrades_v1/UPGRADES_TO_EDIT.txt.txt
+Edit design/weapon_upgrades_v2.json to change the generated game catalog.
+Rarity fields are reserved for the future rarity rework.
 
-GENERAL UPGRADES
+ALL WEAPONS
 
 1. Increased damage
-   Effect: +15% equipment damage per selection (additive).
+   ID: damage
+   Effect: +15% equipment damage
+   Cap: 12
    Rarity:
 
 2. Increased attack speed
-   Effect: +12% attack speed per selection (additive).
+   ID: attack_speed
+   Effect: +12% attack speed and reload speed
+   Cap: 8
    Rarity:
 
 3. Increased move speed
-   Effect: +10% movement speed per selection.
+   ID: movement
+   Effect: +10% movement speed
+   Cap: 5
    Rarity:
 
-4. Increased EXP gain
-   Effect: +20% experience gained per selection.
+4. Vitality
+   ID: vitality
+   Effect: +10% starting maximum HP; heal HP gained
+   Cap: 5
    Rarity:
 
-5. Punchthrough
-   Effect: Pass through one additional enemy per selection.
+5. Full heal
+   ID: medicine
+   Effect: Restore all missing HP immediately
+   Cap: Repeatable while injured
    Rarity:
 
-6. Extra projectile
-   Effect: Adds a parallel projectile. Sword gains another slash; hammer gains a wider cone.
-   Current damage scaling: +35% total output per selection for applicable attacks.
+6. Lifesteal
+   ID: lifesteal
+   Effect: Heal 1% of attack damage; capped per attack cycle
+   Cap: 5
    Rarity:
 
-7. Multiple Shots
-   Effect: Adds one consecutive attack per attack cycle.
-   Current damage scaling: +30% total output per selection.
+7. Increased EXP gain
+   ID: experience
+   Effect: +20% experience gained
+   Cap: 3
    Rarity:
 
-8. Ricochet
-   Effect: Bounce to one additional enemy per selection, rather than bouncing off walls.
+8. Projectile speed / melee reach
+   ID: reach
+   Effect: +10% projectile speed or +5% melee reach
+   Cap: 5
    Rarity:
 
-9. Follow
-   Effect: Projectiles home toward enemies.
+9. Room barrier
+   ID: barrier
+   Effect: Block one incoming hit per room
+   Cap: 1
    Rarity:
 
-10. See All
-    Effect: Attacks pass through obstacles. Unavailable for wands, which already pass through obstacles.
-    Rarity:
+10. Room gold
+   ID: salvage
+   Effect: +3 coins per completed room; once per room
+   Cap: 5
+   Rarity:
 
-11. Vitality
-    Effect: +10% starting maximum HP per selection; immediately heals the HP gained.
-    Rarity:
+11. Second Chance • RARE
+   ID: second_chance
+   Effect: Revive once at 25% maximum HP this run
+   Cap: 1
+   Rarity: Rare
 
-12. Field medicine
-    Effect: Immediately restore 15% maximum HP.
-    Rarity:
+12. Multishot
+   ID: multiple_shots
+   Effect: +1 consecutive attack per cycle; +30% total output
+   Cap: 3
+   Rarity:
 
-13. Gatherer
-    Effect: +25% XP pickup radius per selection.
-    Rarity:
+RANGED ONLY
 
-14. Long reach
-    Effect: +10% projectile speed or +5% melee reach per selection.
-    Wand with Perpetuum: +5% beam width per selection.
-    Wand with Magic Meteor: Faster falling and rolling meteors.
-    Rarity:
+13. Ricochet
+   ID: ricochet
+   Effect: Bounce to one more enemy
+   Cap: 5
+   Rarity:
 
-15. Last enemy
-    Effect: +15% damage against the final enemy in a room per selection.
-    Rarity:
+14. Attack through obstacles
+   ID: see_all
+   Effect: Projectiles pass through obstacles
+   Cap: 1
+   Rarity:
 
-16. Momentum
-    Effect: Clearing combat grants +10% movement speed in the next room.
-    Rarity:
+15. Follow enemy
+   ID: follow
+   Effect: Projectiles home toward enemies
+   Cap: 1
+   Rarity:
 
-17. Emergency barrier
-    Effect: Blocks one hit during the first four seconds after entering a room.
-    Rarity:
+16. Extra projectile
+   ID: multishot
+   Effect: +1 simultaneous parallel projectile; +35% total output
+   Cap: 3
+   Rarity:
 
-18. Salvage
-    Effect: +3 coins per cleared combat room per selection.
-    Rarity:
+MELEE ONLY
 
-19. Second Chance
-    Effect: Revive once at 25% maximum HP. Obtainable only once per run.
-    Rarity: Rare
+17. Larger area
+   ID: area
+   Effect: Widen the slash or cone by 15%
+   Cap: 5
+   Rarity:
 
-BOW AND CROSSBOW UPGRADES
+18. Jump attack
+   ID: jump_attack
+   Effect: Every 5 seconds leap to the nearest enemy and strike harder
+   Cap: 1
+   Rarity:
 
-20. Arrow split
-    Effect: Splits into three directions after the final hit.
-    Replaces: Explosive arrows.
-    Rarity:
+19. Hard slam
+   ID: hard_slam
+   Effect: First hit each cycle sends a 20% damage wave behind its target
+   Cap: 1
+   Rarity:
 
-21. Stop and Aim
-    Effect: Standing still charges an attack for up to three seconds. Moving or reaching three seconds fires it.
-    Charged attacks: Double damage and guaranteed penetration; not affected by Ricochet or Follow.
-    Rarity:
+BOW
 
-22. Explosive arrows
-    Effect: Normal impact damage plus 45% area damage, limited to once per attack cycle.
-    Replaces: Arrow split.
-    Rarity:
+20. Deep Draw
+   ID: deep_draw
+   Effect: Charged arrows gain +25% damage
+   Cap: 3
+   Rarity:
 
-WAND UPGRADES
+21. Quick Draw
+   ID: quick_draw
+   Effect: Charge aimed arrows 20% faster
+   Cap: 3
+   Rarity:
 
-23. Perpetuum
-    Effect: Converts beams into a continuous laser.
-    Replaces: Magic Meteor.
-    Rarity:
+22. Marked Prey
+   ID: marked_prey
+   Effect: Charged hits mark targets; follow-up arrows gain 10% damage
+   Cap: 3
+   Rarity:
 
-24. Magic Meteor
-    Effect: Replaces beams with falling meteors.
-    Replaces: Perpetuum.
-    Rarity:
+23. Explosive Arrows
+   ID: explosive
+   Effect: Impact plus 45% splash once per cycle; replaces Arrow Split
+   Cap: 1
+   Rarity:
 
-METEOR VARIANTS
-These replace existing upgrades while Magic Meteor is active; they are not three additional independent upgrades.
+24. Arrow Split
+   ID: arrow_split
+   Effect: After the final hit, split into 3 weaker arrows; replaces Explosive Arrows
+   Cap: 1
+   Rarity:
 
-25. Meteor Size
-    Replaces: Punchthrough.
-    Effect: +20% base meteor radius per selection.
-    Rarity:
+CROSSBOW
 
-26. Meteor Rain
-    Replaces: Ricochet.
-    Effect: Targets one additional enemy per attack per selection.
-    Rarity:
+25. Larger Magazine
+   ID: magazine
+   Effect: One more bolt before reloading
+   Cap: 3
+   Rarity:
 
-27. Telekinesis
-    Replaces: Follow.
-    Effect: Meteors roll after impact, dealing 25% of their falling damage.
-    Rarity:
+26. Quick Loader
+   ID: quick_loader
+   Effect: Reload 15% faster
+   Cap: 3
+   Rarity:
 
-SEPARATE REWARD
+27. Pinning Bolts
+   ID: pinning
+   Effect: Bolts briefly pin small enemies against nearby walls
+   Cap: 1
+   Rarity:
 
-20 coins
-Effect: Adds 20 coins instead of granting an upgrade.
-This is a currency choice, not an upgrade.
+28. Repeater
+   ID: repeater
+   Effect: Rapidly fire the magazine, then take a longer reload
+   Cap: 1
+   Rarity:
 
-NOTES / PROPOSED CHANGES
+29. Ballista
+   ID: ballista
+   Effect: One huge penetrating bolt with a slower reload
+   Cap: 1
+   Rarity:
 
+WAND
+
+30. Arcane Residue
+   ID: arcane_residue
+   Effect: Spell impacts leave a brief damaging patch
+   Cap: 3
+   Rarity:
+
+31. Mana Echo
+   ID: mana_echo
+   Effect: Every fourth cast repeats at reduced strength
+   Cap: 3
+   Rarity:
+
+32. Spell Focus
+   ID: spell_focus
+   Effect: Repeated hits on one target build up to 30% extra damage
+   Cap: 3
+   Rarity:
+
+33. Perpetuum
+   ID: perpetuum
+   Effect: Replace pulses with a continuous laser
+   Cap: 1
+   Rarity:
+
+34. Magic Meteor
+   ID: meteor
+   Effect: Replace pulses with delayed falling meteors
+   Cap: 1
+   Rarity:
+
+SPEAR
+
+35. Serrated Head
+   ID: serrated_head
+   Effect: Lodged spears cause a short bleed
+   Cap: 3
+   Rarity:
+
+36. Swift Recall
+   ID: swift_recall
+   Effect: Spears return sooner and faster
+   Cap: 3
+   Rarity:
+
+37. Skewer
+   ID: skewer
+   Effect: Penetrate one more enemy on outward throws
+   Cap: 3
+   Rarity:
+
+38. Returning Strike
+   ID: returning_strike
+   Effect: Stronger return hits; reposition to sweep enemies
+   Cap: 1
+   Rarity:
+
+39. Impaler
+   ID: impaler
+   Effect: Spears lodge longer and pulse area damage before returning
+   Cap: 1
+   Rarity:
+
+CHAKRAM
+
+40. Wider Arc
+   ID: wide_orbit
+   Effect: Widen the curved flight path
+   Cap: 3
+   Rarity:
+
+41. Lingering Disc
+   ID: lingering_disc
+   Effect: Linger longer near the end of outward flight
+   Cap: 3
+   Rarity:
+
+42. Serrated Rhythm
+   ID: serrated_rhythm
+   Effect: Repeated disc hits build a capped damage bonus
+   Cap: 3
+   Rarity:
+
+43. Orbiting Blades
+   ID: orbiting_blades
+   Effect: Replace throws with blades circling the character
+   Cap: 1
+   Rarity:
+
+44. Hunting Discs
+   ID: hunting_discs
+   Effect: Stay out longer, ricocheting between enemies before returning
+   Cap: 1
+   Rarity:
+
+SWORD
+
+45. Extended Combo
+   ID: extended_combo
+   Effect: Add one slash before the stronger finisher
+   Cap: 2
+   Rarity:
+
+46. Riposte
+   ID: riposte
+   Effect: After a dodge or guard, the next slash is stronger
+   Cap: 3
+   Rarity:
+
+47. Execution
+   ID: execution
+   Effect: Finishers deal more damage to wounded enemies
+   Cap: 3
+   Rarity:
+
+48. Sword Wave
+   ID: sword_wave
+   Effect: Combo finishers launch a travelling blade wave
+   Cap: 1
+   Rarity:
+
+49. Counterguard
+   ID: counterguard
+   Effect: Finishers briefly guard the front; a block empowers the next slash
+   Cap: 1
+   Rarity:
+
+DUAL AXE
+
+50. Crosscut
+   ID: crosscut
+   Effect: Striking with both axes in succession causes bleed
+   Cap: 3
+   Rarity:
+
+51. Battle Rhythm
+   ID: battle_rhythm
+   Effect: Successful attacks build temporary attack speed
+   Cap: 3
+   Rarity:
+
+52. Hooked Edges
+   ID: hooked_edges
+   Effect: Outer hits pull smaller enemies inward
+   Cap: 3
+   Rarity:
+
+53. Whirlwind
+   ID: whirlwind
+   Effect: Completing a combo spins an attack around you
+   Cap: 1
+   Rarity:
+
+54. Twin Execution
+   ID: twin_execution
+   Effect: Periodically strike forward with both axes for focused damage
+   Cap: 1
+   Rarity:
+
+CLUB
+
+55. Heavy Timber
+   ID: heavy_timber
+   Effect: Increase stagger and knockback
+   Cap: 3
+   Rarity:
+
+56. Backswing
+   ID: backswing
+   Effect: Add a weaker return swing
+   Cap: 3
+   Rarity:
+
+57. Crowd Pressure
+   ID: crowd_pressure
+   Effect: Enemy collisions briefly slow the enemies involved
+   Cap: 3
+   Rarity:
+
+58. Bowling Blow
+   ID: bowling_blow
+   Effect: Knocked enemies travel farther and damage those they collide with
+   Cap: 1
+   Rarity:
+
+59. Titan’s Grip
+   ID: titans_grip
+   Effect: Replace sweeps with slow overhead crushing blows
+   Cap: 1
+   Rarity:
+
+HAMMER
+
+60. Aftershock
+   ID: aftershock
+   Effect: A weaker second impact strikes the same area
+   Cap: 3
+   Rarity:
+
+61. Fault Line
+   ID: fault_line
+   Effect: Extend the ground shockwave
+   Cap: 3
+   Rarity:
+
+62. Fracture
+   ID: fracture
+   Effect: Repeated hammer hits increase damage from subsequent hammer strikes
+   Cap: 3
+   Rarity:
+
+63. Seismic Slam
+   ID: seismic_slam
+   Effect: Replace forward waves with circular shockwaves
+   Cap: 1
+   Rarity:
+
+64. Fissure
+   ID: fissure
+   Effect: Forward waves leave a short-lived damaging crack
+   Cap: 1
+   Rarity:
+
+METEOR ONLY
+
+65. Meteor Size
+   ID: piercing
+   Effect: +20% base meteor radius
+   Cap: 5
+   Rarity:

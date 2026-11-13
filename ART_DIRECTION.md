@@ -284,3 +284,20 @@ outside the dungeon renderer while its visual quality is evaluated. Mechanical
 contact tests do not replace art/pose review; directional weapon illustrations
 and additional weapon-family clips remain future work. The adjacent README
 explains manual Godot editing and which generation tools overwrite templates.
+
+
+## Nine-weapon extension (v0.5.0)
+
+`art/champions/aster_extensions.png` is an original AI-assisted transparent atlas
+containing isolated spear, axe and club sprites and three frontal Aster inventory
+poses. The six regions are defined in `scripts/weapon_extensions_art.gd`.
+Dawnpiercer uses a tall ivory/bronze point, jade fittings and crimson binding;
+Eclipse axes use paired crescent heads; Titanwood combines gnarled timber and
+bronze bands. The palette follows the Fallen Sanctuary and Aster's existing kit.
+
+The gameplay rig reads weapon length/grip metadata and holds two axe sprites,
+one per hand. Spear projectiles use their actual weapon art. Inventory uses the
+new frontal held poses. This is a first playable art pass; final directional art
+and the manually refined character animation remain future work. Mobile browser
+screenshots were reviewed for portrait bounds, held-weapon placement and item
+text. Existing six weapon illustrations remain in use.

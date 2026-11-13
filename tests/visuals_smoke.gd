@@ -12,6 +12,11 @@ func run() -> void:
 		assert(Rect2(Vector2.ZERO,frame.atlas.get_size()).encloses(frame.region),key)
 	assert(Art.BOSSES.get_image().get_pixel(0,0).a<0.1)
 	for weapon in ["bow","crossbow","wand","sword","hammer","chakram"]: assert(Art.frame("weapon_"+weapon).atlas==Art.OBJECTS)
+	for key in Art.Extensions.FRAMES:
+		var frame = Art.frame(key)
+		assert(Rect2(Vector2.ZERO,frame.atlas.get_size()).encloses(frame.region))
+		assert(frame.get_width()>20 and frame.get_height()>20)
+	assert(Art.Extensions.SHEET.get_image().get_pixel(0,0).a<0.1)
 	assert(Art.frame("normal_0").atlas==Art.ENEMIES)
 	assert(Art.frame("portrait")!=Art.frame("idle_front"))
 	assert(Art.frame("walk_front_0").region!=Art.frame("walk_front_1").region)
@@ -40,5 +45,5 @@ func run() -> void:
 	assert(c.arsenal.pose_time==0.24 and c.arsenal.pose_direction.y<0)
 	c.arsenal.reset(Vector2.ZERO); assert(c.arsenal.pose_time==0)
 	assert(identities.size()==10 and rotations.size()==10)
-	print("PASS: animated atlas, ten connected room layouts, six held weapons, ten distinct boss identities/rotations and attack-synchronized poses")
+	print("PASS: animated atlas, ten connected room layouts, nine held weapons, ten distinct boss identities/rotations and attack-synchronized poses")
 	quit()

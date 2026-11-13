@@ -1,6 +1,12 @@
 extends RefCounted
 ## Cached original Sanctuary glyphs; the reveal never allocates textures per frame.
+const Catalog = preload("res://scripts/upgrade_catalog.gd")
+const WeaponArt = preload("res://scripts/game_art.gd")
 const SHAPES := {
+"lifesteal":"M36 11q-19 23-19 33a19 19 0 0 0 38 0q0-10-19-33ZM27 43q3-8 9-1 6-7 9 1 4 6-9 14-13-8-9-14Z",
+"area":"M13 57q0-37 45-44L34 47ZM13 57l44-14M13 57l12-45",
+"jump_attack":"M12 51q3-42 43-26m-10-9 12 9-12 9M20 56h37M43 48l7-9 7 9",
+"hard_slam":"M10 35h22m-8-8 8 8-8 8M39 14v44m8-39q22 17 0 34m7-40q27 22 0 45",
 "damage":"M15 55 47 11 55 8 53 21 24 59M14 40l20 15M11 59l7 5",
 "attack_speed":"m14 20 16 16-16 16m20-32 16 16-16 16M55 16v40",
 "movement":"m16 52 12-26 12 8-5 15 19 5M27 25l14-13 15 10M12 35h10",
@@ -32,6 +38,7 @@ const SHAPES := {
 static var cache: Dictionary = {}
 static func texture(id: String) -> Texture2D:
 	if cache.has(id): return cache[id]
+	if Catalog.OWNERS.has(id) and not SHAPES.has(id): return WeaponArt.frame("weapon_"+str(Catalog.OWNERS[id]))
 	var svg := '<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72"><circle cx="36" cy="36" r="33" fill="#1b3e31" stroke="#af965e"/><circle cx="36" cy="36" r="29" fill="none" stroke="#536d4f" stroke-width=".7"/><path d="%s" fill="none" stroke="#efd495" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' % SHAPES.get(id,SHAPES["damage"])
 	var image := Image.new(); image.load_svg_from_string(svg,3.0)
 	cache[id] = ImageTexture.create_from_image(image)

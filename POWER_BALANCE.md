@@ -16,16 +16,16 @@ Later milestone starting floors remain the plan for strong accounts.
   Three ranks give1.45× equipment damage, rather than adding3 full damage points.
 - Attack speed: +12% per rank, additive, cap8 (+96%), replacing exponential1.15^N.
   A0.08s minimum attack interval bounds firing rate for future very fast weapons.
-- Extra projectile: still adds one projectile/slash per rank. The whole set gains
-  +35% output per rank, shared equally across its projectiles/slashes. Three
-  projectiles total deal1.7× output, not3×. Hammer still widens without extra damage.
+- Extra projectile: adds one parallel projectile per rank, ranged only. The whole set gains
+  +35% output per rank, shared equally across its projectiles. Three
+  projectiles total deal1.7× output, not3×. Melee area is a separate card.
 - Multiple Shots: still adds one sequential salvo per rank. Combined output gains
   +30% per rank, shared across the salvos. Three salvos give1.6×, not3×.
 - These two categories combine as (1+0.35×extra ranks)×(1+0.30×burst ranks).
-  Even at both caps, total delivery output is6.875× rather than36×. Their separate
+  Even at both caps, total delivery output is3.895× rather than16×. Their separate
   categories reward combining upgrades while each rank has diminishing relative gain.
 - Explosive arrows: full normalized direct damage plus45% of the attack's damage
-  as splash, radius52 (104 with Stop and Aim). Each enemy can receive splash only
+  as splash, radius52. Each enemy can receive splash only
   once per entire attack cycle, including all parallel shots and sequential bursts.
   All explosion visuals remain; non-overlapping areas can still hit new enemies.
 - Split children:45% of parent projectile damage each; no recursive splitting.
@@ -37,9 +37,14 @@ Later milestone starting floors remain the plan for strong accounts.
 - Lasers and sword slashes use the same delivery budget. Continuous laser retains
   its10% baseline DPS advantage. Hammer gains burst output, not bonus damage from
   its cone-width upgrade. Critical damage works across every weapon form.
-- Stop and Aim requires at least0.35s charging for a doubled attack. Early releases
-  use an ordinary attack; neither can bypass the normal weapon cooldown. This
-  closes the repeated stop/start double-shot exploit. Automatic release stays3s.
+- Bow now charges naturally while stationary (0.6s before haste/Quick Draw),
+  firing a penetrating1.8× shot; moving fires normal arrows. Deep Draw adds0.25×
+  base damage per rank. Charging cannot bypass the normal cooldown. Stop and Aim
+  is archived, not offered. Crossbow uses magazines/reloads instead.
+- Lifesteal is limited to2% maxHP/cycle and4%/second before Recovery, uses actual
+  damage rather than overkill, and does not heal from bleed. Secondary attacks
+  cannot recursively create more secondary attacks. See [v2](design/WEAPONS_V2.md)
+  for the per-weapon caps and trigger rules.
 - Enemy hits from attacks stay fractional. We never round each small projectile
   up to a full damage point. Ledgers are bounded and cleared on room transitions.
 
@@ -66,26 +71,32 @@ estimates, NOT measured live fights or guaranteed expedition times. Dodging,
 travel, aim, crowd layout, gear and card availability change real clear times.
 
 Mid profile:3 damage ranks,2 attack-speed ranks,2 extra-projectile ranks, no burst;
-plus Explosive for bow/crossbow or Perpetuum for wand. Late profile:6 damage,
+plus Explosive for bow or Perpetuum for wand. Late profile:6 damage,
 4 speed,3 extra,3 burst, plus that weapon modifier. For wand beam/meteor variants,
-replace Perpetuum with the named form. Melee/chakram use shared ranks without a
+replace Perpetuum with the named form. Melee ignores ranged-only Extra Projectile; returning weapons use shared ranks without a
 weapon-specific card. These are explicit fixtures, not promises about exact drop
 or card counts on any floor.
 
 | Weapon/form | Profile | DPS | Floor5 boss HP/DPS estimate |
 | --- | --- | ---: | ---: |
-| bow | mid | 8.42 | 85.5s |
-| bow | late | 25.59 | 28.2s |
-| crossbow | mid | 10.60 | 67.9s |
-| crossbow | late | 32.65 | 22.1s |
-| wand | mid | 8.50 | 84.6s |
+| bow | mid | 11.20 | 64.3s |
+| bow | late | 34.57 | 20.8s |
+| crossbow | mid | 7.89 | 91.3s |
+| crossbow | late | 27.10 | 26.6s |
+| wand | mid | 8.50 | 84.7s |
 | wand | late | 30.39 | 23.7s |
-| sword | mid | 13.93 | 51.7s |
-| sword | late | 49.40 | 14.6s |
+| sword | mid | 9.18 | 78.4s |
+| sword | late | 26.84 | 26.8s |
 | hammer | mid | 7.25 | 99.3s |
 | hammer | late | 21.30 | 33.8s |
-| chakram | mid | 8.63 | 83.4s |
-| chakram | late | 29.97 | 24.0s |
+| chakram | mid | 11.06 | 65.1s |
+| chakram | late | 38.69 | 18.6s |
+| spear | mid | 11.44 | 63.0s |
+| spear | late | 39.74 | 18.1s |
+| dual_axe | mid | 7.25 | 99.3s |
+| dual_axe | late | 21.66 | 33.2s |
+| club | mid | 7.98 | 90.3s |
+| club | late | 23.24 | 31.0s |
 | wand_beam | late | 30.90 | 23.3s |
 | wand_meteor | late | 31.08 | 23.2s |
 
@@ -104,7 +115,7 @@ three-arrow volley (no crits), versus20.4 under the old flat damage/full-shot/
   discovered weapon cases. Check weak, mid and strong builds, not only maximum gear.
 - Existing tests enforce the reported no-one-shot case, duplicate-splash protection,
   meteor overlap protection, charge cooldown and bounded ledger history. The
-  six-weapon profiles must improve on baseline while staying under15× baseline.
+  nine-weapon profiles must improve on baseline while staying under15× baseline.
 - Measure live room/boss times on mobile too. A test passing does not establish
   whether movement, enemy pressure, rewards or a new perk feels fair.
 
@@ -112,7 +123,7 @@ three-arrow volley (no crits), versus20.4 under the old flat damage/full-shot/
 
 The shared output-budget formulas remain. Brute HP is reduced15% and boss/guardian
 HP20%; floor5 boss is now720. The table above reflects that reduction and the test
-reads current HP dynamically. Last enemy adds up to30% damage only
-when one enemy remains; its ranks are not included in the existing benchmark
-profiles. New survival/utility cards and all12 perks are in GAME_DESIGN.md.
+reads current HP dynamically. The new weapon support/signature combinations need
+further mobile balance testing; the baseline/mid/late benchmarks do not include
+all possible support stacks. Retired cards are not in the offer pool.
 Floors6–10 and their tuning are documented in BALANCING.md.

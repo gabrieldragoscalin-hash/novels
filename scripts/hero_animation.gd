@@ -4,6 +4,8 @@ const Art = preload("res://scripts/game_art.gd")
 const WeaponArt = preload("res://scripts/weapon_art.gd")
 const STRIDE := 104.0
 const ARM_LENGTH := 9.0
+var jump_origin := Vector2.ZERO
+var jump_age := 2.0
 var phase := 0.0
 var move_blend := 0.0
 var motion_direction := Vector2.DOWN
@@ -26,7 +28,7 @@ var muzzle := Vector2.ZERO
 
 func reset() -> void:
 	phase = 0; move_blend = 0; release_age = 10; last_release = 0; time = 0
-	primary = Vector2(12,-24); support = Vector2(-12,-24)
+	primary = Vector2(12,-24); support = Vector2(-12,-24); jump_age = 2
 	aim_angle = -PI/2; weapon_angle = aim_angle; facing_back = true; hand_side = 1.0
 
 func sync_room(serial: int) -> void:
@@ -34,6 +36,7 @@ func sync_room(serial: int) -> void:
 
 func tick(delta: float, motion: Vector2, aim: Vector2, arsenal, progression, fire_time: float, has_target: bool) -> void:
 	time += delta
+	jump_age += delta
 	var distance := motion.length()
 	phase += distance/STRIDE*TAU
 	var smoothing := 1.0-exp(-delta*14)
@@ -81,10 +84,17 @@ func targets(direction: Vector2) -> Dictionary:
 			if meteor:
 				hand = Vector2(hand_side*11,-44+recoil*9)
 				other = Vector2(-hand_side*10,-42+recoil*7)
+		"spear":
+			hand = center+direction*(10+recoil*12)-side*windup*3
+			other = hand+direction*7
+		"dual_axe":
+			swing = sin(minf(1,release_age/0.22)*PI)*0.9*(-1 if reverse else 1)
+			hand = center+direction.rotated(swing)*14+side*7
+			other = center+direction.rotated(-swing)*14-side*7
 		"sword":
 			swing = (-windup*1.05 if release_age>0.22 else sin(minf(1.0,release_age/0.22)*PI)*1.1)*(-1 if reverse else 1)
 			hand = center+direction.rotated(swing)*16
-		"hammer":
+		"hammer", "club":
 			swing = -windup*1.2+recoil*0.7
 			hand = center+direction*(10+recoil*6)+Vector2(0,-windup*10)
 			other = hand+direction.rotated(swing)*5
@@ -107,9 +117,9 @@ func joints() -> Dictionary:
 	var off_hand := off_shoulder+(support-off_shoulder).limit_length(ARM_LENGTH*2-0.1)
 	# Project the complete grip into BOTH reach circles, keeping the second hand
 	# attached to the same weapon instead of independently clamping its wrist.
-	if weapon in ["bow","crossbow","hammer"]:
+	if weapon in ["bow","crossbow","hammer","spear","club"]:
 		var forward := Vector2.from_angle(weapon_angle)
-		var offset: Vector2 = forward*({"crossbow":6.0,"hammer":5.0}.get(weapon,0.0))
+		var offset: Vector2 = forward*({"crossbow":6.0,"hammer":5.0,"spear":7.0,"club":5.0}.get(weapon,0.0))
 		if weapon=="bow": offset = -forward*(6+windup*4-exp(-release_age*18))
 		for i in range(12):
 			main_hand = off_shoulder-offset+(main_hand-(off_shoulder-offset)).limit_length(ARM_LENGTH*2-0.15)
@@ -118,6 +128,7 @@ func joints() -> Dictionary:
 	return {"torso":torso,"main_shoulder":main_shoulder,"off_shoulder":off_shoulder,"main_hand":main_hand,"off_hand":off_hand,"main_elbow":elbow(main_shoulder,main_hand,-hand_side),"off_elbow":elbow(off_shoulder,off_hand,hand_side)}
 
 func draw(canvas: CanvasItem, feet: Vector2) -> void:
+	if jump_age<0.4: feet = jump_origin.lerp(feet,jump_age/0.4)-Vector2(0,sin(jump_age/0.4*PI)*23)
 	var pose := joints()
 	grip = feet+pose["main_hand"]
 	var barrel: float = {"bow":5.0,"crossbow":18.5,"wand":20.3,"chakram":7.0}.get(weapon,16.0)
@@ -160,6 +171,7 @@ func _arms(c: CanvasItem, feet: Vector2, pose: Dictionary, view: String, tint: C
 	var hand: Vector2 = feet+pose["main_hand"]
 	var weapon_tint := tint
 	if weapon=="chakram": weapon_tint.a *= clampf((release_age-0.10)/0.12,0,1)
+	if weapon=="dual_axe": WeaponArt.draw_gripped(c,weapon,feet+pose["off_hand"],weapon_angle+0.5,tint)
 	if weapon_tint.a>0: WeaponArt.draw_gripped(c,weapon,hand,weapon_angle,weapon_tint)
 	if weapon=="bow":
 		var cross := Vector2(-sin(weapon_angle),cos(weapon_angle))*13

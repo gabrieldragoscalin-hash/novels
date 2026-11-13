@@ -7,7 +7,10 @@ const ITEMS := {
 	"wand": {"name": "Ember wand", "slot": "weapon", "description": "Magic beams that pass through obstacles."},
 	"sword": {"name":"Vanguard sword","slot":"weapon","description":"Slashes a forward arc at close range."},
 	"hammer": {"name":"Earthshaker hammer","slot":"weapon","description":"Forward cone shockwaves hit an area."},
-	"chakram": {"name":"Gale chakram","slot":"weapon","description":"Thrown disc chains to three more enemies with reduced damage."},
+	"chakram": {"name":"Gale chakram","slot":"weapon","description":"Curved throws hit outward and again on their return."},
+	"spear": {"name":"Dawnpiercer spear","slot":"weapon","description":"Thrown spears lodge, then return along a path you control."},
+	"dual_axe": {"name":"Eclipse axes","slot":"weapon","description":"Alternating axe combos build close-range pressure."},
+	"club": {"name":"Titanwood club","slot":"weapon","description":"Heavy swings knock enemies into each other."},
 	"vest": {"name": "Warden vest", "slot": "armor", "description": "Adds HP and damage reduction."},
 	"boots": {"name": "Scout boots", "slot": "boots", "description": "Adds maximum health."},
 	"hood": {"name": "Pathfinder hood", "slot": "headgear", "description": "Adds maximum health."},
@@ -42,6 +45,12 @@ static func stats(id: String, level: int) -> Dictionary:
 		"chakram":
 			result["damage"] = 2 + level - 1
 			result["interval"] = 0.7
+		"spear":
+			result["damage"] = 3+level-1; result["interval"] = 0.95; result["projectile_speed"] = 330.0
+		"dual_axe":
+			result["damage"] = 2+level-1; result["interval"] = 0.48
+		"club":
+			result["damage"] = 5+level-1; result["interval"] = 1.15
 		"vest":
 			result["health"] = 1+level
 			result["reduction"] = 0.05+(level-1)*0.01

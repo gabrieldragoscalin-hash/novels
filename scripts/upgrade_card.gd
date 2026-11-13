@@ -38,6 +38,12 @@ func prepare(entry: Dictionary, location: Vector2) -> void:
 	final_entry = entry; target = location; landed = false; disabled = true; last_cycle = -1; badge.text = "FATE"; strips[1].show()
 func _fill(index: int, entry: Dictionary) -> void:
 	names[index].text = entry["title"]; descriptions[index].text = entry["description"]; images[index].texture = entry["icon"]
+	_fit(names[index],15,11,53)
+	_fit(descriptions[index],12,10,clip.size.y-149)
+func _fit(label: Label, preferred: int, minimum: int, height: float) -> void:
+	for font_size in range(preferred,minimum-1,-1):
+		label.add_theme_font_size_override("font_size",font_size)
+		if label.get_minimum_size().y<=height: break
 func roll(elapsed: float, delay: float, pool: Array) -> void:
 	var local := elapsed-delay
 	var arrival := clampf(local/0.22,0,1)

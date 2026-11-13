@@ -41,7 +41,7 @@ func run() -> void:
 	combat.enter(state, Vector2(240, 530))
 	combat.progression.base_damage = 6 # Reward-path fixture, independent of card tuning.
 	combat.fire_time = 0
-	combat.tick(0.5, Vector2(240, 530))
+	combat.tick(0.5, Vector2(241, 530))
 	assert(combat.kills == 1 and combat.progression.flares == 0)
 
 	var room = load("res://scenes/room.tscn").instantiate()

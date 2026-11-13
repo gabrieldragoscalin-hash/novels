@@ -249,3 +249,14 @@ on6–9 have4 defenders; floor10 has one400HP guardian. Empty rooms on5–10 use
 floor-2 enemy tiers, while floors3–4 keep tier2. Loot equipment/drop odds retain
 the floor5 baseline beyond5, with Treasure sense added (+5 percentage points max).
 The hub remains capped at floor10; native runtime tests traverse all ten floors.
+
+
+## Nine-weapon revision (v0.5.0)
+
+The [v2 weapon/upgrade spec](design/WEAPONS_V2.md) supersedes earlier card lists
+and weapon behavior in this document. Full Heal replaces Field Medicine;
+Gatherer/Last Enemy/Momentum/Stop and Aim are retired. Room Barrier lasts until
+its one block is spent. Room Gold pays once per completed non-start room. Enemy
+HP/patterns and the floor10 cap are unchanged. Updated stationary nine-weapon
+measurements are in [POWER_BALANCE.md](POWER_BALANCE.md). The old full system,
+including its original balance docs/tests, is in the tagged v1 archive.

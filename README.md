@@ -24,7 +24,9 @@ healer; and a full-screen hub menu with an eight-slot **Inventory**, individual 
 parts upgrades, rarity synthesis, typed keys, chest pity, and coin-bought perks. Inventory shows four
 slots on each side of the character, with locked Pet/Spirit spaces beneath.
 Bottom tabs: **Shop, Inventory, Play, Perks, Miscellaneous**. Menus pause combat.
-Six weapons have distinct arrows, beams, melee arcs, shockwaves and chaining discs.
+Nine weapons have distinct arrows, spells, returning throws, melee combos and ground effects.
+The [v2 weapon/upgrade specification](design/WEAPONS_V2.md) covers every card;
+[the previous system is backed up](design/archive/upgrades_v1/README.md).
 Run cards include parallel projectiles, bursts, enemy ricochet, homing, obstacle
 bypass, charged/split/explosive arrows, continuous lasers and meteors.
 [WEAPONS_SPEC.md](WEAPONS_SPEC.md) records the exact rules. Doors stay open; room rewards and enemy
@@ -127,11 +129,10 @@ The latest combat stacking rules and repeatable weapon damage scenarios are in
 [POWER_BALANCE.md](POWER_BALANCE.md). Run `tests/power_budget_smoke.gd` to check
 weapon output, explosive/meteor overlap and charge-cooldown regressions.
 
-New run cards: Vitality, Field medicine, Gatherer, Long reach, Last enemy, Momentum,
-Emergency barrier, Salvage and rare Second Chance. Second Chance instantly revives
-once at25% maxHP and never appears again in that run. Offers generally pair offense
-with utility/defense. Brute HP is15% lower, boss/guardian HP20% lower, and play now
-continues through floor10. Permanent perk cards can be tapped for their effects.
+The v2 upgrade pool has shared survival/stat cards, ranged/melee cards and five
+specific cards per weapon. Full Heal, Lifesteal, Jump Attack and Hard Slam join
+weapon signatures such as Ballista, Impaler, Whirlwind and Seismic Slam.
+Second Chance revives once at25% maxHP. See [the full catalog](design/WEAPONS_V2.md).
 
 The Sanctuary art pack covers current floors1–10: painted room textures, transparent
 hero/enemy/prop sprites, gradual corruption and matching hub character/portal art.
@@ -141,7 +142,7 @@ from browser downloads.
 ### Animated Sanctuary pass
 
 The hero uses continuous front/back locomotion and independently animated weapon
-arms; mobs have walk/windup/attack poses. All six equipped weapons are visible
+arms; mobs have walk/windup/attack poses. All nine equipped weapons are visible
 and animate per type, with a dedicated frontal inventory character holding them.
 Six architectural templates arrange props around ceremonial routes, canals and
 collapsed floors. Floors1–10 have unique boss silhouettes and attack
@@ -199,7 +200,7 @@ are clearly marked placeholders. Progression, version, live UTC time and license
 are under Details; Miscellaneous keeps the cheat menu.
 
 The default champion is now Aster, an unhooded bronze-and-crimson human demigod,
-with matching profile, six weapon-holding inventory poses and animated dungeon
+with matching profile, nine weapon-holding inventory poses and animated dungeon
 rig. Additional mythology-inspired champions remain future work.
 `python3 tests/browser_home.py` checks the new home interactions and captures
 phone, short-phone and desktop views for clipping review.

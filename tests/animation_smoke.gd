@@ -8,9 +8,9 @@ func run() -> void:
 	var c = Combat.new(Rect2(8,166,464,438),[])
 	var animation = HeroAnimator.new()
 	# Repeated releases must never reset walking phase or teleport a wrist.
-	for weapon in ["bow","crossbow","wand","sword","hammer","chakram"]:
+	for weapon in ["bow","crossbow","wand","sword","hammer","chakram","spear","dual_axe","club"]:
 		c.progression.weapon = weapon
-		assert(Art.frame("inventory_"+weapon).atlas==Art.INVENTORY)
+		assert(Art.frame("inventory_"+weapon).atlas==(Art.Extensions.SHEET if weapon in ["spear","dual_axe","club"] else Art.INVENTORY))
 		for aim in [Vector2.UP,Vector2.RIGHT,Vector2.DOWN,Vector2.LEFT,Vector2(1,1).normalized(),Vector2(-1,-1).normalized()]:
 			for frame in range(90):
 				if frame%5==0: c.arsenal.release_serial += 1
@@ -20,8 +20,8 @@ func run() -> void:
 				assert(animation.phase>previous_phase)
 				assert(animation.primary.distance_to(previous_hand)<=110.0/60+0.001,"Release teleported wrist")
 				var joints: Dictionary = animation.joints()
-				if weapon in ["bow","crossbow","hammer"]:
-					var distance: float = {"bow":6+animation.windup*4-exp(-animation.release_age*18),"crossbow":6.0,"hammer":5.0}[weapon]
+				if weapon in ["bow","crossbow","hammer","spear","club"]:
+					var distance: float = {"bow":6+animation.windup*4-exp(-animation.release_age*18),"crossbow":6.0,"hammer":5.0,"spear":7.0,"club":5.0}[weapon]
 					var offset: Vector2 = Vector2.from_angle(animation.weapon_angle)*distance*(-1 if weapon=="bow" else 1)
 					assert((joints["off_hand"]-joints["main_hand"]).distance_to(offset)<0.001,"Support hand detached from weapon")
 				assert(animation.hand_side==1.0 or animation.hand_side== -1.0)
@@ -51,5 +51,5 @@ func run() -> void:
 	var serial: int = c.arsenal.release_serial
 	c.arsenal._fire(Vector2(240,450),0,false,0)
 	assert(c.arsenal.release_serial==serial+1)
-	print("PASS: six anatomical inventory poses; continuous stride across releases; bounded wrists and connected IK joints; FPS-independent walking; turn hysteresis; actual release events")
+	print("PASS: nine anatomical inventory poses; continuous stride across releases; bounded wrists and connected IK joints; FPS-independent walking; turn hysteresis; actual release events")
 	quit()

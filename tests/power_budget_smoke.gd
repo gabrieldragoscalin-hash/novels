@@ -15,14 +15,16 @@ func make_arena(weapon: String):
 	return c
 func configure(c,stage: int) -> void:
 	if stage==0: return
-	c.progression.ranks["damage"] = 3 if stage==1 else 6
-	c.progression.ranks["attack_speed"] = 2 if stage==1 else 4
-	c.progression.ranks["multishot"] = 2 if stage==1 else 3
-	c.progression.ranks["multiple_shots"] = 0 if stage==1 else 3
-	if c.progression.weapon in ["bow","crossbow"]: c.progression.ranks["explosive"] = 1
-	if c.progression.weapon=="wand": c.progression.ranks["perpetuum"] = 1
+	for i in range(3 if stage==1 else 6): c.give_upgrade("damage")
+	for i in range(2 if stage==1 else 4): c.give_upgrade("attack_speed")
+	if c.progression.is_ranged():
+		for i in range(2 if stage==1 else 3): c.give_upgrade("multishot")
+	if stage==2:
+		for i in range(3): c.give_upgrade("multiple_shots")
+	if c.progression.weapon=="bow": c.give_upgrade("explosive")
+	if c.progression.weapon=="wand": c.give_upgrade("perpetuum")
 func measure(c) -> float:
-	var player := Vector2(240,400) if c.progression.weapon in ["sword","hammer"] else Vector2(240,530)
+	var player := Vector2(240,400) if c.progression.is_melee() else Vector2(240,530)
 	c.arsenal.reset(player)
 	for frame in range(1200):
 		c.fire_time -= 1.0/60
@@ -36,7 +38,7 @@ func run() -> void:
 		for stage in range(1,3):
 			var c = make_arena(weapon); configure(c,stage)
 			var dps := measure(c)
-			assert(dps>baseline and dps<baseline*15,"Shared run multipliers must remain bounded")
+			assert(dps>baseline and dps<baseline*15,"Shared run multipliers must remain bounded: "+weapon)
 			report.append({"weapon":weapon,"build":"mid" if stage==1 else "late","dps":snappedf(dps,0.01),"floor3_boss_seconds_stationary":snappedf(Dungeon.BOSS_HP[2]/dps,0.1),"floor5_boss_seconds_stationary":snappedf(Dungeon.BOSS_HP[4]/dps,0.1)})
 	for form in ["beam","meteor"]:
 		var wand = make_arena("wand"); configure(wand,2)
@@ -62,8 +64,8 @@ func run() -> void:
 	# A distinct attack cycle may hit again.
 	c.arsenal._explode(Vector2(240,330),52,10,100)
 	assert(is_equal_approx(hp-c.enemies[0]["hp"],20))
-	# Stop/Aim tapping cannot bypass the normal firing cooldown.
-	c = make_arena("bow"); c.progression.ranks["stop_aim"] = 1
+	# Bow charging and movement cannot bypass the normal firing cooldown.
+	c = make_arena("bow")
 	for i in range(20):
 		c.arsenal.charge = 0.01; c.fire_time = 1.0
 		c.arsenal.tick(0.01,Vector2(240+i,530))
@@ -77,5 +79,5 @@ func run() -> void:
 	assert(c.progression.fire_interval()>=0.08)
 	assert(Dungeon.NORMAL_HP[1]<Dungeon.NORMAL_HP[2]*0.4)
 	print("POWER_BENCHMARK "+JSON.stringify(report))
-	print("PASS: actual 6-weapon DPS scenarios, reported explosive build, splash dedup, distinct cycles, charge cooldown and bounded ledgers")
+	print("PASS: actual 9-weapon DPS scenarios, reported explosive build, splash dedup, distinct cycles, charge cooldown and bounded ledgers")
 	quit(0)

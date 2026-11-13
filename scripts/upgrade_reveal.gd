@@ -32,7 +32,7 @@ func entry(progression, id: String) -> Dictionary:
 	if id=="coins": return {"id":id,"title":"%d coins" % progression.coin_reward(),"description":"Keep currency instead of an upgrade","icon":Icons.texture("coins"),"badge":"COINS"}
 	var info: Array = progression.upgrade_info(id)
 	var glyph: String = {"Meteor Size":"meteor_size","Meteor Rain":"meteor_rain","Telekinesis":"telekinesis"}.get(info[0],id)
-	return {"id":id,"title":str(info[0]).replace(" • RARE",""),"description":info[1],"icon":Icons.texture(glyph),"badge":"RARE" if id=="second_chance" else "UPGRADE"}
+	return {"id":id,"title":str(info[0]).replace(" • RARE",""),"description":info[1],"icon":Icons.texture(glyph),"badge":"RARE" if id=="second_chance" else ("SIGNATURE" if progression.Catalog.signature(id) else "UPGRADE")}
 func present(progression, title: String, slow: bool) -> void:
 	phase = "slowing" if slow else "rolling"; slow_duration = 0.45 if slow else 0.0
 	elapsed = 0; committed = false; veil = 0; offer_ids = progression.offers.duplicate(); pool.clear()

@@ -1,0 +1,386 @@
+{
+  "shared": {
+    "damage": [
+      "Increased damage",
+      "+15% equipment damage",
+      12
+    ],
+    "attack_speed": [
+      "Increased attack speed",
+      "+12% attack speed and reload speed",
+      8
+    ],
+    "movement": [
+      "Increased move speed",
+      "+10% movement speed",
+      5
+    ],
+    "vitality": [
+      "Vitality",
+      "+10% starting maximum HP; heal HP gained",
+      5
+    ],
+    "medicine": [
+      "Full heal",
+      "Restore all missing HP immediately",
+      0
+    ],
+    "lifesteal": [
+      "Lifesteal",
+      "Heal 1% of attack damage; capped per attack cycle",
+      5
+    ],
+    "experience": [
+      "Increased EXP gain",
+      "+20% experience gained",
+      3
+    ],
+    "reach": [
+      "Projectile speed / melee reach",
+      "+10% projectile speed or +5% melee reach",
+      5
+    ],
+    "barrier": [
+      "Room barrier",
+      "Block one incoming hit per room",
+      1
+    ],
+    "salvage": [
+      "Room gold",
+      "+3 coins per completed room; once per room",
+      5
+    ],
+    "second_chance": [
+      "Second Chance • RARE",
+      "Revive once at 25% maximum HP this run",
+      1
+    ],
+    "multiple_shots": [
+      "Multishot",
+      "+1 consecutive attack per cycle; +30% total output",
+      3
+    ]
+  },
+  "ranged": {
+    "ricochet": [
+      "Ricochet",
+      "Bounce to one more enemy",
+      5
+    ],
+    "see_all": [
+      "Attack through obstacles",
+      "Projectiles pass through obstacles",
+      1
+    ],
+    "follow": [
+      "Follow enemy",
+      "Projectiles home toward enemies",
+      1
+    ],
+    "multishot": [
+      "Extra projectile",
+      "+1 simultaneous parallel projectile; +35% total output",
+      3
+    ]
+  },
+  "melee": {
+    "area": [
+      "Larger area",
+      "Widen the slash or cone by 15%",
+      5
+    ],
+    "jump_attack": [
+      "Jump attack",
+      "Every 5 seconds leap to the nearest enemy and strike harder",
+      1
+    ],
+    "hard_slam": [
+      "Hard slam",
+      "First hit each cycle sends a 20% damage wave behind its target",
+      1
+    ]
+  },
+  "weapons": {
+    "bow": {
+      "deep_draw": [
+        "Deep Draw",
+        "Charged arrows gain +25% damage",
+        3
+      ],
+      "quick_draw": [
+        "Quick Draw",
+        "Charge aimed arrows 20% faster",
+        3
+      ],
+      "marked_prey": [
+        "Marked Prey",
+        "Charged hits mark targets; follow-up arrows gain 10% damage",
+        3
+      ],
+      "explosive": [
+        "Explosive Arrows",
+        "Impact plus 45% splash once per cycle; replaces Arrow Split",
+        1
+      ],
+      "arrow_split": [
+        "Arrow Split",
+        "After the final hit, split into 3 weaker arrows; replaces Explosive Arrows",
+        1
+      ]
+    },
+    "crossbow": {
+      "magazine": [
+        "Larger Magazine",
+        "One more bolt before reloading",
+        3
+      ],
+      "quick_loader": [
+        "Quick Loader",
+        "Reload 15% faster",
+        3
+      ],
+      "pinning": [
+        "Pinning Bolts",
+        "Bolts briefly pin small enemies against nearby walls",
+        1
+      ],
+      "repeater": [
+        "Repeater",
+        "Rapidly fire the magazine, then take a longer reload",
+        1
+      ],
+      "ballista": [
+        "Ballista",
+        "One huge penetrating bolt with a slower reload",
+        1
+      ]
+    },
+    "wand": {
+      "arcane_residue": [
+        "Arcane Residue",
+        "Spell impacts leave a brief damaging patch",
+        3
+      ],
+      "mana_echo": [
+        "Mana Echo",
+        "Every fourth cast repeats at reduced strength",
+        3
+      ],
+      "spell_focus": [
+        "Spell Focus",
+        "Repeated hits on one target build up to 30% extra damage",
+        3
+      ],
+      "perpetuum": [
+        "Perpetuum",
+        "Replace pulses with a continuous laser",
+        1
+      ],
+      "meteor": [
+        "Magic Meteor",
+        "Replace pulses with delayed falling meteors",
+        1
+      ]
+    },
+    "spear": {
+      "serrated_head": [
+        "Serrated Head",
+        "Lodged spears cause a short bleed",
+        3
+      ],
+      "swift_recall": [
+        "Swift Recall",
+        "Spears return sooner and faster",
+        3
+      ],
+      "skewer": [
+        "Skewer",
+        "Penetrate one more enemy on outward throws",
+        3
+      ],
+      "returning_strike": [
+        "Returning Strike",
+        "Stronger return hits; reposition to sweep enemies",
+        1
+      ],
+      "impaler": [
+        "Impaler",
+        "Spears lodge longer and pulse area damage before returning",
+        1
+      ]
+    },
+    "chakram": {
+      "wide_orbit": [
+        "Wider Arc",
+        "Widen the curved flight path",
+        3
+      ],
+      "lingering_disc": [
+        "Lingering Disc",
+        "Linger longer near the end of outward flight",
+        3
+      ],
+      "serrated_rhythm": [
+        "Serrated Rhythm",
+        "Repeated disc hits build a capped damage bonus",
+        3
+      ],
+      "orbiting_blades": [
+        "Orbiting Blades",
+        "Replace throws with blades circling the character",
+        1
+      ],
+      "hunting_discs": [
+        "Hunting Discs",
+        "Stay out longer, ricocheting between enemies before returning",
+        1
+      ]
+    },
+    "sword": {
+      "extended_combo": [
+        "Extended Combo",
+        "Add one slash before the stronger finisher",
+        2
+      ],
+      "riposte": [
+        "Riposte",
+        "After a dodge or guard, the next slash is stronger",
+        3
+      ],
+      "execution": [
+        "Execution",
+        "Finishers deal more damage to wounded enemies",
+        3
+      ],
+      "sword_wave": [
+        "Sword Wave",
+        "Combo finishers launch a travelling blade wave",
+        1
+      ],
+      "counterguard": [
+        "Counterguard",
+        "Finishers briefly guard the front; a block empowers the next slash",
+        1
+      ]
+    },
+    "dual_axe": {
+      "crosscut": [
+        "Crosscut",
+        "Striking with both axes in succession causes bleed",
+        3
+      ],
+      "battle_rhythm": [
+        "Battle Rhythm",
+        "Successful attacks build temporary attack speed",
+        3
+      ],
+      "hooked_edges": [
+        "Hooked Edges",
+        "Outer hits pull smaller enemies inward",
+        3
+      ],
+      "whirlwind": [
+        "Whirlwind",
+        "Completing a combo spins an attack around you",
+        1
+      ],
+      "twin_execution": [
+        "Twin Execution",
+        "Periodically strike forward with both axes for focused damage",
+        1
+      ]
+    },
+    "club": {
+      "heavy_timber": [
+        "Heavy Timber",
+        "Increase stagger and knockback",
+        3
+      ],
+      "backswing": [
+        "Backswing",
+        "Add a weaker return swing",
+        3
+      ],
+      "crowd_pressure": [
+        "Crowd Pressure",
+        "Enemy collisions briefly slow the enemies involved",
+        3
+      ],
+      "bowling_blow": [
+        "Bowling Blow",
+        "Knocked enemies travel farther and damage those they collide with",
+        1
+      ],
+      "titans_grip": [
+        "Titan’s Grip",
+        "Replace sweeps with slow overhead crushing blows",
+        1
+      ]
+    },
+    "hammer": {
+      "aftershock": [
+        "Aftershock",
+        "A weaker second impact strikes the same area",
+        3
+      ],
+      "fault_line": [
+        "Fault Line",
+        "Extend the ground shockwave",
+        3
+      ],
+      "fracture": [
+        "Fracture",
+        "Repeated hammer hits increase damage from subsequent hammer strikes",
+        3
+      ],
+      "seismic_slam": [
+        "Seismic Slam",
+        "Replace forward waves with circular shockwaves",
+        1
+      ],
+      "fissure": [
+        "Fissure",
+        "Forward waves leave a short-lived damaging crack",
+        1
+      ]
+    }
+  },
+  "mutually_exclusive": [
+    [
+      "explosive",
+      "arrow_split"
+    ],
+    [
+      "repeater",
+      "ballista"
+    ],
+    [
+      "perpetuum",
+      "meteor"
+    ],
+    [
+      "returning_strike",
+      "impaler"
+    ],
+    [
+      "orbiting_blades",
+      "hunting_discs"
+    ],
+    [
+      "sword_wave",
+      "counterguard"
+    ],
+    [
+      "whirlwind",
+      "twin_execution"
+    ],
+    [
+      "bowling_blow",
+      "titans_grip"
+    ],
+    [
+      "seismic_slam",
+      "fissure"
+    ]
+  ]
+}

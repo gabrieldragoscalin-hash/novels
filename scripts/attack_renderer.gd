@@ -1,5 +1,6 @@
 extends RefCounted
 ## Bounded sprite work independent of the number of damage entities.
+const NewWeapons = preload("res://scripts/weapon_extensions_art.gd")
 const Vfx = preload("res://scripts/attack_vfx.gd")
 const BOUNDS := Rect2(8,166,464,438)
 const MAX_METEORS := 24
@@ -48,11 +49,18 @@ static func draw_projectiles(c: CanvasItem, bullets: Array, clock: float, player
 		var pos: Vector2 = bullet["pos"]+offset
 		var kind: String = bullet.get("kind","bow")
 		var angle: float = bullet["velocity"].angle()
+		if kind=="spear":
+			var spear: Texture2D = NewWeapons.frame("weapon_spear")
+			c.draw_set_transform(pos,angle+PI/2)
+			c.draw_texture_rect(spear,Rect2(-5,-28,10,56),false)
+			c.draw_set_transform(Vector2.ZERO)
+			continue
 		var size := Vector2(38,20)
 		var clip := "arrow"
 		var anchor := Vector2(0.87,0.62)
 		var tint := Color.WHITE
 		match kind:
+			"sword_wave": clip = "slash"; size = Vector2(48,52); anchor = Vector2(0.5,0.5)
 			"crossbow": clip = "bolt"; size = Vector2(47,25)
 			"wand": clip = "magic"; size = Vector2(60,31)
 			"chakram": clip = "chakram"; size = Vector2(30,30); anchor = Vector2(0.5,0.5); angle = clock*13
@@ -86,7 +94,14 @@ static func draw_effects(c: CanvasItem, arsenal, impacts: Array, clock: float, p
 		if kind in ["explosion","laser"] and cells.has(key): continue
 		cells[key] = true
 		var pos: Vector2 = effect["pos"]+Vector2(0,-16)
+		if effect.get("circular",false) and kind in ["slash","wave"]:
+			for segment in range(4): _stamp(c,kind,age,pos,Vector2(effect["radius"],effect["radius"]*1.3),Vector2(0.05,0.58),segment*PI/2,Color.WHITE)
+			drawn += 1
+			if drawn>=MAX_EFFECTS: break
+			continue
 		match kind:
+			"arcane_patch": _stamp(c,"explosion",fposmod(age*2,1),pos,Vector2.ONE*effect["radius"]*2,Vector2(0.5,0.5),0,Color(0.4,1,0.7,0.45))
+			"fissure": _stamp(c,"wave",age,pos,Vector2(effect["radius"]*2.5,28),Vector2(0.5,0.5),effect["direction"].angle(),Color(0.9,0.7,0.45,0.7))
 			"explosion":
 				_stamp(c,"explosion",age,pos,Vector2.ONE*effect["radius"]*2.25,Vector2(0.5,0.5),0,Color(1,1,1,0.9*minf(1,(1-age)*5)))
 			"laser":

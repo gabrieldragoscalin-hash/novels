@@ -55,13 +55,13 @@ func run() -> void:
 
 	# A piercing shot can hit two targets, but never the same target twice.
 	combat = Combat.new(BOUNDS, [])
-	combat.progression.ranks["piercing"] = 1
+	combat.progression.base_pierce = 1 # Penetration fixture (e.g. a weapon-native effect).
 	state = {"enemies": [], "pickups": []}
 	for y in [400, 360]:
 		state["enemies"].append({"pos": Vector2(240, y), "hp": 3, "flash": 0.0, "repath": 999.0, "path": PackedVector2Array()})
 	combat.enter(state, Vector2(240, 530))
 	combat.fire_time = 0
-	combat.tick(0.5, Vector2(240, 530))
+	combat.tick(0.5, Vector2(241, 530))
 	assert(state["enemies"][0]["hp"] == 2 and state["enemies"][1]["hp"] == 2)
 
 	var room = load("res://scenes/room.tscn").instantiate()

@@ -29,14 +29,15 @@ with sync_playwright() as p:
  errors=[]
  page.on('pageerror',lambda e:errors.append(str(e)))
  page.on('console',lambda m:errors.append(m.text) if m.type=='error' else None)
- url='http://127.0.0.1:8765/?seed=9'
+ base=os.environ.get('WEAPON_TEST_URL','http://127.0.0.1:8765').rstrip('/')
+ url=base+'/?seed=9'
  page.goto(url,wait_until='networkidle');page.wait_for_timeout(3500)
  for attempt in range(40):
   if page.evaluate(read_js):break
   page.wait_for_timeout(200)
  page.route('**/__weapon_fixture.html',lambda route:route.fulfill(status=200,body='<html>fixture</html>',content_type='text/html'))
- for weapon in os.environ.get('WEAPON_FILTER','bow,crossbow,wand,sword,hammer,chakram').split(','):
-  page.goto('http://127.0.0.1:8765/__weapon_fixture.html');page.evaluate(write_js,weapon)
+ for weapon in os.environ.get('WEAPON_FILTER','bow,crossbow,wand,spear,chakram,sword,dual_axe,club,hammer').split(','):
+  page.goto(base+'/__weapon_fixture.html');page.evaluate(write_js,weapon)
   page.goto(url,wait_until='networkidle');page.wait_for_timeout(3000)
   box=page.locator('canvas').bounding_box();scale=box['width']/480;h=box['height']/scale
   def tap(x,y):page.touchscreen.tap(box['x']+x*scale,box['y']+y*scale);page.wait_for_timeout(150)
@@ -47,7 +48,7 @@ with sync_playwright() as p:
   tap(240,h-133) # Teleport to boss; reset profile sits below this row.
   tap(240,76) # Close cheats.
   page.wait_for_timeout(250)
-  if weapon in ['sword','hammer']:
+  if weapon in ['sword','dual_axe','club','hammer']:
    page.keyboard.down('w');page.wait_for_timeout(800);page.keyboard.up('w')
   for frame in range(int(os.environ.get("CAPTURE_FRAMES","3"))):
    page.wait_for_timeout(60 if os.environ.get("CAPTURE_FRAMES") else 170)

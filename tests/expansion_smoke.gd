@@ -24,12 +24,12 @@ func run() -> void:
 	var services = Services.new(d,c,h); services.enter()
 	assert(services.price("armor_item")==135 and services.price("upgrade")==18)
 	h.coins = 1000; assert(services.buy("armor_item")=="Purchased." and h.coins==865)
-	# Vitality's exact max-health gain is its only heal; medicine uses Recovery.
+	# Vitality heals its exact max-health gain; Full Heal restores all missing HP.
 	c = Combat.new(BOUNDS,[]); c.health = 3
 	c.give_upgrade("vitality"); assert(is_equal_approx(c.progression.max_health(),6.6) and is_equal_approx(c.health,3.6))
 	c.progression.current_health = c.health
 	assert(c.progression.available_upgrades().has("medicine"))
-	c.give_upgrade("medicine"); assert(is_equal_approx(c.health,4.59))
+	c.give_upgrade("medicine"); assert(is_equal_approx(c.health,6.6))
 	c.heal(100); assert(not c.progression.available_upgrades().has("medicine"))
 	c.give_upgrade("reach"); assert(c.progression.shot_speed()>c.progression.projectile_speed)
 	# Second Chance is rare, immediate, exact 25%, never offered/traded a second time.
@@ -55,7 +55,7 @@ func run() -> void:
 	c.enter(state,Vector2(240,530)); c.grace_time = 0; c.hurt(1); assert(c.health==6 and not c.barrier_ready)
 	c.enter(state,Vector2(240,530)); assert(not c.barrier_ready)
 	c._damage_enemy(enemy,999); c.tick(0.01,Vector2(240,530))
-	var coins: int = h.coins; c.tick(0.01,Vector2(240,530)); assert(h.coins==coins and c.progression.momentum_pending)
+	var coins: int = h.coins; c.tick(0.01,Vector2(240,530)); assert(h.coins==coins )
 	c.enter({"role":"empty","enemies":[]},Vector2(240,530)); assert(c.progression.momentum_active and not c.progression.momentum_pending)
 	c.enter(state,Vector2(240,530)); assert(not c.progression.momentum_active)
 	# Old four-perk saves keep their levels and receive eight locked entries.

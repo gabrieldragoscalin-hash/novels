@@ -1,8 +1,10 @@
 extends RefCounted
 ## Original SVG menu doodles, generated locally; no external art dependency.
+const Extensions = preload("res://scripts/weapon_extensions_art.gd")
 static var cache: Dictionary = {}
 
 static func texture(kind: String) -> Texture2D:
+	if kind in ["spear","dual_axe","club"]: return Extensions.frame("weapon_"+kind)
 	if cache.has(kind): return cache[kind]
 	var shapes := ""
 	match kind:

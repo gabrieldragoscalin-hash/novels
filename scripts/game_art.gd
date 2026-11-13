@@ -1,5 +1,6 @@
 extends RefCounted
 ## Rendering asset catalog. Room layouts own collision; atlas pixels never define it.
+const Extensions = preload("res://scripts/weapon_extensions_art.gd")
 const Layout = preload("res://scripts/art_regions.gd")
 const ARENA_FLOOR: Texture2D = preload("res://art/sanctuary/arena_floor.png")
 const MASONRY: Texture2D = preload("res://art/sanctuary/masonry.png")
@@ -28,6 +29,7 @@ static var prepared := false
 static var frames: Dictionary = {}
 
 static func frame(key: String) -> AtlasTexture:
+	if Extensions.FRAMES.has(key): return Extensions.frame(key)
 	if frames.has(key): return frames[key]
 	var actor := ACTOR_KEYS.has(key)
 	var keys: Array = ACTOR_KEYS if actor else PROP_KEYS

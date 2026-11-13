@@ -70,8 +70,8 @@ func enter(state: Dictionary, player: Vector2) -> void:
 	progression.momentum_active = progression.momentum_pending
 	progression.momentum_pending = false
 	barrier_time = 0.0; barrier_ready = false
-	if progression.ranks["barrier"]>0 and alive_count()>0 and not state.get("barrier_given",false):
-		state["barrier_given"] = true; barrier_time = 4.0; barrier_ready = true
+	if progression.ranks["barrier"]>0 and not state.get("barrier_spent",false):
+		state["barrier_given"] = true; barrier_time = INF; barrier_ready = true
 	progression.current_health = health
 	enemies = state["enemies"]
 	if not state.has("pickups"): state["pickups"] = []
@@ -151,17 +151,18 @@ func tick(delta: float, player: Vector2, allow_pending: bool = false) -> void:
 	_collect_xp(delta, player)
 	if progression.pending > 0 and not allow_pending: return
 	for enemy in enemies:
-		if enemy["hp"]<=0 or enemy.get("dormant",false): continue
-		enemy_ai.tick(enemy,delta,player)
+		if enemy["hp"]<=0 or enemy.get("dormant",false) or enemy.get("stun_left",0)>0: continue
+		enemy_ai.tick(enemy,delta*(0.65 if enemy.get("slow_left",0)>0 or enemy.get("tether_left",0)>0 else 1),player)
 		if enemy.get("phase","")!="recover" and enemy["pos"].distance_to(player)<(35 if enemy.get("kind","") in ["boss","miniboss"] else 26):
-			hurt(1)
+			hurt(1,false,enemy["pos"])
 			if health<=0: break
 	_tick_hazards(delta,player)
 	_tick_hostile(delta, player)
 	_tick_trap(delta, player)
+	if progression.ranks["salvage"]>0 and room_state.get("role","")!="start" and alive_count()==0 and not room_state.get("room_gold_paid",false):
+		room_state["room_gold_paid"] = true; progression.award_coins(3*progression.ranks["salvage"],room_state.get("role","")=="loot")
 	if room_state.get("role","")=="combat" and alive_count()==0 and not room_state.get("combat_paid",false):
 		room_state["combat_paid"] = true
-		progression.award_coins(3*progression.ranks["salvage"])
 		if progression.ranks["momentum"]>0: progression.momentum_pending = true
 	if room_state.get("role", "") == "empty" and floor_number >= 3 and alive_count() == 0 and not room_state.get("room_paid", false):
 		progression.flares += floor_number + 2
@@ -201,11 +202,13 @@ func heal(amount: float) -> void:
 	health = minf(progression.max_health(),health+amount*progression.healing_multiplier())
 	progression.current_health = health
 
-func hurt(amount: int,trap: bool = false) -> void:
+func hurt(amount: int,trap: bool = false, source: Vector2 = Vector2.INF) -> void:
 	if invincible or hurt_time>0 or grace_time>0 or health<=0: return
+	if not trap and arsenal.behavior.guard_left>0 and source.is_finite() and arsenal.pose_direction.dot((source-arsenal.last_player).normalized())>0.2:
+		arsenal.behavior.guard_left = 0; arsenal.behavior.riposte_left = 3; return
 	if barrier_ready and barrier_time>0 and progression.ranks["barrier"]>0:
-		barrier_ready = false; hurt_time = 1.0; return
-	if progression.rng.randf()<progression.dodge_chance: hurt_time = 1.0; return
+		barrier_ready = false; room_state["barrier_spent"] = true; hurt_time = 1.0; return
+	if progression.rng.randf()<progression.dodge_chance: hurt_time = 1.0; arsenal.behavior.riposte_left = 3; return
 	health = maxf(0.0,health-amount*(1.0-progression.damage_reduction)*(1.0-0.01*progression.perk("trap_resist") if trap else 1.0))
 	if health<=0 and progression.ranks["second_chance"]>0 and not progression.revive_used:
 		progression.revive_used = true
@@ -228,8 +231,10 @@ func _tick_hostile(delta: float, player: Vector2) -> void:
 				bullet["life"] = 0
 				break
 			bullet["pos"] = next
+			if progression.weapon=="sword" and progression.ranks["riposte"]>0 and not bullet.get("riposte_seen",false) and next.distance_to(player)>=16 and next.distance_to(player)<36 and (next-player).dot(bullet["velocity"])>0:
+				arsenal.behavior.riposte_left = 3; bullet["riposte_seen"] = true
 			if next.distance_to(player) < 16:
-				hurt(1,bullet.get("trap",false))
+				hurt(1,bullet.get("trap",false),bullet["pos"]-bullet["velocity"].normalized()*10)
 				bullet["life"] = 0
 				break
 	hostile_bullets = hostile_bullets.filter(func(b): return b["life"] > 0)
@@ -294,7 +299,8 @@ func _tick_hazards(delta: float,player: Vector2) -> void:
 
 func apply_upgrade_effect(id: String,previous_max: float) -> void:
 	if id=="vitality": health = minf(progression.max_health(),health+maxf(0,progression.max_health()-previous_max))
-	if id=="medicine": heal(progression.max_health()*0.15)
+	if id=="medicine": heal(progression.max_health())
+	if id=="barrier" and not room_state.get("barrier_spent",false): room_state["barrier_given"] = true; barrier_time = INF; barrier_ready = true
 	progression.current_health = health
 
 func give_upgrade(id: String) -> void:
