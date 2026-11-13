@@ -223,7 +223,24 @@ Prices start250 coins, +50 per purchase. Effects are copied into the next run.
 
 Scavenger and Loot gold add together on loot coins. Fractional coin bonuses accrue
 within the run instead of rounding every small payout up. Dungeon discounts do
-not affect the hub shop, chests, perks or synthesis. Tap perk cards for effects.
+not affect the hub shop, chests, perks or synthesis.
+
+The Perks page uses twelve individually framed Sanctuary cards and one bottom
+**Obtain** button, with the current coin cost shown above it. Initially every card
+is greyed out, displays a lock and “Locked”, and conceals its perk name/icon.
+Unlocked cards display their own icon and name, with one star for every level
+across multiple rows when necessary (no star-count abbreviation at level25).
+Hover on desktop or tap/hold on mobile shows a non-modal preview of the current
+numeric effect, plus the next effect or maximum status; locked cards have no preview.
+
+An unlock presents a large locked card at the centre and flips it to its icon,
+name and first star. Its short effect description appears below during the flip.
+A level-up presents the existing-star card on the left and a matching one-star
+card on the right; both move together, then the centred card shows all new stars
+and the updated effect below. The reveal dismisses automatically. The reward is
+saved before animation and additional obtains are blocked until it ends.
+Insufficient coins or fully capped perks disable Obtain. Navigation or resizing
+may dismiss a reveal, but cannot revoke the saved perk or buy another one.
 Second Chance is a rare run upgrade, never a permanent perk.
 
 ## Saves, migration and deferred work

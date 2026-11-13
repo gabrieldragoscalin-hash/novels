@@ -65,7 +65,10 @@ All twelve slots are active; exact effects/caps are listed in GAME_DESIGN.md.
 First purchase always unlocks Starting upgrade at level1. Other locked perks
 unlock randomly at level1; no further levels are bought until all12 are unlocked.
 Existing saved levels are retained when the eight new perks arrive. Prices start
-250 coins, +50 per purchase. Second Chance is a rare run card, not a permanent perk.
+250 coins, +50 per purchase. The single Obtain button starts a guarded purchase;
+reward state is saved before the unlock flip or level-up card merge plays.
+The reveal cannot charge additional coins; its stars reflect the saved rank.
+Second Chance is a rare run card, not a permanent perk.
 
 ## Migration
 

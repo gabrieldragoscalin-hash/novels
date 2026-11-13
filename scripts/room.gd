@@ -140,14 +140,13 @@ func _build_ui() -> void:
 	hub_menu.dungeon_requested.connect(start_game)
 	hub_menu.item_requested.connect(_inventory_item)
 	hub_menu.perk_requested.connect(func():
-		if in_hub:
-			var result: String = hub.buy_perk()
-			hub_menu.perk_message = "Received %s Lv.%d" % [hub.PERK_NAMES[result],hub.perks[result]] if not result.is_empty() else "No perk purchased."
+		if not in_hub or hub_menu.perk_page.reveal.busy: return
+		var old_ranks: Dictionary = hub.perks.duplicate()
+		var result: String = hub.buy_perk()
 		_refresh_hub()
+		if not result.is_empty(): hub_menu.perk_page.present(result,old_ranks[result])
 	)
-	hub_menu.perk_info_requested.connect(func(id):
-		_menu(hub.PERK_NAMES[id],hub.PERK_EFFECTS[id].replace("Excludes", "\nExcludes")+"\nLevel %d / %d" % [hub.perks[id],hub.PERK_CAPS[id]],[])
-	)
+	hub_menu.perk_info_requested.connect(func(id): hub_menu.perk_page.show_preview(id,Rect2(),true))
 	hub_menu.synthesis_requested.connect(_synthesis_changed)
 	hub_menu.cheat_requested.connect(func(): cheat_menu.open())
 	death_panel = PanelContainer.new()

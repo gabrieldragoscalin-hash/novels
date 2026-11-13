@@ -11,6 +11,7 @@ const Art = preload("res://scripts/game_art.gd")
 const HomeArt = preload("res://scripts/hub_art.gd")
 const Windows = preload("res://scripts/hub_windows.gd")
 const Icons = preload("res://scripts/ui_icons.gd")
+const PerkPage = preload("res://scripts/perk_page.gd")
 const Chests = preload("res://scripts/shop_chests.gd")
 const SwipeScroll = preload("res://scripts/swipe_scroll.gd")
 const ItemPreview = preload("res://scripts/item_preview.gd")
@@ -35,6 +36,7 @@ var chest_panels: Dictionary = {}
 var chest_buttons: Dictionary = {}
 var last_chest_rewards: Array[String] = []
 var shop_grid: VBoxContainer
+var perk_page
 var perk_grid: GridContainer
 var task_buttons: Array[Button] = []
 var perk_message := ""
@@ -315,17 +317,10 @@ func _build_shop() -> void:
 	shop_scroll.add_child(shop_grid)
 
 func _build_perks() -> void:
-	var page := pages[3]
-	_label(page,"PERKS",Vector2(24,108),22)
-	_label(page,"Unlock all twelve perks before leveling",Vector2(24,143),12,Color("8cb6ba"))
-	perk_grid = GridContainer.new()
-	perk_grid.position = Vector2(24,184)
-	perk_grid.columns = 4
-	perk_grid.add_theme_constant_override("h_separation",8)
-	perk_grid.add_theme_constant_override("v_separation",10)
-	page.add_child(perk_grid)
-	perk_label = _label(page,"",Vector2(24,490),12)
-	train_button = _button(page,"",Vector2(58,562),Vector2(364,50),func(): perk_requested.emit())
+	perk_page = PerkPage.new(); pages[3].add_child(perk_page); perk_page.position = Vector2(0,88)
+	perk_page.setup(hub,self)
+	perk_page.obtain_requested.connect(func(): perk_requested.emit())
+	perk_grid = perk_page.grid; perk_label = perk_page.wallet; train_button = perk_page.obtain_button
 
 func _build_misc() -> void:
 	var page := pages[4]
@@ -338,6 +333,7 @@ func _build_misc() -> void:
 
 func select_tab(index: int) -> void:
 	if index < 0 or index >= TABS.size(): return
+	if is_instance_valid(perk_page): perk_page.deactivate()
 	selected = index
 	hold_uid = ""
 	if is_instance_valid(item_preview): item_preview.hide()
@@ -400,23 +396,7 @@ func refresh() -> void:
 	inventory_note.text = "Choose a base, then its required duplicates" if synthesis_mode else ("Swipe to browse · tap or hold to inspect" if count > 0 else "No items here yet. Find equipment or open shop chests.")
 	_refresh_synthesis()
 	_refresh_shop()
-	_clear_grid(perk_grid)
-	var ids: Array = hub.PERK_NAMES.keys()
-	for index in range(12):
-		var caption := "Reserved\nLocked"
-		if index < ids.size():
-			var id: String = ids[index]
-			caption = "%s\n%s" % [hub.PERK_NAMES[id].replace(" ","\n"),"Locked" if hub.perks[id] == 0 else "Lv.%d/%d" % [hub.perks[id],hub.PERK_CAPS[id]]]
-		var card := _button(perk_grid,caption,Vector2.ZERO,Vector2.ZERO,func(): pass)
-		card.custom_minimum_size = Vector2(100,88)
-		card.add_theme_font_size_override("font_size",11)
-		card.disabled = index>=ids.size()
-		if index<ids.size():
-			card.tooltip_text = hub.PERK_EFFECTS[ids[index]]
-			card.pressed.connect(func(): perk_info_requested.emit(ids[index]))
-	perk_label.text = "%s\nArmor %d • Accessory %d • Weapon %d parts\n%s" % [perk_message,hub.parts["armor"],hub.parts["accessory"],hub.parts["weapon"],"Unlock all twelve perks before leveling." if hub.Economy.REQUIRE_RESERVED_PERKS else "Leveling begins after all twelve perks unlock."]
-	train_button.text = "Buy random perk • %d coins" % hub.perk_price()
-	train_button.disabled = not hub.can_buy_perk()
+	perk_page.set_model(hub)
 	misc_label.text = "Development tools"
 	queue_redraw()
 
@@ -568,6 +548,7 @@ func _layout() -> void:
 	for i in range(pages.size()):
 		pages[i].size = content.size
 		pages[i].position.y = 0 if i == 2 else -88
+	if is_instance_valid(perk_page): perk_page.layout(Vector2(480,nav_top))
 	inventory_scale = clampf(0.9 + (view.y - 800) * 0.001, 0.9, 1.0)
 	for side in range(2):
 		var slots: Array = LEFT_SLOTS if side == 0 else RIGHT_SLOTS
