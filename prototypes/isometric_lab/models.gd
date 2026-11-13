@@ -1,10 +1,12 @@
 extends RefCounted
 ## Original low-poly test models, built from shared meshes and reusable attachment points.
+const Paint = preload("res://prototypes/isometric_lab/paint.gd")
 static var materials: Dictionary = {}
 static func material(hex: String, glow: bool = false) -> StandardMaterial3D:
 	var key:=hex+str(glow)
 	if materials.has(key): return materials[key]
-	var m:=StandardMaterial3D.new(); m.albedo_color=Color(hex); m.roughness=0.9
+	var m:=StandardMaterial3D.new(); m.albedo_color=Color(hex); m.roughness=0.9; m.diffuse_mode=BaseMaterial3D.DIFFUSE_TOON; m.specular_mode=BaseMaterial3D.SPECULAR_DISABLED
+	if not glow: m.next_pass=Paint.outline()
 	if glow: m.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED; m.emission_enabled=true; m.emission=Color(hex)
 	materials[key]=m; return m
 static func mesh(parent: Node3D, shape: Mesh, pos: Vector3, color: String, glow: bool = false) -> MeshInstance3D:
@@ -107,6 +109,8 @@ static func batch_static(parent: Node3D) -> void:
 	var groups: Dictionary={}
 	for child in parent.get_children():
 		if not child is MeshInstance3D: continue
+		if not child.visible:
+			parent.remove_child(child); child.queue_free(); continue
 		var material_value: Material=child.material_override
 		var key:=str(material_value.get_instance_id())+":"+str(child.cast_shadow)
 		if not groups.has(key):
@@ -117,10 +121,12 @@ static func batch_static(parent: Node3D) -> void:
 			var arrays: Array=child.mesh.surface_get_arrays(surface)
 			var vertices: PackedVector3Array=arrays[Mesh.ARRAY_VERTEX]
 			var normals: PackedVector3Array=arrays[Mesh.ARRAY_NORMAL]
+			var uvs: PackedVector2Array=arrays[Mesh.ARRAY_TEX_UV] if arrays[Mesh.ARRAY_TEX_UV]!=null else PackedVector2Array()
 			var indices: PackedInt32Array=arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX]!=null else PackedInt32Array()
 			for j in range(indices.size() if not indices.is_empty() else vertices.size()):
 				var i: int=indices[j] if not indices.is_empty() else j
 				tool.set_normal((child.transform.basis.inverse().transposed()*normals[i]).normalized())
+				tool.set_uv(uvs[i] if not uvs.is_empty() else Vector2.ZERO)
 				tool.add_vertex(child.transform*vertices[i])
 		parent.remove_child(child); child.queue_free()
 	for group in groups.values():

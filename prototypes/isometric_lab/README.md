@@ -1,4 +1,4 @@
-# 3D view lab — Elysian Embers
+# 3D view lab — The Veiled Sanctum
 
 Open **Miscellaneous → 3D view lab**, use `?iso_lab=1`, launch Godot with
 `-- --iso-lab`, or open `lab.tscn` and press F6.
@@ -12,15 +12,19 @@ progression or saved reward in this scene.
 - A fixed diagonal orthographic camera with a following view and a full overview.
   The Angle button compares 50° and the classic 35.264° isometric inclination;
   yaw stays 45°. Movement follows screen directions at either angle.
-- An open suspended sanctuary rather than enclosed dungeon walls. Ivory pillars,
-  bronze rims, jade slabs, crimson cloth and a red-leaf terrace are modeled as
-  geometry. Shadows, overlap and the raised terrace are actual 3D rendering.
+- An enclosed underworld hall with monumental carved rear walls, recessed oracle
+  reliefs, large damaged pillars, a genuine central pit, urns, sarcophagi and
+  emerald candlelight. Near walls are cut away for camera visibility. Painted
+  stone/frieze/relief materials and ink outlines replace the flat pastel slabs.
+  Horizontal caps use stone paving, not stretched vertical-wall textures.
 - The character's weapon is attached to a hand pivot. Sword and spear reuse the
   same character body, walking cycle and attachment; the weapon meshes differ.
 - Walking, cape motion, a basic melee swing, dash, three sparring targets and a
   staircase/bridge to explore. This is a view/movement test, not a balance pass.
 
-These original low-poly character/environment models are provisional. They show
+The room uses an original AI-assisted four-panel painted atlas, with world-space
+stone mapping and preserved panel UVs through static batching. The character
+models remain provisional. They show
 perspective, scale, silhouettes and animation attachments; they are not a claim
 of finished Hades-quality artwork. Authored models, textures and production
 Skeleton3D animation can replace them after choosing the visual direction.
@@ -41,7 +45,8 @@ prototype URL parameters.
 
 `models.gd` constructs reusable material/mesh pieces, character pivots, held
 weapons and animation poses. `stage.gd` owns platform geometry, footprints,
-obstacles and stair height. `lab.gd` owns the isolated SubViewport/World3D,
+obstacles, the central pit, wall openings and stair height. `lab.gd` owns the
+isolated SubViewport/World3D,
 Camera3D, lights, controls and small combat test.
 
 Static scenery is merged by material to reduce draw calls. The renderer stays
@@ -56,3 +61,11 @@ platform/stair access, attached weapons, cooldowns, damage and reset.
 angles, overview, weapons, lighting, hub return and unchanged saved account data
 on phone/compact/desktop sizes. `?iso_lab=1&iso_probe=1` enables a read-only test
 snapshot; it is not an interface for editing gameplay or saves.
+
+
+The attached Hades reference informed scale, composition, dark stone, inked
+contours and green lighting. Its screenshot/assets were not copied. Original
+texture source: `art/isometric/underworld_atlas.png` (floor, wall, oracle relief,
+floor medallion in equal quadrants). `paint.gd`, `stone.gdshader` and
+`ink.gdshader` own the material mapping and outlines. Pit collision and a
+body-clearance flood fill protect routes around the well and to both exits.

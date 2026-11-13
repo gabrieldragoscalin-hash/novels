@@ -11,7 +11,7 @@ var rig: Dictionary
 var obstacles: Array=[]
 var enemies: Array=[]
 var effects: Array=[]
-var player:=Vector2(0,5)
+var player:=Vector2(0,-4.8)
 var facing:=Vector2(0.7,0.7).normalized()
 var camera_target:=Vector3.ZERO
 var clock:=0.0
@@ -52,12 +52,14 @@ func _ready() -> void:
 	viewport=SubViewport.new(); viewport.own_world_3d=true; viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS; viewport.msaa_3d=Viewport.MSAA_DISABLED; stage.add_child(viewport)
 	world=Node3D.new(); viewport.add_child(world)
 	var env:=WorldEnvironment.new(); var settings:=Environment.new()
-	settings.background_mode=Environment.BG_COLOR; settings.background_color=Color("303346")
-	settings.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR; settings.ambient_light_color=Color("9baac0"); settings.ambient_light_energy=0.30
+	settings.background_mode=Environment.BG_COLOR; settings.background_color=Color("060e10")
+	settings.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR; settings.ambient_light_color=Color("557b6b"); settings.ambient_light_energy=0.48
 	settings.tonemap_mode=Environment.TONE_MAPPER_FILMIC; env.environment=settings; world.add_child(env)
-	key_light=DirectionalLight3D.new(); key_light.rotation_degrees=Vector3(-55,-35,0); key_light.light_color=Color("ffe3b1"); key_light.light_energy=0.80; key_light.shadow_enabled=true
+	key_light=DirectionalLight3D.new(); key_light.rotation_degrees=Vector3(-55,-35,0); key_light.light_color=Color("b8cbb2"); key_light.light_energy=0.65; key_light.shadow_enabled=true
 	key_light.directional_shadow_max_distance=65; key_light.directional_shadow_mode=DirectionalLight3D.SHADOW_ORTHOGONAL; world.add_child(key_light)
-	var fill:=DirectionalLight3D.new(); fill.rotation_degrees=Vector3(-25,145,0); fill.light_color=Color("85bfc2"); fill.light_energy=0.18; world.add_child(fill)
+	var fill:=DirectionalLight3D.new(); fill.rotation_degrees=Vector3(-25,145,0); fill.light_color=Color("546f82"); fill.light_energy=0.12; world.add_child(fill)
+	for point in [Vector3(-5,1.4,-6),Vector3(6,1.2,-5)]:
+		var flame_light:=OmniLight3D.new(); flame_light.position=point; flame_light.omni_range=7; flame_light.light_color=Color("64e69a"); flame_light.light_energy=1.6; flame_light.shadow_enabled=false; world.add_child(flame_light)
 	obstacles=Stage.build(world)
 	M.batch_static(world)
 	rig=M.hero(); world.add_child(rig["root"]); M.equip(rig,weapon)
@@ -65,7 +67,7 @@ func _ready() -> void:
 	hud=Control.new(); hud.mouse_filter=Control.MOUSE_FILTER_IGNORE; add_child(hud)
 	label("3D VIEW LAB",Vector2(18,12),22)
 	button("Hub",Vector2(390,10),Vector2(72,36),back)
-	label("ELYSIAN EMBERS • a different view of the Sanctuary",Vector2(18,47),11)
+	label("THE VEILED SANCTUM • an underworld chamber",Vector2(18,47),11)
 	status=label("",Vector2(18,72),12)
 	frame_button=button("",Vector2.ZERO,Vector2(104,36),func(): overview=not overview; release_stick(); update_camera(1); refresh())
 	angle_button=button("",Vector2.ZERO,Vector2(104,36),func(): low_angle=not low_angle; update_camera(1); refresh())
@@ -100,8 +102,8 @@ func layout() -> void:
 	update_camera(1); refresh(); queue_redraw()
 func reset() -> void:
 	for enemy in enemies: enemy["node"].queue_free()
-	enemies.clear(); sparring=false; health=6; hurt_left=0; player=Vector2(0,5); attack_left=0; dash_left=0; dash_cooldown=0; release_stick(); attack_held=false; attack_touch=-1
-	for point in [Vector2(-2,-1),Vector2(3,2),Vector2(1,-5)]: enemies.append(M.shade(world,Stage.point(point),point.y< -4))
+	enemies.clear(); sparring=false; health=6; hurt_left=0; player=Vector2(0,-4.8); attack_left=0; dash_left=0; dash_cooldown=0; release_stick(); attack_held=false; attack_touch=-1
+	for point in [Vector2(-5,-4),Vector2(5,-4),Vector2(4,5)]: enemies.append(M.shade(world,Stage.point(point),point.y>4))
 	rig["root"].position=Stage.point(player); camera_target=Stage.point(player)+Vector3.UP; update_camera(1); refresh()
 func refresh() -> void:
 	if status==null: return

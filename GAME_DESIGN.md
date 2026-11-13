@@ -496,3 +496,20 @@ Existing gameplay/art and both older labs remain intact. These are provisional
 low-poly models for judging the view, scale, movement and atmosphere, not final
 art or a decision to convert the whole game. Production character rigs/assets
 and native iPhone performance remain to evaluate after this test.
+
+
+### Veiled Sanctum room remake
+
+The 3D lab now uses an enclosed, monumental underworld chamber rather than the
+open bright island scene. Original painted stone, carved friezes, recessed oracle
+reliefs and ink contours establish a more illustrated treatment. Tall north/west
+walls, large fractured columns, urns, sarcophagi and emerald candlelight frame a
+continuous paved floor around a real central pit. Near walls remain cut away.
+The earlier floating tree island, cone forest and orange stripes are removed.
+
+The pit is absent from the walkable region and has descending stone lining and a
+raised rim. Wall/column/cover footprints remain collision obstacles. Both aisles,
+the west shrine and the raised north exit are checked with body-radius clearance.
+The prototype keeps its camera, controls, temporary combat and account isolation.
+This supersedes the open-sanctuary visual description above; character models
+remain provisional and the production dungeon is not replaced.

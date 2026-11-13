@@ -312,3 +312,17 @@ weapon is a mesh attached to the hand; the walking limbs and cape are animated
 pivots. Sword/spear reuse the rig. This intentionally uses provisional low-poly
 models to test a different view and atmosphere. It does not replace the current
 art or claim a finished illustrated3D production style.
+
+
+### Veiled Sanctum: chamber composition and painted surfaces
+
+The 3D test room is rebuilt around the user's Hades reference: tall enclosing
+architecture, deep openings, substantial damaged columns, layered carved borders,
+dark mineral stone, strong ink contours and green light. The scene now has a real
+central well and continuous circulation paths instead of a bright floating plaza.
+An original AI-assisted atlas supplies flat-painted flagstones, ashlar/friezes,
+a veiled oracle relief and an eclipse medallion. The reference screenshot itself
+is not used as a texture. Wall and floor shaders map surfaces in world space;
+reliefs/medallions retain explicit UVs through static batching. Horizontal caps
+sample paving rather than stretched wall friezes. Mipmaps limit distant shimmer.
+The existing character is still a temporary low-poly model, not final character art.
