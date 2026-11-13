@@ -1,0 +1,142 @@
+CURRENT RUN UPGRADES
+
+24 upgrades, plus 3 Meteor variants.
+Rarity fields are left blank for editing. Second Chance is currently labelled Rare.
+
+GENERAL UPGRADES
+
+1. Increased damage
+   Effect: +15% equipment damage per selection (additive).
+   Rarity:
+
+2. Increased attack speed
+   Effect: +12% attack speed per selection (additive).
+   Rarity:
+
+3. Increased move speed
+   Effect: +10% movement speed per selection.
+   Rarity:
+
+4. Increased EXP gain
+   Effect: +20% experience gained per selection.
+   Rarity:
+
+5. Punchthrough
+   Effect: Pass through one additional enemy per selection.
+   Rarity:
+
+6. Extra projectile
+   Effect: Adds a parallel projectile. Sword gains another slash; hammer gains a wider cone.
+   Current damage scaling: +35% total output per selection for applicable attacks.
+   Rarity:
+
+7. Multiple Shots
+   Effect: Adds one consecutive attack per attack cycle.
+   Current damage scaling: +30% total output per selection.
+   Rarity:
+
+8. Ricochet
+   Effect: Bounce to one additional enemy per selection, rather than bouncing off walls.
+   Rarity:
+
+9. Follow
+   Effect: Projectiles home toward enemies.
+   Rarity:
+
+10. See All
+    Effect: Attacks pass through obstacles. Unavailable for wands, which already pass through obstacles.
+    Rarity:
+
+11. Vitality
+    Effect: +10% starting maximum HP per selection; immediately heals the HP gained.
+    Rarity:
+
+12. Field medicine
+    Effect: Immediately restore 15% maximum HP.
+    Rarity:
+
+13. Gatherer
+    Effect: +25% XP pickup radius per selection.
+    Rarity:
+
+14. Long reach
+    Effect: +10% projectile speed or +5% melee reach per selection.
+    Wand with Perpetuum: +5% beam width per selection.
+    Wand with Magic Meteor: Faster falling and rolling meteors.
+    Rarity:
+
+15. Last enemy
+    Effect: +15% damage against the final enemy in a room per selection.
+    Rarity:
+
+16. Momentum
+    Effect: Clearing combat grants +10% movement speed in the next room.
+    Rarity:
+
+17. Emergency barrier
+    Effect: Blocks one hit during the first four seconds after entering a room.
+    Rarity:
+
+18. Salvage
+    Effect: +3 coins per cleared combat room per selection.
+    Rarity:
+
+19. Second Chance
+    Effect: Revive once at 25% maximum HP. Obtainable only once per run.
+    Rarity: Rare
+
+BOW AND CROSSBOW UPGRADES
+
+20. Arrow split
+    Effect: Splits into three directions after the final hit.
+    Replaces: Explosive arrows.
+    Rarity:
+
+21. Stop and Aim
+    Effect: Standing still charges an attack for up to three seconds. Moving or reaching three seconds fires it.
+    Charged attacks: Double damage and guaranteed penetration; not affected by Ricochet or Follow.
+    Rarity:
+
+22. Explosive arrows
+    Effect: Normal impact damage plus 45% area damage, limited to once per attack cycle.
+    Replaces: Arrow split.
+    Rarity:
+
+WAND UPGRADES
+
+23. Perpetuum
+    Effect: Converts beams into a continuous laser.
+    Replaces: Magic Meteor.
+    Rarity:
+
+24. Magic Meteor
+    Effect: Replaces beams with falling meteors.
+    Replaces: Perpetuum.
+    Rarity:
+
+METEOR VARIANTS
+These replace existing upgrades while Magic Meteor is active; they are not three additional independent upgrades.
+
+25. Meteor Size
+    Replaces: Punchthrough.
+    Effect: +20% base meteor radius per selection.
+    Rarity:
+
+26. Meteor Rain
+    Replaces: Ricochet.
+    Effect: Targets one additional enemy per attack per selection.
+    Rarity:
+
+27. Telekinesis
+    Replaces: Follow.
+    Effect: Meteors roll after impact, dealing 25% of their falling damage.
+    Rarity:
+
+SEPARATE REWARD
+
+20 coins
+Effect: Adds 20 coins instead of granting an upgrade.
+This is a currency choice, not an upgrade.
+
+NOTES / PROPOSED CHANGES
+
