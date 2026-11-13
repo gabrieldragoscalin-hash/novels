@@ -117,10 +117,11 @@ func run() -> void:
 			if room.combat.alive_count() == 0: break
 		assert(room.combat.alive_count() == 0, "Boss must be defeatable with real projectiles")
 		assert(room.combat.progression.flares == before + 50 + (f - 1) * 10)
+		var earned_damage: float = room.combat.progression.damage()
 		room._advance_floor()
 		if f < Dungeon.MAX_FLOOR:
 			await room.transition_finished
-			assert(room.dungeon.floor_number == f + 1 and room.combat.progression.damage() == 150)
+			assert(room.dungeon.floor_number == f + 1 and room.combat.progression.damage() == earned_damage)
 		else: assert(room.dungeon.completed and not room.active and room.death_panel.visible)
 	# Awakened empty rooms pay their floor-specific completion reward only once.
 	for cell in room.dungeon.rooms:

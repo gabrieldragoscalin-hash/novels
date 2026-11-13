@@ -27,7 +27,7 @@ try:
     with sync_playwright() as p:
         executable = next((shutil.which(x) for x in ('chromium', 'google-chrome', 'google-chrome-stable') if shutil.which(x)), None)
         browser = p.chromium.launch(executable_path=executable, args=['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'])
-        for name, query in [('hub', ''), ('lab', '?animation_lab=1')]:
+        for name, query in [('hub', ''), ('lab', '?animation_lab=1'), ('room-lab', '?room_lab=1')]:
             context = browser.new_context(viewport={'width': 390, 'height': 844})
             page = context.new_page()
             # Fail the first chunk once, then require automatic recovery.

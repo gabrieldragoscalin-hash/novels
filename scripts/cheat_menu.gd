@@ -176,7 +176,7 @@ func flares() -> void:
 	status.text = "Added 100 run flares."
 
 func level_up() -> void:
-	game.combat.progression.reward_choices(2,true)
+	game.combat.progression.reward_choices()
 	status.text = "Upgrade choice queued. Close to choose."
 
 func clear_room() -> void:

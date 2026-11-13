@@ -73,6 +73,11 @@ var font := ThemeDB.fallback_font
 
 func _ready() -> void:
 	var lab_requested := false
+	var room_lab_requested := "--room-lab" in OS.get_cmdline_user_args()
+	if OS.has_feature("web"): room_lab_requested = JavaScriptBridge.eval("new URLSearchParams(location.search).get('room_lab') === '1'")
+	if room_lab_requested:
+		get_tree().change_scene_to_file.call_deferred("res://prototypes/room_lab/lab.tscn")
+		return
 	if OS.has_feature("web"): lab_requested = JavaScriptBridge.eval("new URLSearchParams(location.search).get('animation_lab') === '1'")
 	if lab_requested:
 		get_tree().change_scene_to_file.call_deferred("res://prototypes/animation_lab/lab.tscn")
@@ -269,7 +274,7 @@ func _new_run(mark_floor: bool = true) -> void:
 	notice_time = 0
 	notice_label.hide()
 	_update_room_label()
-	if hub.perks["starting_upgrade"] > 0: combat.progression.reward_choices(2,false)
+	if hub.perks["starting_upgrade"] > 0: combat.progression.reward_choices()
 
 func reset_player() -> void:
 	if transitioning: return
@@ -589,8 +594,9 @@ func _draw_enemy(enemy: Dictionary) -> void:
 	draw_rect(Rect2(bar.position,Vector2(36.0*enemy["hp"]/enemy.get("max_hp",5),4)),Color("ed8392") if kind not in ["brute","miniboss"] else Color("e3b56a"))
 
 func _show_level_up(title: String = "", slow_transition: bool = true) -> void:
+	if combat.progression.pending<=0 or combat.progression.offers.is_empty(): return
 	_release_stick()
-	var heading := "LEVEL %d — CHOOSE A REWARD" % combat.progression.level if title.is_empty() else title
+	var heading := "LEVEL %d — CHOOSE AN UPGRADE" % combat.progression.level if title.is_empty() else title
 	combat.grace_time = maxf(combat.grace_time,0.8)
 	level_panel.present(combat.progression,heading,slow_transition and title.is_empty())
 
@@ -662,7 +668,7 @@ func _interact() -> void:
 		"loot":
 			if services.loot():
 				_notice(state["reward"])
-				if combat.progression.pending > 0: _show_level_up("LOOT — CHOOSE A REWARD")
+				if combat.progression.pending > 0: _show_level_up("LOOT — CHOOSE AN UPGRADE")
 				else: _menu("Loot secured", "+%d coins • %d flares\n%s" % [state.get("coin_reward",15+dungeon.floor_number*5),20 if dungeon.floor_number%5==0 else 10,state["reward"]], [])
 		"bonus":
 			if state.get("summoned_shop", false): _open_shop()
@@ -745,7 +751,7 @@ func _shop_buy(id: String) -> void:
 	var message: String = services.buy(id)
 	if combat.progression.pending > 0:
 		_close_service()
-		_show_level_up("SHOP — CHOOSE A REWARD")
+		_show_level_up("SHOP — CHOOSE AN UPGRADE")
 	else: _open_shop(message)
 	_update_combat_labels()
 
@@ -795,7 +801,7 @@ func _spin_wheel() -> void:
 				combat.progression.coins += 20
 				_menu("Wheel: coins", "You gained 20 coins.", [])
 			2:
-				combat.progression.reward_choices(2, false)
+				combat.progression.reward_choices()
 				_show_level_up("WHEEL — CHOOSE AN UPGRADE")
 			3:
 				if services.tradable_owned().is_empty():

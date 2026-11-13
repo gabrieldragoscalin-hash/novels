@@ -29,7 +29,6 @@ func setup() -> void:
 	visibility_changed.connect(func():
 		if not visible: phase = "idle")
 func entry(progression, id: String) -> Dictionary:
-	if id=="coins": return {"id":id,"title":"%d coins" % progression.coin_reward(),"description":"Keep currency instead of an upgrade","icon":Icons.texture("coins"),"badge":"COINS"}
 	var info: Array = progression.upgrade_info(id)
 	var glyph: String = {"Meteor Size":"meteor_size","Meteor Rain":"meteor_rain","Telekinesis":"telekinesis"}.get(info[0],id)
 	return {"id":id,"title":str(info[0]).replace(" • RARE",""),"description":info[1],"icon":Icons.texture(glyph),"badge":"RARE" if id=="second_chance" else ("SIGNATURE" if progression.Catalog.signature(id) else "UPGRADE")}
@@ -37,7 +36,6 @@ func present(progression, title: String, slow: bool) -> void:
 	phase = "slowing" if slow else "rolling"; slow_duration = 0.45 if slow else 0.0
 	elapsed = 0; committed = false; veil = 0; offer_ids = progression.offers.duplicate(); pool.clear()
 	for id in progression.available_upgrades(): pool.append(entry(progression,id))
-	if offer_ids.has("coins"): pool.append(entry(progression,"coins"))
 	if pool.is_empty():
 		for id in offer_ids: pool.append(entry(progression,id))
 	title_label.text = title; hint.text = "Your blessings are taking shape…"
@@ -76,4 +74,4 @@ func _process(delta: float) -> void:
 			for index in range(offer_ids.size()): cards[index].disabled = false
 	queue_redraw()
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO,get_viewport_rect().size),Color(0.012,0.035,0.027,veil))
+	draw_rect(get_global_transform().affine_inverse()*get_viewport_rect(),Color(0.012,0.035,0.027,veil))

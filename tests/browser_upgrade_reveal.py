@@ -44,17 +44,17 @@ with sync_playwright() as p:
  client.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]});page.wait_for_timeout(250)
  page.screenshot(path='/tmp/upgrades-ready.png')
  t=text('/tmp/upgrades-ready.png');print('Ready-card screenshot captured',flush=True)
- assert 'COINS' in t and 'paused' in t,t
- # Select the currency card exactly once; combat resumes with no dialog.
+ assert 'COINS' not in t and 'paused' in t,t
+ # Select the third upgrade; combat resumes without awarding currency.
  tap(384,360);page.wait_for_timeout(700)
  for _ in range(40):
   d=page.evaluate(readjs)
-  if d and d['coins']==20:break
+  if d and d['coins']==0:break
   page.wait_for_timeout(200)
- assert d['coins']==20,d
+ assert d['coins']==0,d
  page.screenshot(path='/tmp/upgrades-resumed.png')
  assert 'taking shape' not in text('/tmp/upgrades-resumed.png')
  assert not errors,errors
- print('PASS: mobile rolling cards, held-touch guard, visible dungeon, currency selection once, saved reward and resume',flush=True)
+ print('PASS: mobile rolling cards, held-touch guard, visible dungeon, third upgrade selection, no currency reward and resume',flush=True)
  b.close()
 server.shutdown()

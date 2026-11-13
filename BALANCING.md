@@ -97,7 +97,7 @@ cannot hit the same enemy twice. Wands/See All bypass pillars; other attacks do 
 - Dungeon loot coins:20/25/30/35/40 across floors 1–5. Equipment is now a chance, not guaranteed.
   Common/Uncommon/Rare/Epic odds: floor1 80/20/0/0%; floor2 70/28/2/0%;
   floor3 55/40/5/0%; floor4 40/50/10/0%; floor5 0/70/28/2%.
-  Floors2–5 also offer a run-upgrade/coin choice. Loot flares are10 normally,
+  Floors2–5 also offer a three-upgrade choice. Loot flares are10 normally,
   20 on floor5, plus eligible defender kill flares.
 - Dungeon loot key chance5%; conditional types70% Copper /25% Silver /5% Gold.
 - Normal enemies have a2% chance to leave a Common equipment pickup. Collect it by
@@ -115,7 +115,7 @@ cannot hit the same enemy twice. Wands/See All bypass pillars; other attacks do 
 - Pity: Copper Epic, Silver Legendary, Gold Legendary+1 at35 after34 misses.
   Normal Gold legendary ALSO resets pity. Counters are saved separately by chest
   type and shared between key/gem payment methods. Odds/guarantees are shown in UI.
-- Perks start250 coins, +50 per purchase. First unlock: Starting upgrade, two upgrade
+- Perks start250 coins, +50 per purchase. First unlock: Starting upgrade, three upgrade
   choices without a coin card. All four known perks must unlock before leveling;
   the other eight are reserved. HP:+1 per level, dodge:+1 percentage point per
   level, boss damage:+2 percentage points per level. Limits1/25/25/25.
@@ -125,9 +125,9 @@ cloud synchronization is claimed. All exact odds/prices/effects above can be tun
 
 ## Room services and traps retained
 
-Healer:full heal once per floor. Free upgrade:two upgrades/20coins once. Trader:
+Healer:full heal once per floor. Free upgrade:three upgrades once. Trader:
 one rank for one of three eligible choices once. Wheel:one equal-probability spin
-among heal3,20coins,two-upgrade choice,trade,shopkeeper; no trade available gives
+among heal3,20coins,three-upgrade choice,trade,shopkeeper; no trade available gives
 20coins. Wheel shops never repeat bonus entrance flares.
 
 Dungeon-room shop remains separate from hub shop: Common bow/armor copies150coins;

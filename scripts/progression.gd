@@ -65,18 +65,14 @@ func add_xp(amount: int) -> void:
 	if pending > 0 and offers.is_empty(): _roll_offers()
 
 func _roll_offers() -> void:
-	_make_choices(2,true)
-
-func coin_reward() -> int:
-	return 20
+	_make_choices(3)
 
 func choose(index: int) -> String:
 	if pending <= 0 or index < 0 or index >= offers.size(): return ""
 	var id := offers[index]
 	for other in offers:
 		if other!=id and other in ["explosive","arrow_split","perpetuum","meteor"]: declined[other] = true
-	if id == "coins": coins += coin_reward()
-	else: grant_upgrade(id)
+	grant_upgrade(id)
 	pending -= 1
 	offers.clear()
 	if pending > 0: _roll_offers()
@@ -108,11 +104,11 @@ func available_upgrades() -> Array[String]:
 		pool.append(id)
 	return pool
 
-func reward_choices(count: int = 2, with_coins: bool = true) -> void:
+func reward_choices(count: int = 3) -> void:
 	pending += 1
-	_make_choices(count,with_coins)
+	_make_choices(count)
 
-func _make_choices(count: int,with_coins: bool) -> void:
+func _make_choices(count: int) -> void:
 	offers.clear()
 	var pool := available_upgrades()
 	if count>=2:
@@ -125,7 +121,7 @@ func _make_choices(count: int,with_coins: bool) -> void:
 				var id := weighted_pick(group); offers.append(id); pool.erase(id)
 	while offers.size()<count and not pool.is_empty():
 		var id := weighted_pick(pool); offers.append(id); pool.erase(id)
-	if with_coins or offers.is_empty(): offers.append("coins")
+	if offers.is_empty(): pending = 0 # Exhausted catalog: never trap the player in an empty reveal.
 
 func weight(id: String) -> float:
 	var value := 0.08 if id=="second_chance" else (0.35 if Catalog.signature(id) else 1.0)

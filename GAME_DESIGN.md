@@ -87,10 +87,10 @@ All floor-specific encounters, stock, rewards and uses refresh on descent.
   names, icons and descriptions roll downward, then settle in staggered order.
   The rolling is cosmetic: authoritative offers and reward RNG are unchanged.
   Cards cannot be selected until every choice settles, preventing held-thumb
-  selections. Choose one of two distinct upgrades or a persistent coin reward.
+  selections. Choose one of three distinct eligible upgrades; there is no coin card.
   Excess XP is retained; queued choices remain paused without another slowdown.
-  Free/start/shop/wheel/loot choices use the same reveal, including two-card
-  rewards, with no combat slowdown in those presentations. Selection grants once,
+  Free/start/shop/wheel/loot choices use the same three-upgrade reveal,
+  with no combat slowdown in those presentations. Selection grants once,
   clears the movement stick, and resumes with a short safety window. Glyphs and
   text reflect the current weapon, including the three Meteor alternatives.
 - Nine weapons: ranged Bow, Crossbow, Wand, Spear and Chakram; melee Sword,
@@ -101,8 +101,9 @@ All floor-specific encounters, stock, rewards and uses refresh on descent.
   are Ricochet, Attack through obstacles, Follow and Extra Projectile. Melee-only
   cards are Larger Area, Jump Attack and Hard Slam. Multishot adds consecutive
   attacks for every weapon. The old system is safely archived with a Git tag.
-- Coin choices, loot and wheel coin rewards use the persistent coin wallet.
-- The permanent Starting upgrade perk gives two upgrades without a coin option,
+- Loot, room-gold bonuses and direct wheel/shop coin rewards use the persistent
+  coin wallet. Upgrade choices never grant currency.
+- The permanent Starting upgrade perk gives a choice of three upgrades,
   preventing free currency farming by repeatedly starting and abandoning runs.
 
 ## Flares and room services
@@ -123,10 +124,10 @@ Room rewards are once per room per floor. Eligible defenders also pay individual
 kill rewards. Boss-room adds never give flares. No revisit resets rewards.
 
 - Healer: full heal once per floor; full-health visits do not consume it.
-- Free upgrade: two upgrade cards plus a coin card, once per floor.
+- Free upgrade: three upgrade cards, once per floor.
 - Trader: exchange one owned run-upgrade rank for one of three eligible alternatives,
   once per floor. Nothing is removed until confirmation.
-- Wheel: one spin; heal, coins, choose between two upgrades, trade an upgrade for
+- Wheel: one spin; heal, coins, choose between three upgrades, trade an upgrade for
   one of three, or summon a shopkeeper. No eligible trade gives coins instead.
   Summoning a shopkeeper never repeats the bonus-room entrance reward.
 - Dungeon shop: common equipment copies paid with coins; run upgrades/healing/coins
@@ -212,7 +213,7 @@ Prices start250 coins, +50 per purchase. Effects are copied into the next run.
 
 | Perk | Effect per level | Cap |
 | --- | --- | ---: |
-| Starting upgrade | Start with one two-upgrade choice, no coin card |1|
+| Starting upgrade | Start with one three-upgrade choice, no coin card |1|
 | Starting HP | +1 starting HP |25|
 | Dodge | +1 percentage point dodge |25|
 | Boss damage | +2% boss/guardian damage |25|
@@ -451,3 +452,27 @@ scrubbing controls are available. Side view is the reference. Front/back fitting
 and weapon perspective remain provisional. This experiment does not replace the
 dungeon renderer or unlock a second champion. See prototypes/animation_lab/README.md
 for source scenes, resource editing and the artwork contract.
+
+
+## Separate room-layout sandbox
+
+The current ten-floor dungeon remains the comparison build. An independent
+Room Lab is available from Miscellaneous or `?room_lab=1`. It tests 1568×1904
+worlds with a following camera, connected courts, branching paths and bridges,
+using Hades-style spatial ideas rather than reproducing its maps or artwork.
+The routes themselves define the floor; void is non-walkable and low scenery
+blocks projectiles. Projectiles can cross open gaps. Every court, shrine and exit
+has a validated path with body-radius clearance.
+
+Three editable plans: Processional Steps (two-sided loop), Broken Forum
+(split galleries and cross-link), and Cinder Causeways (islands over lava).
+Each has four spatially activated packs:24 enemies normally or36 in crowded mode.
+Existing melee/ranged enemy behaviors and all nine weapons are reused. The
+sandbox has a fixed temporary loadout, local XP/upgrades, optional invincibility,
+a once-only healing shrine and a clear-all-packs exit. No account rewards,
+spending or loadout changes are saved. Map view pauses combat; restarting,
+changing layout or changing weapon resets the temporary encounter.
+
+This is a layout/combat-flow prototype, not final environment art or a replacement
+for dungeon generation. Floor plans and collision live under
+`prototypes/room_lab`; the main room-layout catalog is unchanged.

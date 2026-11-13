@@ -69,7 +69,7 @@ static func draw_projectiles(c: CanvasItem, bullets: Array, clock: float, player
 		if bullet.get("explosive",false): tint = Color(1.1,0.76,0.48)
 		_stamp(c,clip,fposmod(clock*5,1.0),pos,size,anchor,angle,tint)
 
-static func draw_effects(c: CanvasItem, arsenal, impacts: Array, clock: float, player: Vector2, muzzle: Vector2) -> void:
+static func draw_effects(c: CanvasItem, arsenal, impacts: Array, clock: float, player: Vector2, muzzle: Vector2, bounds: Rect2 = BOUNDS) -> void:
 	var meteors := meteor_samples(arsenal.meteors)
 	last_counts["meteors"] = meteors.size()
 	for meteor in meteors:
@@ -78,11 +78,11 @@ static func draw_effects(c: CanvasItem, arsenal, impacts: Array, clock: float, p
 		var duration: float = meteor.get("duration",0.45)
 		var remaining: float = clampf(meteor["delay"]/duration,0,1)
 		# A painted ignition on the floor marks the exact landing point.
-		_clipped(c,Vfx.frame("explosion",0),Rect2(pos-Vector2.ONE*radius,Vector2.ONE*radius*2),Color(1,0.7,0.4,0.3))
+		_clipped(c,Vfx.frame("explosion",0),Rect2(pos-Vector2.ONE*radius,Vector2.ONE*radius*2),Color(1,0.7,0.4,0.3),bounds)
 		var altitude := 175*pow(remaining,0.8)
 		var core := pos+Vector2(-altitude*0.35,-12-altitude)
 		var size := Vector2.ONE*radius*3.4
-		_clipped(c,Vfx.at("meteor",fposmod(clock*6,1)),Rect2(core-size*Vector2(0.72,0.76),size),Color.WHITE)
+		_clipped(c,Vfx.at("meteor",fposmod(clock*6,1)),Rect2(core-size*Vector2(0.72,0.76),size),Color.WHITE,bounds)
 	var drawn := 0; var cells := {}
 	for i in range(arsenal.effects.size()-1,-1,-1):
 		var effect: Dictionary = arsenal.effects[i]
@@ -129,8 +129,8 @@ static func _stamp(c: CanvasItem, clip: String, progress: float, pos: Vector2, s
 	c.draw_texture_rect(Vfx.at(clip,progress),Rect2(-size*anchor,size),false,tint)
 	c.draw_set_transform(Vector2.ZERO)
 
-static func _clipped(c: CanvasItem, texture: Texture2D, rect: Rect2, tint: Color) -> void:
-	var visible := rect.intersection(BOUNDS)
+static func _clipped(c: CanvasItem, texture: Texture2D, rect: Rect2, tint: Color, bounds: Rect2 = BOUNDS) -> void:
+	var visible := rect.intersection(bounds)
 	if not visible.has_area(): return
 	var source := Rect2((visible.position-rect.position)/rect.size*texture.get_size(),visible.size/rect.size*texture.get_size())
 	c.draw_texture_rect_region(texture,visible,source,tint)

@@ -220,3 +220,10 @@ The remaining upgrade and power-budget suites test delivery, collisions, splash
 and meteor overlap. Browser checks cover actual exported inventory/combat art.
 These are prototype numbers; real mobile run timing still needs playtesting before
 redesigning enemies/rooms or treating the new builds as final balance.
+
+
+Upgrade reward update: level-ups and free/start/shop/wheel/loot upgrade rewards
+now offer three eligible upgrades. The coin card is removed; direct loot, wheel
+and shop currency rewards remain. When fewer than three eligible cards remain
+at their caps, show only those cards; if none remain, clear the reward queue
+without presenting an empty choice. Never pad the pool with duplicate or coin cards.

@@ -58,6 +58,7 @@ jobs:
           godot --headless --path . --script tests/equipment_smoke.gd
           godot --headless --path . --script tests/upgrades_smoke.gd
           godot --headless --path . --script tests/nine_weapons_smoke.gd
+          godot --headless --path . --script tests/room_lab_smoke.gd
           godot --headless --path . --script tests/upgrade_reveal_smoke.gd
           godot --headless --path . --script tests/hub_menu_smoke.gd
           godot --headless --path . --script tests/inventory_ui_smoke.gd
@@ -85,15 +86,18 @@ jobs:
           godot --headless --path . --export-release Web build/web/index.html
           python tools/prepare_web_release.py build/web
           touch build/web/.nojekyll
-      - name: Test exported game and animation lab in browser
+      - name: Test exported game and prototype labs in browser
         run: |
           python -m pip install playwright==1.62.0
           python tests/browser_release_boot.py --directory build/web
+          python tests/browser_room_lab.py --directory build/web
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: browser-startup-screenshots
-          path: build/release-checks
+          path: |
+            build/release-checks
+            build/room-lab-checks
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
@@ -111,7 +115,7 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-      - name: Verify published game and animation lab
+      - name: Verify published game and prototype labs
         run: |
           python -m pip install playwright==1.62.0
           python tests/browser_release_boot.py --url '${{ steps.deployment.outputs.page_url }}'

@@ -47,7 +47,7 @@ func run() -> void:
 	assert(is_equal_approx(room.combat.progression.dodge_chance,0.04))
 	assert(is_equal_approx(room.combat.progression.boss_damage_bonus,0.1))
 	assert(room.combat.progression.pending == 1)
-	assert(room.combat.progression.offers.size() == 2)
+	assert(room.combat.progression.offers.size() == 3)
 	assert(room.active and not room.hub_menu.visible)
 	room._return_to_hub(); assert(room.in_hub and room.hub_menu.visible)
 	print("PASS: eight-slot layout, reserved slots, synthesis screen, 12 perk cards, reserved tasks, navigation/departure/hub return")

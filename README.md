@@ -213,3 +213,16 @@ and inspect at gameplay size. This is a separate proof; the dungeon keeps its
 current renderer. Side view is the reference and front/back art remains provisional.
 Editable Godot files and fitting instructions are in
 [prototypes/animation_lab/README.md](prototypes/animation_lab/README.md).
+
+
+### Room layout lab
+
+Use **Miscellaneous → Room lab**, or open
+[the room sandbox](https://gabrieldragoscalin-hash.github.io/novels/?room_lab=1).
+Three large layouts test connected courts, branching galleries, bridges and lava
+causeways with a following camera. Switch between24 and36 mobs, all nine weapons,
+map/pause and invincibility. Sandbox rewards and equipment never affect the account.
+The original dungeon stays available for comparison. See
+[the lab notes](prototypes/room_lab/README.md) for controls and editing.
+
+All production upgrade choices now offer three eligible upgrades, with no coin card.

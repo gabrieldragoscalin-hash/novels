@@ -104,7 +104,7 @@ Daily floor rewards include floor 4: two silver keys, floor 5: one gold key.
   matching parts, without consuming duplicates. No crafting recipes remain.
 - Perk price is 250 + 50 × previous purchases. Starting HP adds 1 per level;
   dodge adds 1 percentage point per level; boss damage adds 2 percentage points
-  per level. Starting upgrade offers two upgrades, without a farmable coin card.
+  per level. Starting upgrade offers three upgrades, without a farmable coin card.
 - Coins are now a persistent wallet, including run rewards. Flares remain temporary
   and retain their existing role in the separate dungeon-room shop. Dungeon shops
   no longer sell keys or seals; their permanent offers are common item copies.

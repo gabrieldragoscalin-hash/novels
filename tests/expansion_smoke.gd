@@ -44,7 +44,7 @@ func run() -> void:
 	var revives := 0
 	for i in range(2000):
 		p.reward_choices()
-		assert(p.offers.size()==3 and p.offers[0]!=p.offers[1] and p.offers[2]=="coins")
+		assert(p.offers.size()==3 and p.offers[0]!=p.offers[1] and p.offers[0]!=p.offers[2] and p.offers[1]!=p.offers[2] and not p.offers.has("coins"))
 		if p.offers.has("second_chance"): revives += 1
 	assert(revives>0 and revives<50)
 	# Barrier and clear rewards cannot be farmed by re-entering the same room.
