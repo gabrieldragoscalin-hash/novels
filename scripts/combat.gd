@@ -130,8 +130,8 @@ func _cell(point: Vector2) -> Vector2i:
 		cell = best
 	return cell
 
-func tick(delta: float, player: Vector2) -> void:
-	if health <= 0 or progression.pending > 0: return
+func tick(delta: float, player: Vector2, allow_pending: bool = false) -> void:
+	if health <= 0 or (progression.pending > 0 and not allow_pending): return
 	barrier_time = maxf(0,barrier_time-delta)
 	progression.current_health = health
 	progression.last_enemy_active = alive_count()==1
@@ -149,7 +149,7 @@ func tick(delta: float, player: Vector2) -> void:
 			collected_items.append(item_drops[index])
 			item_drops.remove_at(index)
 	_collect_xp(delta, player)
-	if progression.pending > 0: return
+	if progression.pending > 0 and not allow_pending: return
 	for enemy in enemies:
 		if enemy["hp"]<=0 or enemy.get("dormant",false): continue
 		enemy_ai.tick(enemy,delta,player)

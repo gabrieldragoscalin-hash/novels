@@ -81,8 +81,18 @@ All floor-specific encounters, stock, rewards and uses refresh on descent.
   travel across rooms. Brief hit invulnerability and arrival protection apply.
 - Enemies drop XP crystals. Nearby unobstructed crystals are attracted to the player;
   uncollected crystals and item pickups remain in their rooms.
-- Level-up pauses combat and movement. Choose one of two distinct upgrades or a
-  persistent coin reward. Excess XP is retained and additional choices queue.
+- Level-up eases combat from 65% to 15% speed over 0.45 seconds, with player
+  protection, then pauses it while choosing. Three Sanctuary jade/gold cards sit
+  across the room, with the dungeon still visible behind a light veil. Their
+  names, icons and descriptions roll downward, then settle in staggered order.
+  The rolling is cosmetic: authoritative offers and reward RNG are unchanged.
+  Cards cannot be selected until every choice settles, preventing held-thumb
+  selections. Choose one of two distinct upgrades or a persistent coin reward.
+  Excess XP is retained; queued choices remain paused without another slowdown.
+  Free/start/shop/wheel/loot choices use the same reveal, including two-card
+  rewards, with no combat slowdown in those presentations. Selection grants once,
+  clears the movement stick, and resumes with a short safety window. Glyphs and
+  text reflect the current weapon, including the three Meteor alternatives.
 - Shared cards: damage, attack speed, movement, EXP gain, Punchthrough, Extra
   projectile, Multiple Shots, enemy Ricochet, Follow and See All. Extra projectile
   fires parallel ranged/chakram shots, alternating sword slashes, or wider hammer

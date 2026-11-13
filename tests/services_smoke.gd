@@ -74,6 +74,7 @@ func run() -> void:
 			1: assert(room.combat.progression.coins == 20)
 			2:
 				assert(room.combat.progression.offers.size() == 2 and not room.combat.progression.offers.has("coins"))
+				await create_timer(1.5).timeout
 				room._choose_upgrade(0)
 			3:
 				room._trade_select_old("damage")
@@ -88,6 +89,7 @@ func run() -> void:
 	enter_service(room, "upgrade")
 	room._interact()
 	assert(room.level_panel.visible and room.combat.progression.offers.size() == 3)
+	await create_timer(1.5).timeout
 	room._choose_upgrade(2)
 	room._interact()
 	assert(room.combat.progression.pending == 0 and room.combat.progression.coins == 20)

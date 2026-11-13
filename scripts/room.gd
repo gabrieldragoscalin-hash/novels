@@ -2,6 +2,7 @@ extends Node2D
 ## First combat prototype: auto-fire while moving and persistent encounters.
 signal transition_finished
 const Art = preload("res://scripts/game_art.gd")
+const UpgradeReveal = preload("res://scripts/upgrade_reveal.gd")
 const HubMenu = preload("res://scripts/hub_menu.gd")
 const HubState = preload("res://scripts/hub.gd")
 const Services = preload("res://scripts/services.gd")
@@ -41,7 +42,7 @@ var outcome_text: Label
 var run_token := ""
 var wheel_rotation := 0.0
 var death_panel: PanelContainer
-var level_panel: Panel
+var level_panel
 var level_title: Label
 var card_buttons: Array[Button] = []
 var notice_label: Label
@@ -173,23 +174,9 @@ func _build_ui() -> void:
 	death_box.add_child(retry)
 	root.add_child(death_panel)
 	death_panel.hide()
-	level_panel = Panel.new()
-	level_panel.position = Vector2(40, 210)
-	level_panel.size = Vector2(400, 370)
-	level_panel.add_theme_stylebox_override("panel", style)
-	level_title = _label(level_panel, "LEVEL UP", Vector2(24, 20), 25, Color("dfbd78"))
-	_label(level_panel, "Choose one. Combat is paused.", Vector2(24, 58), 14, Color("d2d7df"))
-	for index in range(3):
-		var card := Button.new()
-		card.position = Vector2(24, 100 + index * 78)
-		card.size = Vector2(352, 64)
-		card.add_theme_font_size_override("font_size", 15)
-		card.pressed.connect(_choose_upgrade.bind(index))
-		level_panel.add_child(card)
-		card_buttons.append(card)
-	_label(level_panel, "Choose one reward • lasts this run", Vector2(24, 342), 12, Color("96a3b6"))
-	root.add_child(level_panel)
-	level_panel.hide()
+	level_panel = UpgradeReveal.new(); root.add_child(level_panel); level_panel.setup()
+	level_panel.selected.connect(_choose_upgrade)
+	level_title = level_panel.title_label; card_buttons.assign(level_panel.cards)
 	service_panel = Panel.new()
 	service_panel.position = Vector2(30, 190)
 	service_panel.size = Vector2(420, 420)
@@ -340,7 +327,10 @@ func _physics_process(delta: float) -> void:
 	cheat_run_button.visible = not in_hub
 	if cheat_menu != null and cheat_menu.visible: return
 	clock += delta
-	if active and not interacting and not transitioning and focused and combat.progression.pending == 0:
+	if active and not interacting and not transitioning and combat.health>0 and combat.progression.pending>0 and not level_panel.visible:
+		_show_level_up()
+	if active and not interacting and not transitioning and focused and (combat.progression.pending == 0 or level_panel.slowing()):
+		if level_panel.slowing(): delta *= level_panel.world_speed()
 		var animation_origin := player
 		run_time += delta
 		var direction := Vector2.ZERO
@@ -357,7 +347,7 @@ func _physics_process(delta: float) -> void:
 			notice_label.visible = notice_time > 0
 			var before_kills: int = combat.kills
 			var was_revived: bool = combat.progression.revive_used
-			combat.tick(delta, player)
+			combat.tick(delta, player, level_panel.slowing())
 			var target: int = combat.arsenal.nearest(player)
 			var aim := Vector2(facing,facing_y*0.5).normalized()
 			if target>=0: aim = player.direction_to(combat.enemies[target]["pos"])
@@ -369,7 +359,7 @@ func _physics_process(delta: float) -> void:
 				_notice("Picked up " + hub.item_name(uid))
 			combat.collected_items.clear()
 			_claim_floor_reward()
-			if combat.progression.pending > 0: _show_level_up()
+			if combat.progression.pending > 0 and combat.health > 0 and not level_panel.visible: _show_level_up()
 			if combat.health <= 0:
 				active = false
 				_release_stick()
@@ -584,28 +574,18 @@ func _draw_enemy(enemy: Dictionary) -> void:
 	draw_rect(bar.grow(1),Color("151a20"))
 	draw_rect(Rect2(bar.position,Vector2(36.0*enemy["hp"]/enemy.get("max_hp",5),4)),Color("ed8392") if kind not in ["brute","miniboss"] else Color("e3b56a"))
 
-func _show_level_up(title: String = "") -> void:
+func _show_level_up(title: String = "", slow_transition: bool = true) -> void:
 	_release_stick()
-	level_title.text = "LEVEL %d — CHOOSE A REWARD" % combat.progression.level if title.is_empty() else title
-	level_title.add_theme_font_size_override("font_size", 19)
-	for index in range(3):
-		card_buttons[index].visible = index < combat.progression.offers.size()
-		if index >= combat.progression.offers.size(): continue
-		var id: String = combat.progression.offers[index]
-		if id == "coins":
-			card_buttons[index].text = "+%d coins\nSave currency instead of an upgrade" % combat.progression.coin_reward()
-		else:
-			var info: Array = combat.progression.upgrade_info(id)
-			card_buttons[index].text = "%s\n%s" % [info[0], info[1]]
-	level_panel.show()
+	var heading := "LEVEL %d — CHOOSE A REWARD" % combat.progression.level if title.is_empty() else title
+	combat.grace_time = maxf(combat.grace_time,0.8)
+	level_panel.present(combat.progression,heading,slow_transition and title.is_empty())
 
 func _choose_upgrade(index: int) -> void:
-	if not level_panel.visible or not combat.apply_choice(index): return
-	_release_stick()
-	if combat.progression.pending > 0: _show_level_up()
-	else:
-		level_panel.hide()
-		combat.grace_time = maxf(combat.grace_time, 0.5)
+	if level_panel.offer_ids != combat.progression.offers or not level_panel.accept(index): return
+	if not combat.apply_choice(index): return
+	_release_stick(); level_panel.hide()
+	if combat.progression.pending > 0: _show_level_up("",false)
+	else: combat.grace_time = maxf(combat.grace_time,0.5)
 	_update_combat_labels()
 
 func _read_seed() -> void:

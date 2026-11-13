@@ -73,6 +73,7 @@ func run() -> void:
 	var pos: Vector2 = room.player
 	room.move_player(Vector2(0, -50))
 	assert(room.player == pos and room.level_panel.visible, "Choice overlay must freeze movement")
+	await create_timer(2.0).timeout
 	room._choose_upgrade(2)
 	assert(not room.level_panel.visible and room.combat.progression.coins == 20)
 	room.restart_run()
