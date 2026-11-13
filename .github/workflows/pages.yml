@@ -59,6 +59,7 @@ jobs:
           godot --headless --path . --script tests/upgrades_smoke.gd
           godot --headless --path . --script tests/nine_weapons_smoke.gd
           godot --headless --path . --script tests/room_lab_smoke.gd
+          godot --headless --path . --script tests/isometric_lab_smoke.gd
           godot --headless --path . --script tests/upgrade_reveal_smoke.gd
           godot --headless --path . --script tests/hub_menu_smoke.gd
           godot --headless --path . --script tests/inventory_ui_smoke.gd
@@ -91,6 +92,7 @@ jobs:
           python -m pip install playwright==1.62.0
           python tests/browser_release_boot.py --directory build/web
           python tests/browser_room_lab.py --directory build/web
+          python tests/browser_isometric_lab.py --directory build/web
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -98,6 +100,7 @@ jobs:
           path: |
             build/release-checks
             build/room-lab-checks
+            build/isometric-checks
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web

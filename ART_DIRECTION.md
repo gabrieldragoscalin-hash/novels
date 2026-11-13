@@ -301,3 +301,14 @@ new frontal held poses. This is a first playable art pass; final directional art
 and the manually refined character animation remain future work. Mobile browser
 screenshots were reviewed for portrait bounds, held-weapon placement and item
 text. Existing six weapon illustrations remain in use.
+
+## 3D orthographic view prototype
+
+`prototypes/isometric_lab` adds a separate visual experiment: an open suspended
+sanctuary, ivory/bronze columns, jade slabs, crimson cloth and red foliage above
+ember-colored depths. All pieces are original procedural3D geometry, with a
+fixed diagonal camera and actual directional lighting/shadows. The character's
+weapon is a mesh attached to the hand; the walking limbs and cape are animated
+pivots. Sword/spear reuse the rig. This intentionally uses provisional low-poly
+models to test a different view and atmosphere. It does not replace the current
+art or claim a finished illustrated3D production style.

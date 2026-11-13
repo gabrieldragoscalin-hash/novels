@@ -72,6 +72,11 @@ var movement_blockers: Array[Control] = []
 var font := ThemeDB.fallback_font
 
 func _ready() -> void:
+	var iso_requested := "--iso-lab" in OS.get_cmdline_user_args()
+	if OS.has_feature("web"): iso_requested=JavaScriptBridge.eval("new URLSearchParams(location.search).get('iso_lab') === '1'")
+	if iso_requested:
+		get_tree().change_scene_to_file.call_deferred("res://prototypes/isometric_lab/lab.tscn")
+		return
 	var lab_requested := false
 	var room_lab_requested := "--room-lab" in OS.get_cmdline_user_args()
 	if OS.has_feature("web"): room_lab_requested = JavaScriptBridge.eval("new URLSearchParams(location.search).get('room_lab') === '1'")

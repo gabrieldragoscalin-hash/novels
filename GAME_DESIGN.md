@@ -476,3 +476,23 @@ changing layout or changing weapon resets the temporary encounter.
 This is a layout/combat-flow prototype, not final environment art or a replacement
 for dungeon generation. Floor plans and collision live under
 `prototypes/room_lab`; the main room-layout catalog is unchanged.
+
+## Separate 3D view/style experiment
+
+A third lab, under `prototypes/isometric_lab`, tests a true3D scene with a fixed
+orthographic camera,45° yaw and selectable50°/35.264° inclination. It is available
+through Miscellaneous → 3D view lab or `?iso_lab=1`. The open Sanctuary test scene
+uses modeled platforms, ivory/bronze architecture, jade stone, crimson cloth,
+actual shadows, a bridge and a raised terrace with stairs.
+
+The temporary hero uses reusable limb pivots and a physical hand attachment for
+sword/spear meshes, walking/cape poses, a simple attack and dash. Three targets
+start sparring only after the player attacks. Controls are screen-relative with
+floating-stick/two-finger mobile input. Overview pauses the test; Reset restores
+its targets and health; a lighter shadow-free mode is available.
+
+The experiment has no account progression, currency rewards or equipment writes.
+Existing gameplay/art and both older labs remain intact. These are provisional
+low-poly models for judging the view, scale, movement and atmosphere, not final
+art or a decision to convert the whole game. Production character rigs/assets
+and native iPhone performance remain to evaluate after this test.

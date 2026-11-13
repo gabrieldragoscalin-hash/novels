@@ -329,6 +329,7 @@ func _build_misc() -> void:
 	_button(page,"Cheat menu • testing",Vector2(24,410),Vector2(432,48),func(): cheat_requested.emit())
 	_button(page,"Animation lab • shared rig prototype",Vector2(24,474),Vector2(432,48),func(): get_tree().change_scene_to_file.call_deferred("res://prototypes/animation_lab/lab.tscn"))
 	_button(page,"Room lab • paths, chambers and larger encounters",Vector2(24,534),Vector2(432,48),func(): get_tree().change_scene_to_file.call_deferred("res://prototypes/room_lab/lab.tscn"))
+	_button(page,"3D view lab • fixed isometric camera",Vector2(24,594),Vector2(432,48),func(): get_tree().change_scene_to_file.call_deferred("res://prototypes/isometric_lab/lab.tscn"))
 	_label(page,"THE WORKSHOP",Vector2(24,260),18)
 	_label(page,"Testing tools for the current prototype.\nPlayer progress and build information are in\nthe profile menu under Details.",Vector2(24,300),13,Color("bad2d0"))
 

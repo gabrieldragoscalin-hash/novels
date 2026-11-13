@@ -226,3 +226,13 @@ The original dungeon stays available for comparison. See
 [the lab notes](prototypes/room_lab/README.md) for controls and editing.
 
 All production upgrade choices now offer three eligible upgrades, with no coin card.
+
+### 3D camera and style lab
+
+Use **Miscellaneous → 3D view lab**, or open
+[the 3D prototype](https://gabrieldragoscalin-hash.github.io/novels/?iso_lab=1).
+An open sanctuary tests a diagonal orthographic camera, real modeled architecture,
+shadows, a raised terrace and a character holding sword/spear meshes. Try both
+camera angles, overview, floating-stick movement, basic attacks and dash.
+The low-poly models are provisional; the existing game and saves are unaffected.
+See [the prototype notes](prototypes/isometric_lab/README.md).
