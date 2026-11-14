@@ -513,3 +513,13 @@ the west shrine and the raised north exit are checked with body-radius clearance
 The prototype keeps its camera, controls, temporary combat and account isolation.
 This supersedes the open-sanctuary visual description above; character models
 remain provisional and the production dungeon is not replaced.
+
+
+### Veiled Sanctum palette revision
+
+The same carved architecture now uses ivory/white walls, cooler light-gray
+paving, muted gold trim and restrained yellow candlelight. Deep gray recesses
+and softer diffuse lighting preserve the painted detail and distinguish floor
+from walls at both camera inclinations. The shader remaps the original atlas
+without replacing its carvings or changing room geometry and collision.
+This replaces the earlier green palette in the isolated 3D lab.

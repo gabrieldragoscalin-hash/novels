@@ -52,14 +52,14 @@ func _ready() -> void:
 	viewport=SubViewport.new(); viewport.own_world_3d=true; viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS; viewport.msaa_3d=Viewport.MSAA_DISABLED; stage.add_child(viewport)
 	world=Node3D.new(); viewport.add_child(world)
 	var env:=WorldEnvironment.new(); var settings:=Environment.new()
-	settings.background_mode=Environment.BG_COLOR; settings.background_color=Color("060e10")
-	settings.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR; settings.ambient_light_color=Color("557b6b"); settings.ambient_light_energy=0.48
+	settings.background_mode=Environment.BG_COLOR; settings.background_color=Color("161b24")
+	settings.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR; settings.ambient_light_color=Color("b4bac6"); settings.ambient_light_energy=0.30
 	settings.tonemap_mode=Environment.TONE_MAPPER_FILMIC; env.environment=settings; world.add_child(env)
-	key_light=DirectionalLight3D.new(); key_light.rotation_degrees=Vector3(-55,-35,0); key_light.light_color=Color("b8cbb2"); key_light.light_energy=0.65; key_light.shadow_enabled=true
+	key_light=DirectionalLight3D.new(); key_light.rotation_degrees=Vector3(-55,-35,0); key_light.light_color=Color("fff0cc"); key_light.light_energy=0.45; key_light.shadow_enabled=true
 	key_light.directional_shadow_max_distance=65; key_light.directional_shadow_mode=DirectionalLight3D.SHADOW_ORTHOGONAL; world.add_child(key_light)
-	var fill:=DirectionalLight3D.new(); fill.rotation_degrees=Vector3(-25,145,0); fill.light_color=Color("546f82"); fill.light_energy=0.12; world.add_child(fill)
+	var fill:=DirectionalLight3D.new(); fill.rotation_degrees=Vector3(-25,145,0); fill.light_color=Color("8593aa"); fill.light_energy=0.12; world.add_child(fill)
 	for point in [Vector3(-5,1.4,-6),Vector3(6,1.2,-5)]:
-		var flame_light:=OmniLight3D.new(); flame_light.position=point; flame_light.omni_range=7; flame_light.light_color=Color("64e69a"); flame_light.light_energy=1.6; flame_light.shadow_enabled=false; world.add_child(flame_light)
+		var flame_light:=OmniLight3D.new(); flame_light.position=point; flame_light.omni_range=7; flame_light.light_color=Color("ffdd9b"); flame_light.light_energy=0.15; flame_light.shadow_enabled=false; world.add_child(flame_light)
 	obstacles=Stage.build(world)
 	M.batch_static(world)
 	rig=M.hero(); world.add_child(rig["root"]); M.equip(rig,weapon)

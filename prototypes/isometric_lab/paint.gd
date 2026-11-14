@@ -13,7 +13,13 @@ static func surface(kind: String) -> ShaderMaterial:
 	m.set_shader_parameter("atlas",load("res://art/isometric/underworld_atlas.png"))
 	match kind:
 		"floor": m.set_shader_parameter("region",Vector4(0,0,0.5,0.5)); m.set_shader_parameter("density",0.16)
-		"wall": m.set_shader_parameter("region",Vector4(0.5,0,0.5,0.5)); m.set_shader_parameter("mapping",1); m.set_shader_parameter("density",0.20); m.set_shader_parameter("tint",Color(1.08,1.18,1.22,1)); m.next_pass=outline()
+		"wall": m.set_shader_parameter("region",Vector4(0.5,0,0.5,0.5)); m.set_shader_parameter("mapping",1); m.set_shader_parameter("density",0.20); m.next_pass=outline()
 		"relief": m.set_shader_parameter("region",Vector4(0,0.5,0.5,0.5)); m.set_shader_parameter("mapping",2)
 		"medallion": m.set_shader_parameter("region",Vector4(0.5,0.5,0.5,0.5)); m.set_shader_parameter("mapping",2)
+	if kind=="floor":
+		m.set_shader_parameter("stone_shadow",Color("303943")); m.set_shader_parameter("stone_mid",Color("5f6a78")); m.set_shader_parameter("stone_high",Color("98a2ad")); m.set_shader_parameter("gold_amount",0.35)
+	elif kind=="wall":
+		m.set_shader_parameter("stone_shadow",Color("646568")); m.set_shader_parameter("stone_mid",Color("bcb6a6")); m.set_shader_parameter("stone_high",Color("e7dcc2")); m.set_shader_parameter("gold_amount",0.80)
+	else:
+		m.set_shader_parameter("stone_shadow",Color("414650")); m.set_shader_parameter("stone_mid",Color("bbb6aa")); m.set_shader_parameter("stone_high",Color("f2e4bf")); m.set_shader_parameter("gold_amount",1.0)
 	cache[kind]=m; return m

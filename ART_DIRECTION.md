@@ -326,3 +326,13 @@ is not used as a texture. Wall and floor shaders map surfaces in world space;
 reliefs/medallions retain explicit UVs through static batching. Horizontal caps
 sample paving rather than stretched wall friezes. Mipmaps limit distant shimmer.
 The existing character is still a temporary low-poly model, not final character art.
+
+
+### Veiled Sanctum palette revision
+
+The same carved architecture now uses ivory/white walls, cooler light-gray
+paving, muted gold trim and restrained yellow candlelight. Deep gray recesses
+and softer diffuse lighting preserve the painted detail and distinguish floor
+from walls at both camera inclinations. The shader remaps the original atlas
+without replacing its carvings or changing room geometry and collision.
+This replaces the earlier green palette in the isolated 3D lab.

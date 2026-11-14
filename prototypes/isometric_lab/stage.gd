@@ -37,7 +37,7 @@ static func plate(parent: Node3D, polygon: Array, height: float, color: String, 
 	# Bronze rim is modeled at the same coordinates as the actual floor boundary.
 	for i in range(polygon.size()):
 		var a: Vector2=polygon[i]; var b: Vector2=polygon[(i+1)%polygon.size()]; var mid: Vector2=(a+b)/2
-		var rim:=M.box(parent,Vector3(mid.x,height+0.02,mid.y),Vector3(a.distance_to(b),0.07,0.10),"53654c")
+		var rim:=M.box(parent,Vector3(mid.x,height+0.02,mid.y),Vector3(a.distance_to(b),0.07,0.10),"b19151")
 		rim.rotation.y=-atan2(b.y-a.y,b.x-a.x)
 static func rect_polygon(rect: Rect2) -> Array:
 	return [rect.position,Vector2(rect.end.x,rect.position.y),rect.end,Vector2(rect.position.x,rect.end.y)]
@@ -72,7 +72,7 @@ static func build(parent: Node3D) -> Array[Rect2]:
 	for pos in [Vector2(-4,2),Vector2(4,-1)]:
 		stone(parent,point(pos)+Vector3(0,0.40,0),Vector3(1.8,0.8,0.8))
 		stone(parent,point(pos)+Vector3(0,0.84,0),Vector3(2.0,0.16,1.0))
-		M.box(parent,point(pos)+Vector3(0,0.94,0),Vector3(1.65,0.03,0.72),"52604a")
+		M.box(parent,point(pos)+Vector3(0,0.94,0),Vector3(1.65,0.03,0.72),"b5a378")
 		obstacles.append(Rect2(pos-Vector2(0.9,0.4),Vector2(1.8,0.8)))
 	# A quieter west shrine replaces the bright tree island.
 	for rect in [Rect2(-17.3,-7,1,7),Rect2(-17,-7.4,6,1),Rect2(-17,-0.4,6,0.8)]: wall(parent,rect,4.2); obstacles.append(rect)
@@ -96,12 +96,12 @@ static func wall(parent: Node3D, footprint: Rect2, height: float) -> void:
 	stone(parent,Vector3(center.x,height/2,center.y),Vector3(footprint.size.x,height,footprint.size.y))
 	for y in [0.22,0.48,height-0.45,height-0.15]:
 		stone(parent,Vector3(center.x,y,center.y),Vector3(footprint.size.x+0.16,0.12,footprint.size.y+0.16))
-	for y in [0.55,height-0.60]: M.box(parent,Vector3(center.x,y,center.y),Vector3(footprint.size.x+0.19,0.055,footprint.size.y+0.19),"647256")
+	for y in [0.55,height-0.60]: M.box(parent,Vector3(center.x,y,center.y),Vector3(footprint.size.x+0.19,0.055,footprint.size.y+0.19),"b99a59")
 static func portal(parent: Node3D, base: Vector3) -> void:
 	M.box(parent,base+Vector3(0,2.5,0.02),Vector3(3.4,4.9,0.10),"061211")
 	for side in [-1,1]:
 		stone(parent,base+Vector3(side*1.75,2.7,0.24),Vector3(0.48,5.4,0.58))
-		for i in range(3): M.box(parent,base+Vector3(side*(1.60+i*0.10),2.7,0.55),Vector3(0.035,4.9,0.025),"738266")
+		for i in range(3): M.box(parent,base+Vector3(side*(1.60+i*0.10),2.7,0.55),Vector3(0.035,4.9,0.025),"bca66c")
 	stone(parent,base+Vector3(0,5.2,0.3),Vector3(4.0,0.38,0.85))
 	stone(parent,base+Vector3(0,0.12,0.65),Vector3(3.9,0.24,2.1))
 	var image:=QuadMesh.new(); image.size=Vector2(3.05,4.6)
@@ -120,11 +120,11 @@ static func candles(parent: Node3D, pos: Vector3, green: bool = true) -> void:
 	for i in range(3):
 		var p:=pos+Vector3(i*0.16,0,absf(sin(i))*0.12)
 		var height:=0.22+i*0.085
-		M.cylinder(parent,p+Vector3(0,height/2,0),0.05,height,"adae74")
-		var flame_color: String="86e3a1" if green else "e9ce82"
+		M.cylinder(parent,p+Vector3(0,height/2,0),0.05,height,"e3d7b1")
+		var flame_color: String="fff0b7" if green else "efc879"
 		M.cylinder(parent,p+Vector3(0,height+0.10,0),0.055,0.25,flame_color,0).material_override=M.material(flame_color,true)
 static func urn(parent: Node3D, pos: Vector3) -> void:
-	M.cylinder(parent,pos+Vector3(0,0.40,0),0.24,0.65,"61705b",0.34)
-	for y in [0.16,0.45,0.64]: M.cylinder(parent,pos+Vector3(0,y,0),0.31,0.04,"202f29")
-	M.cylinder(parent,pos+Vector3(0,0.78,0),0.17,0.16,"4a5e4c",0.17)
-	M.cylinder(parent,pos+Vector3(0,0.87,0),0.23,0.06,"829075")
+	M.cylinder(parent,pos+Vector3(0,0.40,0),0.24,0.65,"b8af9a",0.34)
+	for y in [0.16,0.45,0.64]: M.cylinder(parent,pos+Vector3(0,y,0),0.31,0.04,"806b42")
+	M.cylinder(parent,pos+Vector3(0,0.78,0),0.17,0.16,"b2aa96",0.17)
+	M.cylinder(parent,pos+Vector3(0,0.87,0),0.23,0.06,"d5c29a")

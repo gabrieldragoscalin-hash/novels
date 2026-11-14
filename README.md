@@ -232,7 +232,7 @@ All production upgrade choices now offer three eligible upgrades, with no coin c
 Use **Miscellaneous → 3D view lab**, or open
 [the 3D prototype](https://gabrieldragoscalin-hash.github.io/novels/?iso_lab=1).
 The Veiled Sanctum tests a diagonal orthographic camera inside a dark carved
-chamber with painted stone, oracle door reliefs, green light, a real central pit
+chamber with painted stone, oracle door reliefs, warm candlelight, a real central pit
 and a raised exit. The character holds sword/spear meshes. Try both
 camera angles, overview, floating-stick movement, basic attacks and dash.
 The low-poly models are provisional; the existing game and saves are unaffected.

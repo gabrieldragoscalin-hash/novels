@@ -14,8 +14,10 @@ progression or saved reward in this scene.
   yaw stays 45°. Movement follows screen directions at either angle.
 - An enclosed underworld hall with monumental carved rear walls, recessed oracle
   reliefs, large damaged pillars, a genuine central pit, urns, sarcophagi and
-  emerald candlelight. Near walls are cut away for camera visibility. Painted
+  warm yellow candlelight. Near walls are cut away for camera visibility. Painted
   stone/frieze/relief materials and ink outlines replace the flat pastel slabs.
+  Ivory walls, cooler gray paving and muted gold details separate vertical and
+  walkable surfaces. Soft diffuse lighting retains carving detail at both angles.
   Horizontal caps use stone paving, not stretched vertical-wall textures.
 - The character's weapon is attached to a hand pivot. Sword and spear reuse the
   same character body, walking cycle and attachment; the weapon meshes differ.
